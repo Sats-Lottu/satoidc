@@ -1,0 +1,27 @@
+services:
+  database:
+    image: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_DB: app_db
+      POSTGRES_PASSWORD: app_password
+    ports:
+      - "5432:5432"
+
+  satoidc:
+    build:
+      context: .
+      dockerfile: satoidc/DockerFile
+    entrypoint: ./entrypoint.sh
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+    environment:
+      DATABASE_URL: postgresql+psycopg://app_user:app_password@database:5432/app_db
+      SYNC_DATABASE_URL: postgresql+psycopg://app_user:app_password@database:5432/app_db
+
+volumes:
+  pgdata:
