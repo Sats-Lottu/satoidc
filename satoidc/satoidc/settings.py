@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     SYNC_DATABASE_URL: str = "sqlite:///satoidc.db"
 
     # LNURL-AUTH settings
-    LNURL_K1_TTL_SECONDS: int = 300
+    LNURL_K1_TTL_SECONDS: int = 60
 
     # OAUTH2 JWT settings
     OAUTH2_JWT_ISS: str = "http://localhost:8000"

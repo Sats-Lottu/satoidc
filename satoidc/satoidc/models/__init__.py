@@ -109,7 +109,7 @@ class Permission:
 class LnurlAuthChallenge(TimestampMixin):
     __tablename__ = "lnurl_auth_challenges"
     user_id: Mapped[Optional[UUID]] = mapped_column(
-        ForeignKey("users.id"), nullable=True, index=True
+        ForeignKey("users.id"), nullable=True, default=None, index=True
     )
 
     k1: Mapped[str] = mapped_column(

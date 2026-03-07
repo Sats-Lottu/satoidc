@@ -1,5 +1,6 @@
 import ecdsa
 from bech32 import bech32_encode, convertbits
+from nicegui import Event
 
 
 def url_encode(url: str) -> str:
@@ -26,3 +27,9 @@ def verify(k1: str, key: str, sig: str) -> True:
         return vk.verify_digest(sig, k1, sigdecode=ecdsa.util.sigdecode_der)
     except ecdsa.keys.BadSignatureError:
         return False
+
+
+# Basicamente um EventEmitter global para emitir eventos de autenticação
+#  via LNURL, que podem ser ouvidos em outros lugares do código para criar
+#  sessões, etc.
+lnurl_auth_events = Event[dict]()
