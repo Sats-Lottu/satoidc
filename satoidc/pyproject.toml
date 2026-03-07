@@ -39,6 +39,6 @@ addopts = '-p no:warnings'
 asyncio_default_fixture_loop_scope = 'function'
 
 [tool.taskipy.tasks]
-run = 'fastapi dev iam'
-test = 'pytest -s -x --cov=iam -vv'
+run = 'fastapi dev satoidc'
+test = 'pytest -s -x --cov=satoidc -vv'
 post_test = 'coverage html'
