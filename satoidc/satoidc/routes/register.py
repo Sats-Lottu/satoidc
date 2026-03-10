@@ -1,24 +1,65 @@
-import re
 from typing import Annotated, Optional
 
+import segno
 from fastapi import Depends
+from fastapi.responses import RedirectResponse
 from nicegui import APIRouter, ui
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
+from satoidc.auth.lnurl import lnurl_auth_events, url_encode
 from satoidc.auth.security import hash_password
-from satoidc.models import User
+from satoidc.models import LnurlAuthChallenge, User
 from satoidc.models.database import get_session
+from satoidc.settings import ENV
 from satoidc.utils import safe_redirect
+from satoidc.validators import (
+    is_valid_email,
+    is_valid_login,
+    is_valid_password,
+    validate_registration_form,
+)
 
 router = APIRouter()
-
-LOGIN_RE = re.compile(r"^[a-z0-9]{6,30}$")
-MIN_PASSWORD_LENTH = 8
-
-
 Session = Annotated[AsyncSession, Depends(get_session)]
+
+
+class LNURLAuthQRRegister:
+    def __init__(self, base_url: str, session: Session):
+        self.base_url = base_url
+        self.k1 = None
+        self.action = "register"
+        self.session = session
+
+    async def refresh_qrcode(self):
+        challenge = LnurlAuthChallenge(action=self.action)
+        self.session.add(challenge)
+        await self.session.commit()
+        await self.session.refresh(challenge)
+        self.k1 = challenge.k1
+        self.qrcode.refresh()
+
+    @ui.refreshable_method
+    def qrcode(self):
+        lnurl_auth = url_encode(
+            f"{self.base_url}auth/lnurl/callback?tag=login&k1={self.k1}&action={self.action}"
+        )
+        qrcode = segno.make_qr(lnurl_auth, error="l")
+        ui.label("Login with LN Wallet")
+        with ui.link(target=f"lightning:{lnurl_auth}").tooltip(
+            "Open in Lightning Wallet"
+        ):
+            ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
+                "w-64"
+            ).tooltip(
+                "Scan with your Lightning Wallet to register as root user"
+            )
+        ui.label(lnurl_auth).classes(
+            "mt-2 w-full break-all text-xs text-center"
+        ).on("click", lambda e: ui.clipboard.write(lnurl_auth)).on(
+            "click",
+            lambda e: ui.notify("LNURL copied to clipboard!", type="positive"),
+        ).tooltip("Click to copy")
 
 
 @router.page("/register")
@@ -26,90 +67,135 @@ async def register_page(
     request: Request, session: Session, redirect_to: Optional[str] = None
 ):
     redirect_to = safe_redirect(redirect_to)
+    if request.session.get("user_id"):
+        return RedirectResponse("/", status_code=303)
+    ui.add_head_html(
+        '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css"'
+        ' rel="stylesheet" />'
+    )
 
-    ui.label("Create account").classes("text-2xl font-bold mb-2")
-    ui.label("Fill in the details below.").classes("text-gray-500 mb-6")
+    lnurl_auth_register_root = LNURLAuthQRRegister(
+        base_url=str(request.base_url), session=session
+    )
+    ui.timer(ENV.LNURL_K1_TTL_SECONDS, lnurl_auth_register_root.refresh_qrcode)
 
-    with ui.card().classes("w-full max-w-lg p-6"):
-        login_field = ui.input("Login (a-z0-9, 6-30)").classes("w-full")
-        email = ui.input("Email").props("type=email").classes("w-full")
-        nickname = ui.input("Nickname (optional)").classes("w-full")
+    @lnurl_auth_events.subscribe
+    async def _event_handler(data: dict):
+        if data.get("k1") == lnurl_auth_register_root.k1:
+            request.session["user_id"] = data.get("user_id")
+            ui.notify("Logged in with LN Wallet!", type="positive")
+            ui.navigate.to(redirect_to or "/")
 
-        password = ui.input(
-            "Password", password=True, password_toggle_button=True
+    with (
+        ui.dialog() as dialog,
+        ui.card().classes("w-full max-w-lg mx-auto items-center"),
+    ):
+        lnurl_auth_register_root.qrcode()
+        ui.button("Close", on_click=dialog.close)
+    with (
+        ui.header(elevated=True)
+        .style("background-color:#3874c8; color:white")
+        .classes("items-center justify-between px-4")
+    ):
+        with (
+            ui.row()
+            .classes("items-center gap-2")
+            .on("click", lambda: ui.navigate.to("/"))
+        ):
+            ui.icon("verified_user")
+            ui.label("SatOIDC").classes("text-lg font-bold")
+
+    with ui.card().classes("w-full max-w-lg mx-auto items-center"):
+        ui.label("Create account").classes("text-2xl font-bold mb-2")
+        ui.label("Fill in the details below.").classes("text-gray-500 mb-6")
+        login_field = (
+            ui.input(
+                "Login",
+                validation={"Invalid login!": is_valid_login},
+            )
+            .classes("w-full")
+            .tooltip("Lowercase letters and numbers, 6-30 characters")
+        )
+        email_field = (
+            ui.input(
+                "Email",
+                validation={"Invalid email!": is_valid_email},
+            )
+            .props("type=email")
+            .classes("w-full")
+        ).tooltip("Enter a valid email address")
+        nickname_field = (
+            ui.input("Nickname (optional)", value="Satoshi")
+            .classes("w-full")
+            .tooltip(
+                "Letters, numbers, dots, underscores or hyphens, "
+                "2-80 characters"
+            )
+        )
+
+        password_field = (
+            ui.input(
+                "Password",
+                password=True,
+                password_toggle_button=True,
+                validation={
+                    "Weak password!": lambda v: (
+                        is_valid_password(v) if len(v) >= 0 else True
+                    ),
+                },
+            )
+            .classes("w-full")
+            .tooltip(
+                "Password requirements:\n"
+                "• 8-128 characters\n"
+                "• At least one uppercase letter (A-Z)\n"
+                "• At least one lowercase letter (a-z)\n"
+                "• At least one number (0-9)\n"
+                "• At least one special character (!@#$...)"
+            )
+        )
+        _confirm = ui.input(
+            "Confirm password",
+            password=True,
+            password_toggle_button=True,
+            validation={
+                "Not same password!": lambda value: (
+                    password_field.value == value
+                )
+            },
         ).classes("w-full")
-        confirm = ui.input(
-            "Confirm password", password=True, password_toggle_button=True
-        ).classes("w-full")
-
-        error = ui.label("").classes("text-red-500 mt-2")
-        ok = ui.label("").classes("text-green-600 mt-2")
-
-        def validate_form() -> Optional[str]:
-            login_value = (login_field.value or "").strip()
-            e = (email.value or "").strip().lower()
-            p = password.value or ""
-            c = confirm.value or ""
-
-            if not login_value:
-                return "Login is required."
-            if not LOGIN_RE.fullmatch(login_value):
-                return "Login must match ^[a-z0-9]{6,30}$."
-            if not e or "@" not in e:
-                return "Valid email is required."
-            if len(p) < MIN_PASSWORD_LENTH:
-                return "Password must be at least 8 characters."
-            if p != c:
-                return "Passwords do not match."
-            return None
 
         async def submit():
-            error.set_text("")
-            ok.set_text("")
-
-            msg = validate_form()
-            if msg:
-                error.set_text(msg)
+            validation_errors = validate_registration_form(
+                login_field.value,
+                nickname_field.value,
+                password_field.value,
+                email_field.value,
+            ).values()
+            if validation_errors:
+                ui.notify("\n".join(validation_errors), type="negative")
                 return
-
-            login_value = login_field.value.strip()
-            e = email.value.strip().lower()
-            n = (nickname.value or "").strip() or None
-            pw_hash = hash_password(password.value)
-
-            db_user = await session.scalar(
-                select(User).where(User.login == login_value)
-            ) or await session.scalar(select(User).where(User.email == e))
-            if db_user:
-                error.set_text("Login or Email already in use.")
-                return
+            login = login_field.value.strip()
+            email = email_field.value.strip().lower()
+            nickname = (nickname_field.value or "").strip() or None
+            pw_hash = hash_password(password_field.value)
 
             user = User(
                 lnurl_pubkey=None,
-                login=login_value,
-                email=e,
-                nickname=n,
+                login=login,
+                email=email,
+                nickname=nickname,
                 password_hash=pw_hash,
             )
             session.add(user)
             await session.commit()
             await session.refresh(user)
+            request.session["user_id"] = str(user.id)
+            ui.notify("Account created!", type="positive")
+            ui.navigate.to(redirect_to or "/")
 
-            # auto-login
-            request.session["user_id"] = user.id.hex
-
-            ok.set_text("Account created! Redirecting...")
-            ui.timer(0.8, lambda: ui.navigate.to(redirect_to), once=True)
-
+        # Buttons
         with ui.row().classes("gap-3 mt-4"):
             ui.button("Create account", on_click=submit).classes("w-full")
-            ui.button("Cancel", on_click=lambda: ui.navigate.to("/")).props(
-                "outline"
-            ).classes("w-full")
-
-    with ui.row().classes("gap-4 mt-4"):
-        ui.link(
-            "Already have an account? Login",
-            f"/login?redirect_to={redirect_to}",
-        ).classes("text-blue-500 underline")
-        ui.link("← Home", "/").classes("text-blue-500 underline")
+    with ui.page_sticky(x_offset=18, y_offset=18):
+        ui.button(icon="qr_code", on_click=dialog.open).props("fab")

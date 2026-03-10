@@ -1,15 +1,8 @@
-"""
-Login + OAuth2 authorize redirect (FastAPI + NiceGUI + Authlib)
-- Corrige redirect_to com query (URL-encode)
-- Corrige bug do `nxt` não definido
-- Evita confusão com OIDC nonce (renomeia para login_nonce)
-- Repassa redirect_to com segurança em erros
-"""
-
 import uuid
 from typing import Annotated, Optional
 from urllib.parse import quote
 
+import segno
 from fastapi import Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from nicegui import APIRouter, ui
@@ -17,9 +10,11 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from satoidc.auth.lnurl import lnurl_auth_events, url_encode
 from satoidc.auth.security import verify_password
-from satoidc.models import User
+from satoidc.models import LnurlAuthChallenge, User
 from satoidc.models.database import get_session
+from satoidc.settings import ENV
 
 router = APIRouter()
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -108,20 +103,94 @@ async def login_post(
     return RedirectResponse(url=nxt, status_code=303)
 
 
+class LNURLAuthQRLogin:
+    def __init__(self, base_url: str, session: Session):
+        self.base_url = base_url
+        self.k1 = None
+        self.action = "login"
+        self.session = session
+
+    async def refresh_qrcode(self):
+        challenge = LnurlAuthChallenge(action=self.action)
+        self.session.add(challenge)
+        await self.session.commit()
+        await self.session.refresh(challenge)
+        self.k1 = challenge.k1
+        self.qrcode.refresh()
+
+    @ui.refreshable_method
+    def qrcode(self):
+        lnurl_auth = url_encode(
+            f"{self.base_url}auth/lnurl/callback?tag=login&k1={self.k1}&action={self.action}"
+        )
+        qrcode = segno.make_qr(lnurl_auth, error="l")
+        ui.label("Login with LN Wallet")
+        with ui.link(target=f"lightning:{lnurl_auth}").tooltip(
+            "Open in Lightning Wallet"
+        ):
+            ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
+                "w-64"
+            ).tooltip(
+                "Scan with your Lightning Wallet to register as root user"
+            )
+        ui.label(lnurl_auth).classes(
+            "mt-2 w-full break-all text-xs text-center"
+        ).on("click", lambda e: ui.clipboard.write(lnurl_auth)).on(
+            "click",
+            lambda e: ui.notify("LNURL copied to clipboard!", type="positive"),
+        ).tooltip("Click to copy")
+
+
 @router.page("/login")
 def login_page(
+    session: Session,
     request: Request,
     redirect_to: Optional[str] = "/",
     err: Optional[str] = None,
 ):
+    if request.session.get("user_id"):
+        return RedirectResponse("/", status_code=303)
     # gera nonce do login (não confundir com OIDC nonce)
     login_nonce = uuid.uuid4().hex
     request.session["login_nonce"] = login_nonce
 
-    ui.label("Sign in").classes("text-2xl font-bold mb-2")
-    ui.label("Use your account to continue.").classes("text-gray-500 mb-6")
+    lnurl_auth_register_root = LNURLAuthQRLogin(
+        base_url=str(request.base_url), session=session
+    )
+    ui.timer(ENV.LNURL_K1_TTL_SECONDS, lnurl_auth_register_root.refresh_qrcode)
 
-    with ui.card().classes("w-full max-w-md p-6"):
+    @lnurl_auth_events.subscribe
+    async def _event_handler(data: dict):
+        if data.get("k1") == lnurl_auth_register_root.k1:
+            request.session["user_id"] = data.get("user_id")
+            ui.notify("Logged in with LN Wallet!", type="positive")
+            ui.navigate.to(redirect_to or "/")
+
+    # QR Code Dialog
+    with (
+        ui.dialog() as dialog,
+        ui.card().classes("w-full max-w-lg mx-auto items-center"),
+    ):
+        lnurl_auth_register_root.qrcode()
+        ui.button("Close", on_click=dialog.close)
+
+    # Header
+    with (
+        ui.header(elevated=True)
+        .style("background-color:#3874c8; color:white")
+        .classes("items-center justify-between px-4")
+    ):
+        with (
+            ui.row()
+            .classes("items-center gap-2")
+            .on("click", lambda: ui.navigate.to("/"))
+        ):
+            ui.icon("verified_user")
+            ui.label("SatOIDC").classes("text-lg font-bold")
+
+    with ui.card().classes("w-full max-w-lg mx-auto items-center"):
+        ui.label("Sign in").classes("text-2xl font-bold")
+        ui.label("Use your account to continue.").classes("text-gray-500")
         match err:
             case None:
                 pass
@@ -137,7 +206,7 @@ def login_page(
         with (
             ui.element("form")
             .props('method="post" action="/login"')
-            .classes("flex flex-col gap-3")
+            .classes("flex flex-col gap-3 w-full")
         ):
             ui.input("Email or Login").props(
                 "name='identifier' autocomplete='username'"
@@ -155,16 +224,17 @@ def login_page(
                 f"type='hidden' name='login_nonce' value='{login_nonce}'"
             )
 
-            ui.separator().classes("my-1")
+            with ui.row().classes("gap-4 w-full justify-center"):
+                ui.button(
+                    "Cancel", on_click=lambda: ui.navigate.to("/")
+                ).props("outline")
+                ui.button("Login").props("type='submit'")
 
-            ui.button("Login").props("type='submit'").classes("w-full")
-            ui.button("Cancel", on_click=lambda: ui.navigate.to("/")).props(
-                "outline"
-            ).classes("w-full")
-
-    with ui.row().classes("gap-4 mt-4"):
-        ui.link("← Home", "/").classes("text-blue-500 underline")
-        ui.link("Register", "/register").classes("text-blue-500 underline")
+        with ui.row().classes("gap-4 mt-4 justify-center"):
+            ui.label("Don't have an account?")
+            ui.link("register", "/register")
+    with ui.page_sticky(x_offset=18, y_offset=18):
+        ui.button(icon="qr_code", on_click=dialog.open).props("fab")
 
 
 @router.get("/logout")
