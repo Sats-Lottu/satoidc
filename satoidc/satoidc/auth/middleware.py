@@ -8,6 +8,7 @@ PUBLIC_PREFIXES = (
     "/_nicegui",  # assets internos
     "/oauth",  # tudo de OIDC
     "/api",  # APIs públicas (token, callbacks, etc.)
+    "/auth/lnurl",  # endpoints de LNURL auth
 )
 
 PUBLIC_EXACT = {

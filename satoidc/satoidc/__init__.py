@@ -40,4 +40,4 @@ for router in routers:
     app.include_router(router)
 
 
-ui.run_with(app)
+ui.run_with(app, title="SatOIDC - Identity Service")

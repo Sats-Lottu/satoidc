@@ -1,6 +1,6 @@
 import ecdsa
 from bech32 import bech32_encode, convertbits
-from nicegui import Event
+from nicegui import Event, app
 
 
 def url_encode(url: str) -> str:
@@ -33,3 +33,6 @@ def verify(k1: str, key: str, sig: str) -> True:
 #  via LNURL, que podem ser ouvidos em outros lugares do código para criar
 #  sessões, etc.
 lnurl_auth_events = Event[dict]()
+# Usamos o armazenamento geral do NiceGUI para guardar temporariamente
+#  os logins via LNURL, associando um Nonce a um user_id
+lnurl_auth_temp_storage = app.storage.general

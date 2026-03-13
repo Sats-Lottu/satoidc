@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated, Optional
 
 import segno
@@ -7,7 +8,11 @@ from nicegui import APIRouter, ui
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
-from satoidc.auth.lnurl import lnurl_auth_events, url_encode
+from satoidc.auth.lnurl import (
+    lnurl_auth_events,
+    lnurl_auth_temp_storage,
+    url_encode,
+)
 from satoidc.auth.security import hash_password
 from satoidc.models import LnurlAuthChallenge, User
 from satoidc.models.database import get_session
@@ -52,7 +57,7 @@ class LNURLAuthQRRegister:
             ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
                 "w-64"
             ).tooltip(
-                "Scan with your Lightning Wallet to register as root user"
+                "Scan with your Lightning Wallet to register without password"
             )
         ui.label(lnurl_auth).classes(
             "mt-2 w-full break-all text-xs text-center"
@@ -73,24 +78,24 @@ async def register_page(
         '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css"'
         ' rel="stylesheet" />'
     )
-
-    lnurl_auth_register_root = LNURLAuthQRRegister(
+    register_nonce = uuid.uuid4().hex
+    request.session["login_nonce"] = register_nonce
+    lnurl_auth_register = LNURLAuthQRRegister(
         base_url=str(request.base_url), session=session
     )
-    ui.timer(ENV.LNURL_K1_TTL_SECONDS, lnurl_auth_register_root.refresh_qrcode)
+    ui.timer(ENV.LNURL_K1_TTL_SECONDS, lnurl_auth_register.refresh_qrcode)
 
     @lnurl_auth_events.subscribe
     async def _event_handler(data: dict):
-        if data.get("k1") == lnurl_auth_register_root.k1:
-            request.session["user_id"] = data.get("user_id")
-            ui.notify("Logged in with LN Wallet!", type="positive")
-            ui.navigate.to(redirect_to or "/")
+        if data.get("k1") == lnurl_auth_register.k1:
+            lnurl_auth_temp_storage[str(register_nonce)] = data.get("user_id")
+            ui.navigate.to(f"/auth/lnurl/redirect?redirect_to={redirect_to}")
 
     with (
         ui.dialog() as dialog,
         ui.card().classes("w-full max-w-lg mx-auto items-center"),
     ):
-        lnurl_auth_register_root.qrcode()
+        lnurl_auth_register.qrcode()
         ui.button("Close", on_click=dialog.close)
     with (
         ui.header(elevated=True)

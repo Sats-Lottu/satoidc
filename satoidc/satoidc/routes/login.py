@@ -10,7 +10,11 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from satoidc.auth.lnurl import lnurl_auth_events, url_encode
+from satoidc.auth.lnurl import (
+    lnurl_auth_events,
+    lnurl_auth_temp_storage,
+    url_encode,
+)
 from satoidc.auth.security import verify_password
 from satoidc.models import LnurlAuthChallenge, User
 from satoidc.models.database import get_session
@@ -23,23 +27,6 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 # ---------------------------
 # Helpers
 # ---------------------------
-
-
-def build_return_to(request: Request) -> str:
-    """Constrói /path?query a partir do request atual."""
-    path = request.url.path
-    if request.url.query:
-        return f"{path}?{request.url.query}"
-    return path
-
-
-def redirect_to_login(request: Request) -> RedirectResponse:
-    """Redirect para /login com redirect_to URL-encoded."""
-    return_to = build_return_to(request)
-    return RedirectResponse(
-        url=f"/login?redirect_to={quote(return_to, safe='')}",
-        status_code=303,
-    )
 
 
 def encode_query_value(value: str) -> str:
@@ -131,7 +118,8 @@ class LNURLAuthQRLogin:
             ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
                 "w-64"
             ).tooltip(
-                "Scan with your Lightning Wallet to register as root user"
+                "Scan with your Lightning Wallet to login to your"
+                " account without password"
             )
         ui.label(lnurl_auth).classes(
             "mt-2 w-full break-all text-xs text-center"
@@ -142,7 +130,7 @@ class LNURLAuthQRLogin:
 
 
 @router.page("/login")
-def login_page(
+async def login_page(
     session: Session,
     request: Request,
     redirect_to: Optional[str] = "/",
@@ -154,24 +142,23 @@ def login_page(
     login_nonce = uuid.uuid4().hex
     request.session["login_nonce"] = login_nonce
 
-    lnurl_auth_register_root = LNURLAuthQRLogin(
+    lnurl_auth_login = LNURLAuthQRLogin(
         base_url=str(request.base_url), session=session
     )
-    ui.timer(ENV.LNURL_K1_TTL_SECONDS, lnurl_auth_register_root.refresh_qrcode)
+    ui.timer(ENV.LNURL_K1_TTL_SECONDS, lnurl_auth_login.refresh_qrcode)
 
     @lnurl_auth_events.subscribe
     async def _event_handler(data: dict):
-        if data.get("k1") == lnurl_auth_register_root.k1:
-            request.session["user_id"] = data.get("user_id")
-            ui.notify("Logged in with LN Wallet!", type="positive")
-            ui.navigate.to(redirect_to or "/")
+        if data.get("k1") == lnurl_auth_login.k1:
+            lnurl_auth_temp_storage[str(login_nonce)] = data.get("user_id")
+            ui.navigate.to(f"/auth/lnurl/redirect?redirect_to={redirect_to}")
 
     # QR Code Dialog
     with (
         ui.dialog() as dialog,
         ui.card().classes("w-full max-w-lg mx-auto items-center"),
     ):
-        lnurl_auth_register_root.qrcode()
+        lnurl_auth_login.qrcode()
         ui.button("Close", on_click=dialog.close)
 
     # Header
@@ -235,6 +222,19 @@ def login_page(
             ui.link("register", "/register")
     with ui.page_sticky(x_offset=18, y_offset=18):
         ui.button(icon="qr_code", on_click=dialog.open).props("fab")
+
+
+@router.page("/auth/lnurl/redirect")
+async def lnurl_redirect(request: Request, redirect_to: Optional[str] = "/"):
+    expected_nonce = request.session.get("login_nonce")
+    user_id = None
+    if expected_nonce:
+        user_id = lnurl_auth_temp_storage.get(expected_nonce)
+    lnurl_auth_temp_storage.pop(expected_nonce, None)
+    if user_id:
+        request.session["user_id"] = str(user_id)
+    ui.label("Redirecting...").classes("text-lg font-bold")
+    ui.navigate.to(redirect_to)
 
 
 @router.get("/logout")
