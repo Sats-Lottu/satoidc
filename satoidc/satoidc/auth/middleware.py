@@ -17,6 +17,7 @@ PUBLIC_EXACT = {
     "/logout",
     "/health",
     "/forbidden",  # página de acesso negado
+    "/",
 }
 
 
