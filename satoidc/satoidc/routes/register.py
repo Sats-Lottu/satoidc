@@ -69,11 +69,11 @@ class LNURLAuthQRRegister:
 
 @router.page("/register")
 async def register_page(
-    request: Request, session: Session, redirect_to: Optional[str] = None
+    request: Request, session: Session, redirect_to: Optional[str] = "/profile"
 ):
     redirect_to = safe_redirect(redirect_to)
     if request.session.get("user_id"):
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(redirect_to, status_code=303)
     ui.add_head_html(
         '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css"'
         ' rel="stylesheet" />'

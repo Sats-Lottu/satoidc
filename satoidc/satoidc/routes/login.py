@@ -133,11 +133,11 @@ class LNURLAuthQRLogin:
 async def login_page(
     session: Session,
     request: Request,
-    redirect_to: Optional[str] = "/",
+    redirect_to: Optional[str] = "/profile",
     err: Optional[str] = None,
 ):
     if request.session.get("user_id"):
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(redirect_to, status_code=303)
     # gera nonce do login (não confundir com OIDC nonce)
     login_nonce = uuid.uuid4().hex
     request.session["login_nonce"] = login_nonce

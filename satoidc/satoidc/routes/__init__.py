@@ -6,12 +6,14 @@ from .home import router as home_router
 from .lnurl_auth import router as lnurl_auth_router
 from .login import router as login_router
 from .oauth2 import router as oauth_router
+from .profile import router as profile_router
 from .register import router as register_router
 
 __all__ = [
     "home_router",
     "register_router",
     "login_router",
+    "profile_router",
     "dashboard_router",
     "forbidden_router",
     "oauth_router",
@@ -30,4 +32,5 @@ routers = [
     authorize_router,
     create_client_router,
     lnurl_auth_router,
+    profile_router,
 ]
