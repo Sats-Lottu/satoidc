@@ -14,20 +14,31 @@ router = APIRouter()
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
-@router.page("/create_client")
+@router.page("/create_client", dark=True)
 async def create_client_page(
     session: Session,
     request: Request,
 ):
     user_id = request.session.get("user_id")
 
-    ui.link("← Home", "/").classes("text-blue-500 underline")
-
-    ui.label("Create OAuth2 Client").classes("text-2xl font-bold mt-4")
-    ui.label(f"user: {user_id}").classes("text-2xl font-bold mt-4")
+    with ui.header(fixed=False).classes(
+        "bg-transparent border-b border-gray-700 items-center justify-between"
+    ):
+        # lado esquerdo
+        with ui.row().classes("items-center gap-0") as logo:
+            ui.image("statics/imgs/logo.png").classes(
+                "w-12 h-12 md:w-16 md:h-16"
+            )
+            ui.label("Sat").classes("text-2xl md:text-3xl font-bold")
+            ui.label("OIDC").classes(
+                "bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 "
+                "bg-clip-text text-transparent text-2xl md:text-3xl font-bold"
+            )
+            logo.on("click", lambda: ui.navigate.to("/"))
 
     # form container
-    with ui.card().classes("w-full max-w-2xl p-6 gap-4"):
+    with ui.card().classes("w-full max-w-2xl mx-auto p-6 gap-4, self-center"):
+        ui.label("Create OAuth2 Client").classes("text-2xl font-bold mt-4")
         client_name = ui.input("Client Name").classes("w-full")
 
         client_uri = ui.input("Client URI").props("type=url").classes("w-full")
@@ -59,8 +70,6 @@ async def create_client_page(
             value="client_secret_basic",
             label="Token Endpoint Auth Method",
         ).classes("w-full")
-
-        result = ui.label("").classes("text-green-500")
 
         async def submit():
 
@@ -94,8 +103,6 @@ async def create_client_page(
             session.add(client)
             await session.commit()
 
-            result.set_text("Client created successfully!")
-
             # redirect after short delay
             ui.timer(
                 1.0,
@@ -106,4 +113,4 @@ async def create_client_page(
         ui.button(
             "Submit",
             on_click=submit,
-        ).classes("mt-4")
+        ).classes("mt-4 self-center w-full")
