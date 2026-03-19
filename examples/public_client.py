@@ -29,7 +29,6 @@ async def main(request: Request) -> RedirectResponse | None:
         app.storage.user.pop("user_info", None)
         return await oauth.satoidc.authorize_redirect(
             request,
-            request.url_for("satoidc"),
         )
 
     ui.label(f"Welcome {user_info.get('name', '')}!")
@@ -45,12 +44,10 @@ def logout() -> None:
 @app.get("/auth/callback")
 async def auth(request: Request) -> RedirectResponse:
     try:
-        user_info = (await oauth.satoidc.authorize_access_token(request)).get(
-            "userinfo", {}
-        )
+        token = await oauth.satoidc.authorize_access_token(request)
+        user_info = (token).get("userinfo", {})
         if _is_valid(user_info):
             app.storage.user["user_info"] = user_info
-        print("User info:", user_info)
     except (OAuthError, Exception):
         logging.exception("could not authorize access token")
     return RedirectResponse("/")
