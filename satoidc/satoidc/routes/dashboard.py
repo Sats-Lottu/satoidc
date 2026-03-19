@@ -70,7 +70,7 @@ async def dashboard_developer(session: Session, request: Request):
 
     # obter sessão do banco
     clients = await session.scalars(
-        select(OAuth2Client).where(OAuth2Client.client_id == UUID(user_id))
+        select(OAuth2Client).where(OAuth2Client.user_id == UUID(user_id))
     )
 
     columns = [
@@ -83,14 +83,14 @@ async def dashboard_developer(session: Session, request: Request):
         },
         {"name": "action", "label": "Action", "align": "center"},
     ]
-    rows = [
-        {
+    rows = []
+    """    {
             "name": client.client_name,
             "users": 0,
             "license_expiry": "12/12/2999",
         }
         for client in clients
-    ]
+    ]"""
     with ui.column().classes(
         "items-center self-center w-full max-w-screen-md mx-auto"
     ):
@@ -110,8 +110,8 @@ async def dashboard_developer(session: Session, request: Request):
             ui.button(
                 "New Client", on_click=lambda: ui.navigate.to("/create_client")
             )
-
-    """# container principal
+    ui.separator()
+    # container principal
     for client in clients:
         # equivalente ao <pre>
         with ui.card().classes("w-full p-4 bg-gray-900 text-white"):
@@ -135,4 +135,4 @@ async def dashboard_developer(session: Session, request: Request):
                         ui.label(f"{key}:").classes("font-bold")
                         ui.label(str(value))
 
-        ui.separator()"""
+        ui.separator()
