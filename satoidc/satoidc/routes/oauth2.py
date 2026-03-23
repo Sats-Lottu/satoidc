@@ -15,6 +15,7 @@ from satoidc.auth.oauth2 import (
     generate_user_info,
     require_oauth,
 )
+from satoidc.auth.scopes import scopes
 from satoidc.models import User
 from satoidc.models.database import get_session
 from satoidc.settings import ENV
@@ -125,7 +126,7 @@ def well_known():
         "grant_types_supported": ["authorization_code", "refresh_token"],
         "subject_types_supported": ["public"],
         "id_token_signing_alg_values_supported": ["RS256"],
-        "scopes_supported": ["openid", "profile", "email", "wallet"],
+        "scopes_supported": list(scopes.keys()),
         "token_endpoint_auth_methods_supported": [
             "none",
             "client_secret_post",
