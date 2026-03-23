@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import logging
 import time
 
@@ -7,7 +8,11 @@ from fastapi import Request
 from nicegui import app, ui
 from starlette.responses import RedirectResponse
 
-CLIENT_ID = "your-client-id"
+parser = argparse.ArgumentParser()
+parser.add_argument("--client-id", required=True, type=str)
+args = parser.parse_args()
+
+CLIENT_ID = args.client_id.strip()
 oauth = OAuth()
 oauth.register(
     name="satoidc",
