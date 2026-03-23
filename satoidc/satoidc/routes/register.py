@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 from typing import Annotated, Optional
 
 import segno
@@ -24,6 +25,10 @@ from satoidc.validators import (
     is_valid_password,
     validate_registration_form,
 )
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TERMS_FILE = PROJECT_ROOT / "docs" / "legal" / "terms.md"
+TERMS_MD = TERMS_FILE.read_text(encoding="utf-8")
 
 router = APIRouter()
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -199,8 +204,20 @@ async def register_page(
             ui.notify("Account created!", type="positive")
             ui.navigate.to(redirect_to or "/")
 
+        with (
+            ui.dialog(value=True) as dialog_terms,
+            ui.card().classes("w-full mx-auto items-center"),
+        ):
+            ui.markdown(TERMS_MD)
+            
+        with ui.row().classes("gap-1 items-center"):
+            checkbox_terms = ui.checkbox("I accept the ")
+            ui.link("terms of service.").on("click", dialog_terms.open)
+
         # Buttons
         with ui.row().classes("gap-3 mt-4"):
-            ui.button("Create account", on_click=submit).classes("w-full")
+            ui.button("Create account", on_click=submit).classes(
+                "w-full"
+            ).bind_enabled_from(checkbox_terms, "value")
     with ui.page_sticky(x_offset=18, y_offset=18):
         ui.button(icon="qr_code", on_click=dialog.open).props("fab")
