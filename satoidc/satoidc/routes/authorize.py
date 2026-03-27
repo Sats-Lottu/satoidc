@@ -16,8 +16,8 @@ async def authorize_get(request: Request):
     try:
         _grant = authorization.validate_consent_request(request=request)
         scopes = request.query_params.get("scope", "").split()
-        allowed_scopes = set(_grant.client.scope.split())
-        #ui.label(f"is sub set {set(scopes).issubset(allowed_scopes)}")
+        # allowed_scopes = set(_grant.client.scope.split())
+        # ui.label(f"is sub set {set(scopes).issubset(allowed_scopes)}")
     except OAuth2Error as error:
         ui.notify(str(dict(error.get_body())))
     # CSRF
