@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres
+    image: postgres:latest
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
