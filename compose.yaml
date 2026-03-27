@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:latest
+    image: postgres:16
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
@@ -14,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: satoidc/DockerFile
-    entrypoint: ./entrypoint.sh
+    entrypoint: [ "sh", "/app/entrypoint.sh" ]
     ports:
       - "8000:8000"
     depends_on:
