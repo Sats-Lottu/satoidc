@@ -8,7 +8,7 @@ async def exists_root_user() -> bool:
     async for session in get_session():
         result = await session.scalar(
             select(Permission).where(
-                Permission.permission_type.is_(PermissionsEnum.ROOT)
+                Permission.permission_type == PermissionsEnum.ROOT
             )
         )
         return result is not None
