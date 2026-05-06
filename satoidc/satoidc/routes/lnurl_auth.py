@@ -36,9 +36,11 @@ async def lnurl_auth_callback(
         )
         .values(verified=True)
         .returning(LnurlAuthChallenge)
+        .execution_options(synchronize_session=False)
     )
     if not challenge:
         return {"status": "ERROR", "reason": "Invalid or expired k1"}
+    await session.refresh(challenge)
     if challenge.action != query.action:
         return {"status": "ERROR", "reason": "Action mismatch"}
 
