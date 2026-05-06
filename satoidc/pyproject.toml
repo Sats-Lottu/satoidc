@@ -81,7 +81,7 @@ quote-style = "double"
 
 [tool.taskipy.tasks]
 run = "fastapi dev satoidc"
-test = "pytest"
+test = "pytest -m \"not e2e\""
 test_e2e = "pytest -m e2e tests/e2e"
 lint = "ruff check"
 spellcheck = "typos --config pyproject.toml --force-exclude ."
