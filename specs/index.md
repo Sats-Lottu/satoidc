@@ -4,6 +4,7 @@ Use this index to track active and historical specs.
 
 | Spec | Status | Area | Last Updated |
 | --- | --- | --- | --- |
+| [OIDC Key Rotation](features/oidc-key-rotation/spec.md) | draft | OAuth/OIDC Security | 2026-05-06 |
 | [OIDC Contract](contracts/oidc.md) | draft | OAuth/OIDC | 2026-05-06 |
 | [Authorization Code Flow](flows/authorization-code.md) | draft | OAuth/OIDC | 2026-05-06 |
 | [Login Flow](flows/login.md) | draft | Auth/UI | 2026-05-06 |

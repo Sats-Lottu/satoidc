@@ -17,3 +17,4 @@ updated: 2026-05-06
 - 2026-05-06: Add `DESIGN.md` because SatOIDC has a browser-facing NiceGUI interface and needs stable UI conventions.
 - 2026-05-06: Prefer `python:3.11-slim` over Alpine for the application image to reduce native dependency friction for packages such as `psycopg`, `cryptography`, NiceGUI, and Uvicorn.
 - 2026-05-06: Compose should expose SatOIDC on `${SATOIDC_PORT:-8000}` and wait for PostgreSQL health before running migrations.
+- 2026-05-06: Track OIDC signing key lifecycle as a dedicated feature spec at `specs/features/oidc-key-rotation/`; prefer Vault Transit for the final cryptographic backend, with encrypted private-key storage acceptable only as an MVP fallback.

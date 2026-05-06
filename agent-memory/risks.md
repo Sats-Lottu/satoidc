@@ -16,6 +16,7 @@ High priority:
 - Tests are absent; `poetry run task test` collects zero tests and fails.
 - Password login redirects to submitted `redirect_to` without `safe_redirect`.
 - RSA JWT/JWKS key is generated in memory at process import, so restarts and replicas invalidate or diverge token verification.
+- OIDC key rotation is specified in `specs/features/oidc-key-rotation/`, but implementation still needs persistent key storage, `kid` headers, JWKS retention windows, admin authorization, and audit events.
 - `ResourceProtector.acquire_token` likely uses the wrong `FastAPIOAuth2Request` constructor signature.
 
 Medium priority:
