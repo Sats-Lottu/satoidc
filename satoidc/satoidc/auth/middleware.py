@@ -9,6 +9,7 @@ PUBLIC_PREFIXES = (
     "/oauth",  # tudo de OIDC
     "/api",  # APIs públicas (token, callbacks, etc.)
     "/auth/lnurl",  # endpoints de LNURL auth
+    "/.well-known",  # OIDC/OAuth discovery documents
 )
 
 PUBLIC_EXACT = {

@@ -5,7 +5,7 @@ from satoidc.models import User
 
 
 def test_oidc_discovery_metadata_matches_advertised_contract(app_client):
-    response = app_client.get("/oauth/.well-known/openid-configuration")
+    response = app_client.get("/.well-known/openid-configuration")
 
     assert response.status_code == HTTPStatus.OK
     metadata = response.json()
@@ -13,15 +13,16 @@ def test_oidc_discovery_metadata_matches_advertised_contract(app_client):
     assert metadata["authorization_endpoint"].endswith("/authorize")
     assert metadata["token_endpoint"].endswith("/oauth/token")
     assert metadata["userinfo_endpoint"].endswith("/oauth/userinfo")
-    assert metadata["jwks_uri"].endswith("/oauth/jwks.json")
+    assert metadata["jwks_uri"].endswith("/.well-known/jwks.json")
     assert metadata["response_types_supported"] == ["code"]
     assert "authorization_code" in metadata["grant_types_supported"]
+    assert "refresh_token" in metadata["grant_types_supported"]
     assert metadata["id_token_signing_alg_values_supported"] == ["RS256"]
     assert metadata["code_challenge_methods_supported"] == ["S256"]
 
 
 def test_jwks_endpoint_exposes_only_public_key_material(app_client):
-    response = app_client.get("/oauth/jwks.json")
+    response = app_client.get("/.well-known/jwks.json")
 
     assert response.status_code == HTTPStatus.OK
     jwks = response.json()

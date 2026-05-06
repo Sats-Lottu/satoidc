@@ -31,13 +31,14 @@ async def db_session(
         autoflush=False,
         bind=sync_engine,
     )
-    sync_db = testing_session_local()
 
     monkeypatch.setattr(database_module, "engine", async_engine)
     monkeypatch.setattr(database_module, "sync_engine", sync_engine)
     monkeypatch.setattr(database_module, "SessionLocal", testing_session_local)
-    monkeypatch.setattr(database_module, "db", sync_db)
-    monkeypatch.setattr(oauth2_module, "db", sync_db)
+    database_module.SyncSession.remove()
+    database_module.SyncSession.configure(bind=sync_engine)
+    monkeypatch.setattr(database_module, "db", database_module.SyncSession)
+    monkeypatch.setattr(oauth2_module, "db", database_module.SyncSession)
 
     async with async_engine.begin() as conn:
         await conn.run_sync(table_registry.metadata.create_all)
@@ -48,7 +49,7 @@ async def db_session(
         ) as session:
             yield session
     finally:
-        sync_db.close()
+        database_module.SyncSession.remove()
         await async_engine.dispose()
         sync_engine.dispose()
 

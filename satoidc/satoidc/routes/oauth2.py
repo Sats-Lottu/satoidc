@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from satoidc.auth.oauth2 import (
     KEY,
@@ -17,11 +18,58 @@ from satoidc.auth.oauth2 import (
 )
 from satoidc.auth.scopes import scopes
 from satoidc.models import User
-from satoidc.models.database import get_session
+from satoidc.models.database import get_session, remove_sync_session
 from satoidc.settings import ENV
 
 router = APIRouter(prefix="/oauth", tags=["OAuth2"])
+well_known_router = APIRouter(tags=["OAuth2"])
 Session = Annotated[AsyncSession, Depends(get_session)]
+
+
+def _create_authorization_response_sync(
+    request: Request, user: User, decision: str
+):
+    try:
+        grant = authorization.validate_consent_request(
+            request=request, end_user=user
+        )
+        if decision == "deny":
+            return authorization.create_authorization_response(
+                request=request,
+                grant_user=None,
+            )
+
+        return authorization.create_authorization_response(
+            request=request,
+            grant_user=user,
+            grant=grant,
+        )
+    finally:
+        remove_sync_session()
+
+
+def _create_token_response_sync(request: Request):
+    try:
+        return authorization.create_token_response(request=request)
+    finally:
+        remove_sync_session()
+
+
+def _create_endpoint_response_sync(endpoint_name: str, request: Request):
+    try:
+        return authorization.create_endpoint_response(
+            endpoint_name, request=request
+        )
+    finally:
+        remove_sync_session()
+
+
+def _userinfo_sync(request: Request):
+    try:
+        with require_oauth.acquire(request, "profile") as token:
+            return generate_user_info(token.user, token.scope)
+    finally:
+        remove_sync_session()
 
 
 @router.post("/authorize")
@@ -55,25 +103,16 @@ async def authorize(  # noqa: PLR0911
         return JSONResponse({"error": "invalid_session"}, status_code=401)
 
     try:
-        grant = authorization.validate_consent_request(
-            request=request, end_user=user
+        return await run_in_threadpool(
+            _create_authorization_response_sync,
+            request,
+            user,
+            decision,
         )
     except (OAuth2Error, UnsupportedResponseTypeError) as error:
         return JSONResponse(
             dict(error.get_body()), status_code=error.status_code
         )
-
-    if decision == "deny":
-        return authorization.create_authorization_response(
-            request=request,
-            grant_user=None,
-        )
-
-    return authorization.create_authorization_response(
-        request=request,
-        grant_user=user,
-        grant=grant,
-    )
 
 
 @router.post("/token")
@@ -82,36 +121,36 @@ async def token(request: Request):
     await request.body()
 
     # Pass the Starlette request to Authlib; it calls the sync adapter.
-    return authorization.create_token_response(request=request)
+    return await run_in_threadpool(_create_token_response_sync, request)
 
 
 @router.post("/introspect")
-def introspect_token(
+async def introspect_token(
     request: Request,
 ):
-    return authorization.create_endpoint_response(
-        "introspection", request=request
+    await request.body()
+    return await run_in_threadpool(
+        _create_endpoint_response_sync, "introspection", request
     )
 
 
 @router.post("/revoke")
-def revoke_token(
+async def revoke_token(
     request: Request,
 ):
 
-    return authorization.create_endpoint_response(
-        "revocation", request=request
+    await request.body()
+    return await run_in_threadpool(
+        _create_endpoint_response_sync, "revocation", request
     )
 
 
 @router.get("/userinfo")
 def userinfo(request: Request):
     """Request user profile information"""
-    with require_oauth.acquire(request, "profile") as token:
-        return generate_user_info(token.user, token.scope)
+    return _userinfo_sync(request)
 
 
-@router.get("/.well-known/openid-configuration")
 def well_known():
 
     return {
@@ -119,7 +158,7 @@ def well_known():
         "authorization_endpoint": f"{ENV.OAUTH2_JWT_ISS}/authorize",
         "token_endpoint": f"{ENV.OAUTH2_JWT_ISS}/oauth/token",
         "userinfo_endpoint": f"{ENV.OAUTH2_JWT_ISS}/oauth/userinfo",
-        "jwks_uri": f"{ENV.OAUTH2_JWT_ISS}/oauth/jwks.json",
+        "jwks_uri": f"{ENV.OAUTH2_JWT_ISS}/.well-known/jwks.json",
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],
         "subject_types_supported": ["public"],
@@ -143,7 +182,6 @@ def well_known():
     }
 
 
-@router.get("/jwks.json")
 def jwks():
     # Return only the public key material.
     public_key = KEY.as_dict(add_kid=True)
@@ -155,3 +193,13 @@ def jwks():
     public_key.pop("qi", None)
 
     return {"keys": [public_key]}
+
+
+@well_known_router.get("/.well-known/openid-configuration")
+def well_known_root():
+    return well_known()
+
+
+@well_known_router.get("/.well-known/jwks.json")
+def jwks_root():
+    return jwks()

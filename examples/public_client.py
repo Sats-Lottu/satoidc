@@ -16,7 +16,7 @@ CLIENT_ID = args.client_id.strip()
 oauth = OAuth()
 oauth.register(
     name="satoidc",
-    server_metadata_url="http://localhost:8000/oauth/.well-known/openid-configuration",
+    server_metadata_url="http://localhost:8000/.well-known/openid-configuration",
     client_id=CLIENT_ID,
     client_secret=None,
     client_kwargs={

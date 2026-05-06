@@ -25,6 +25,7 @@ app.config = {
     "OAUTH2_TOKEN_EXPIRES_IN": {
         "authorization_code": ENV.OAUTH2_TOKEN_EXPIRES_IN
     },
+    "OAUTH2_REFRESH_TOKEN_GENERATOR": True,
     "OAUTH2_ERROR_URIS": [
         (
             "invalid_client",

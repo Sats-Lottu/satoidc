@@ -10,27 +10,20 @@ from authlib.integrations.sqla_oauth2 import (
     OAuth2TokenMixin,
 )
 from sqlalchemy import DateTime, ForeignKey, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    registry,
+    relationship,
+)
 
 from satoidc.enums import PermissionsEnum
 
 table_registry = registry()
 
 
-class TimestampMixin:
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        init=False,
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
-
-
 @table_registry.mapped_as_dataclass
-class User(TimestampMixin):
+class User:
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(
@@ -44,6 +37,15 @@ class User(TimestampMixin):
     password_hash: Mapped[Optional[str]] = mapped_column(nullable=True)
     nickname: Mapped[str] = mapped_column(default="Satoshi")
     is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 
     # Relationships
     permissions: Mapped[list["Permission"]] = relationship(
@@ -106,7 +108,7 @@ class Permission:
 
 
 @table_registry.mapped_as_dataclass
-class LnurlAuthChallenge(TimestampMixin):
+class LnurlAuthChallenge:
     __tablename__ = "lnurl_auth_challenges"
     user_id: Mapped[Optional[UUID]] = mapped_column(
         ForeignKey("users.id"), nullable=True, default=None, index=True
@@ -117,6 +119,15 @@ class LnurlAuthChallenge(TimestampMixin):
     )
     action: Mapped[str] = mapped_column(default="login")
     verified: Mapped[bool] = mapped_column(default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 
     user: Mapped[Optional["User"]] = relationship("User", init=False)
 
@@ -157,7 +168,7 @@ class OAuth2Token(OAuth2TokenMixin):
     user: Mapped["User"] = relationship("User")
 
     def is_refresh_token_active(self):
-        if self.revoked:
+        if self.refresh_token_revoked_at:
             return False
         expires_at = self.issued_at + self.expires_in * 2
         return expires_at >= time.time()

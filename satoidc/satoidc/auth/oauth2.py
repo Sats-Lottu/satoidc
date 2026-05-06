@@ -1,5 +1,6 @@
 """OIDC server example"""
 
+import time
 from secrets import token_urlsafe
 
 from authlib.integrations.sqla_oauth2 import (
@@ -16,12 +17,6 @@ from authlib.oauth2.rfc7662 import (
 )
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
-from authlib.oidc.core.grants import (
-    OpenIDHybridGrant as _OpenIDHybridGrant,
-)
-from authlib.oidc.core.grants import (
-    OpenIDImplicitGrant as _OpenIDImplicitGrant,
-)
 
 from satoidc.fastapi_oauth2 import (
     AuthorizationServer,
@@ -68,22 +63,6 @@ def generate_user_info(user, scope):
         user_info["name"] = user.nickname
         user_info["lnurl_pubkey"] = user.lnurl_pubkey
     return user_info
-
-
-def create_authorization_code(client, grant_user, request):
-    code = token_urlsafe(64)
-    nonce = request.data.get("nonce")
-    item = OAuth2AuthorizationCode(
-        code=code,
-        client_id=client.client_id,
-        redirect_uri=request.redirect_uri,
-        scope=request.scope,
-        user_id=grant_user.id,
-        nonce=nonce,
-    )
-    db.add(item)
-    db.commit()
-    return code
 
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
@@ -146,6 +125,13 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
 class RefreshTokenGrant(grants.RefreshTokenGrant):
     """RefreshTokenGrant class"""
 
+    INCLUDE_NEW_REFRESH_TOKEN = True
+    TOKEN_ENDPOINT_AUTH_METHODS = [
+        "client_secret_basic",
+        "client_secret_post",
+        "none",
+    ]
+
     def authenticate_refresh_token(self, refresh_token):  # noqa: PLR6301
         token = (
             db.query(OAuth2Token)
@@ -159,7 +145,7 @@ class RefreshTokenGrant(grants.RefreshTokenGrant):
         return db.query(User).filter(User.id == credential.user_id).first()
 
     def revoke_old_credential(self, credential):  # noqa: PLR6301
-        credential.revoked = True
+        credential.refresh_token_revoked_at = int(time.time())
         db.add(credential)
         db.commit()
 
@@ -167,7 +153,7 @@ class RefreshTokenGrant(grants.RefreshTokenGrant):
 class IntrospectionEndpoint(_IntrospectionEndpoint):
     """IntrospectionEndpoint class"""
 
-    def query_token(self, token, token_type_hint, client):  # noqa: PLR6301
+    def query_token(self, token, token_type_hint):  # noqa: PLR6301
         if token_type_hint == "access_token":
             tok = (
                 db.query(OAuth2Token)
@@ -192,21 +178,23 @@ class IntrospectionEndpoint(_IntrospectionEndpoint):
                     .filter(OAuth2Token.refresh_token == token)
                     .first()
                 )
-        if tok:
-            if tok.client_id == client.client_id:
-                return tok
+        return tok
+
+    def check_permission(self, token, client, request):  # noqa: PLR6301
+        return token.check_client(client)
 
     def introspect_token(self, token):  # noqa: PLR6301
+        expires_at = token.issued_at + token.expires_in
         return {
             "active": True,
             "client_id": token.client_id,
             "token_type": token.token_type,
-            "username": token.user_id,
+            "username": str(token.user_id),
             "scope": token.get_scope(),
-            "sub": token.user.id,
+            "sub": str(token.user_id),
             "aud": token.client_id,
             "iss": JWT_CONFIG.get("iss"),
-            "exp": token.expires_in,
+            "exp": expires_at,
             "iat": token.issued_at,
         }
 
@@ -218,31 +206,6 @@ class OpenIDCode(_OpenIDCode):
         return exists_nonce(nonce, request)
 
     def get_jwt_config(self, grant):  # noqa: PLR6301
-        return JWT_CONFIG
-
-    def generate_user_info(self, user, scope):  # noqa: PLR6301
-        return generate_user_info(user, scope)
-
-
-class ImplicitGrant(_OpenIDImplicitGrant):
-    def exists_nonce(self, nonce, request):  # noqa: PLR6301
-        return exists_nonce(nonce, request)
-
-    def get_jwt_config(self, grant):  # noqa: PLR6301
-        return JWT_CONFIG
-
-    def generate_user_info(self, user, scope):  # noqa: PLR6301
-        return generate_user_info(user, scope)
-
-
-class HybridGrant(_OpenIDHybridGrant):
-    def create_authorization_code(self, client, grant_user, request):  # noqa: PLR6301
-        return create_authorization_code(client, grant_user, request)
-
-    def exists_nonce(self, nonce, request):  # noqa: PLR6301
-        return exists_nonce(nonce, request)
-
-    def get_jwt_config(self):  # noqa: PLR6301
         return JWT_CONFIG
 
     def generate_user_info(self, user, scope):  # noqa: PLR6301
@@ -261,13 +224,12 @@ def config_oauth(app):
         app, query_client=query_client, save_token=save_token
     )
 
-    # support all openid grants
+    # Support authorization code + PKCE. Other OIDC response types should only
+    # be registered when discovery and tests explicitly advertise them.
     authorization.register_grant(
         AuthorizationCodeGrant,
         [OpenIDCode(require_nonce=True), CodeChallenge(required=True)],
     )
-    authorization.register_grant(ImplicitGrant)
-    authorization.register_grant(HybridGrant)
     authorization.register_grant(RefreshTokenGrant)
     authorization.register_endpoint(IntrospectionEndpoint)
 
