@@ -1,0 +1,7 @@
+workspace.json
+workspace-mobile.json
+appearance.json
+core-plugins.json
+cache/
+plugins/
+themes/

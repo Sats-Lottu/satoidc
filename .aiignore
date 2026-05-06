@@ -1,0 +1,29 @@
+# Secrets and local config
+.env
+.env.*
+*.pem
+*.key
+
+# Python and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local environments and package caches
+.venv/
+venv/
+env/
+
+# Local runtime state
+.nicegui/
+*.db
+*.sqlite
+*.sqlite3
+
+# Editor and Obsidian local workspace state
+.vscode/
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
