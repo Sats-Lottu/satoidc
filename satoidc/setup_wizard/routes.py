@@ -3,6 +3,8 @@ from typing import Annotated
 import segno
 from fastapi import Depends, Request
 from nicegui import APIRouter, app, ui
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from satoidc.auth.lnurl import lnurl_auth_events, url_encode
 from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
@@ -15,7 +17,6 @@ from satoidc.validators import (
     is_valid_password,
     validate_registration_form,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 

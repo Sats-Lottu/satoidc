@@ -209,7 +209,7 @@ async def register_page(
             ui.card().classes("w-full mx-auto items-center"),
         ):
             ui.markdown(TERMS_MD)
-            
+
         with ui.row().classes("gap-1 items-center"):
             checkbox_terms = ui.checkbox("I accept the ")
             ui.link("terms of service.").on("click", dialog_terms.open)

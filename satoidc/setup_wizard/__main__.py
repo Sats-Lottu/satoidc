@@ -1,6 +1,7 @@
 import asyncio
 
 from nicegui import app, ui
+
 from satoidc.routes.lnurl_auth import router as lnurl_auth_router
 
 from .get_root import exists_root_user

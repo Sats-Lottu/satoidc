@@ -1,7 +1,8 @@
+from sqlalchemy import select
+
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission
 from satoidc.models.database import get_session
-from sqlalchemy import select
 
 
 async def exists_root_user() -> bool:

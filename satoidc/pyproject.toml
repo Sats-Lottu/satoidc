@@ -1,9 +1,9 @@
 [project]
 name = "satoidc"
 version = "0.1.0"
-description = ""
+description = "OpenID Connect provider with Bitcoin/Lightning LNURL-auth support."
 authors = [
-    {name = "Lucas Santos Silva",email = "luss1010@gmail.com"}
+    {name = "Lucas Santos Silva", email = "luss1010@gmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
@@ -19,27 +19,96 @@ dependencies = [
     "bech32 (>=1.2.0,<2.0.0)",
     "pydantic-settings (>=2.13.0,<3.0.0)",
     "nicegui (>=3.7.1,<4.0.0)",
-    "segno (>=1.6.6,<2.0.0)"
+    "segno (>=1.6.6,<2.0.0)",
 ]
 
+[dependency-groups]
+dev = [
+    "taskipy (>=1.14.1,<2.0.0)",
+    "pytest (>=9.0.2,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "pytest-asyncio (>=1.3.0,<2.0.0)",
+    "testcontainers (>=4.14.2,<5.0.0)",
+    "freezegun (>=1.5.5,<2.0.0)",
+    "factory-boy (>=3.3.3,<4.0.0)",
+    "ruff (>=0.15.11,<0.16.0)",
+    "typos (>=1.45.1,<2.0.0)",
+    "pytest-playwright-asyncio (>=0.7.2,<0.8.0)",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.group.dev.dependencies]
-taskipy = "^1.14.1"
-pytest = "^9.0.2"
-pytest-cov = "^7.0.0"
-pytest-asyncio = "^1.3.0"
-
 [tool.pytest.ini_options]
 pythonpath = "."
-addopts = '-p no:warnings'
-asyncio_default_fixture_loop_scope = 'function'
+addopts = "-p nicegui.testing.user_plugin -s -x --cov=satoidc -vv"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+main_file = "satoidc/__init__.py"
+markers = [
+    "e2e: end-to-end browser tests",
+]
+filterwarnings = [
+    "ignore::authlib.deprecate.AuthlibDeprecationWarning",
+]
+
+[tool.coverage.run]
+core = "ctrace"
+concurrency = ["thread", "greenlet"]
+
+[tool.ruff]
+line-length = 79
+extend-exclude = [
+    "migrations",
+]
+
+[tool.ruff.lint]
+preview = true
+select = [
+    "I",
+    "F",
+    "E",
+    "W",
+    "PL",
+    "PT",
+    "FAST",
+]
+
+[tool.ruff.format]
+preview = true
+quote-style = "double"
 
 [tool.taskipy.tasks]
-run = 'fastapi dev satoidc'
-test = 'pytest -s -x --cov=satoidc -vv'
-post_test = 'coverage html'
-start_public_client = 'python ../examples/public_client.py --client-id '
+run = "fastapi dev satoidc"
+test = "pytest"
+test_e2e = "pytest -m e2e tests/e2e"
+lint = "ruff check"
+spellcheck = "typos --config pyproject.toml --force-exclude README.md ../AGENTS.md ../DESIGN.md ../docs ../specs"
+format = "ruff format"
+pre_format = "ruff check --fix"
+playwright_install = "playwright install chromium"
+start_public_client = "python ../examples/public_client.py --client-id"
+post_test = "coverage html"
+
+[tool.typos.default]
+extend-ignore-identifiers-re = [
+    "selectin",
+    "lnurl",
+    "satoidc",
+    "SECRECT",
+]
+extend-ignore-words-re = [
+    "SECRECT",
+]
+extend-ignore-re = [
+    "SESSION_MIDDLEWARE_SECRECT_KEY",
+    "SECRECT",
+]
+
+[tool.typos.files]
+extend-exclude = [
+    "poetry.lock",
+    "satoidc/**/*.py",
+    "setup_wizard/**/*.py",
+]
