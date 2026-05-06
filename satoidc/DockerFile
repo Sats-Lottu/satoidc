@@ -1,12 +1,26 @@
-FROM python:3.11-alpine
-ENV POETRY_VIRTUALENVS_CREATE=false
+FROM python:3.11-slim
+
+ENV PIP_NO_CACHE_DIR=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
+RUN pip install --no-cache-dir "poetry>=2.0,<3.0"
+
+COPY satoidc/pyproject.toml satoidc/poetry.lock ./
+RUN poetry config installer.max-workers 10 \
+    && poetry install --no-root --no-interaction --no-ansi --only main
+
 COPY satoidc/ .
-
-RUN pip install poetry
-
-RUN poetry config installer.max-workers 10
-RUN poetry install --no-root --no-interaction --no-ansi --without dev
+RUN chmod +x /app/entrypoint.sh \
+    && useradd --create-home --shell /bin/bash appuser \
+    && chown -R appuser:appuser /app
 
 EXPOSE 8000
+
+USER appuser
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=3).read()" || exit 1

@@ -166,9 +166,9 @@ docker compose up --build
 The compose stack starts:
 
 - PostgreSQL 16.
-- SatOIDC with migrations, setup wizard and FastAPI runtime.
+- SatOIDC with migrations, setup wizard and FastAPI runtime on `http://localhost:8000`.
 
-The app service maps container port `8000` to a random host port by default through `0:8000`.
+The stack reads optional overrides from `.env`; use `.env.example` as the baseline for ports, database credentials and secrets. PostgreSQL has a healthcheck, so the application waits for the database before running migrations.
 
 ---
 

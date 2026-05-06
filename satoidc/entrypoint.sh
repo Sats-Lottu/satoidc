@@ -1,10 +1,11 @@
 #!/bin/sh
+set -eu
 
-# Executa as migrações do banco de dados
+echo "Running database migrations..."
 poetry run alembic upgrade head
 
-# Wizard (só bloqueia se não existir admin; ao finalizar ele encerra sozinho)
+echo "Running setup wizard if a root user is missing..."
 poetry run python -m setup_wizard
 
-# Inicia a aplicação
-poetry run fastapi run --host 0.0.0.0 --port 8000 satoidc
+echo "Starting SatOIDC..."
+exec poetry run fastapi run --host 0.0.0.0 --port 8000 satoidc

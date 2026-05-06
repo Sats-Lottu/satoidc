@@ -1,27 +1,37 @@
 services:
   database:
     image: postgres:16
+    restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: app_user
-      POSTGRES_DB: app_db
-      POSTGRES_PASSWORD: app_password
+      POSTGRES_USER: ${POSTGRES_USER:-app_user}
+      POSTGRES_DB: ${POSTGRES_DB:-app_db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app_password}
     expose:
       - 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   satoidc:
     build:
       context: .
       dockerfile: satoidc/DockerFile
+    restart: unless-stopped
     entrypoint: [ "sh", "/app/entrypoint.sh" ]
     ports:
-      - "0:8000"
+      - "${SATOIDC_PORT:-8000}:8000"
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgresql+psycopg://app_user:app_password@database:5432/app_db
-      SYNC_DATABASE_URL: postgresql+psycopg://app_user:app_password@database:5432/app_db
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-app_password}@database:5432/${POSTGRES_DB:-app_db}
+      SYNC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-app_password}@database:5432/${POSTGRES_DB:-app_db}
+      OAUTH2_JWT_ISS: ${OAUTH2_JWT_ISS:-http://localhost:8000}
+      SESSION_MIDDLEWARE_SECRECT_KEY: ${SESSION_MIDDLEWARE_SECRECT_KEY:-CHANGE_ME_TO_A_LONG_RANDOM_SECRET}
 
 volumes:
   pgdata:

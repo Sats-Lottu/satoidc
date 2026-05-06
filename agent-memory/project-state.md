@@ -21,6 +21,7 @@ Important paths:
 - `satoidc/satoidc/fastapi_oauth2/`: local FastAPI integration layer for Authlib.
 - `satoidc/satoidc/models/`: SQLAlchemy models and database setup.
 - `satoidc/migrations/`: Alembic migrations.
+- `satoidc/DockerFile`, `satoidc/entrypoint.sh`, `compose.yaml`, `.dockerignore`, `.env.example`: production-like Docker Compose stack with PostgreSQL healthcheck, cached Poetry dependency install, non-root app runtime, migrations, setup wizard, and FastAPI startup.
 - `examples/`: OIDC client examples.
 - `specs/`: Spec-Driven Development workspace for feature specs, flows, contracts, and SDD decisions.
 - `DESIGN.md`: SatOIDC interface guidelines for NiceGUI pages, colors, layout, components, accessibility, and visual verification.

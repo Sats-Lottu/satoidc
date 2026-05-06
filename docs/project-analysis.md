@@ -230,7 +230,7 @@ Root creation paths:
 `compose.yaml` defines:
 
 - `database`: Postgres 16 with `app_user`, `app_db`, and `app_password`.
-- `satoidc`: builds from `satoidc/DockerFile`, runs `entrypoint.sh`, depends on database, maps container port `8000` to a random host port with `"0:8000"`.
+- `satoidc`: builds from `satoidc/DockerFile`, runs `entrypoint.sh`, waits for the database healthcheck, and maps container port `8000` to `${SATOIDC_PORT:-8000}`.
 
 `entrypoint.sh`:
 
