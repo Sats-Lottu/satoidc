@@ -78,11 +78,10 @@ async def authorize(  # noqa: PLR0911
 
 @router.post("/token")
 async def token(request: Request):
-    # garante request._body para seu payload sync
+    # Ensure request._body is available for the synchronous payload adapter.
     await request.body()
 
-    # IMPORTANTÍSSIMO: passe o Request do Starlette pro authlib
-    # (ele vai chamar create_oauth2_request sync internamente)
+    # Pass the Starlette request to Authlib; it calls the sync adapter.
     return authorization.create_token_response(request=request)
 
 
@@ -121,7 +120,6 @@ def well_known():
         "token_endpoint": f"{ENV.OAUTH2_JWT_ISS}/oauth/token",
         "userinfo_endpoint": f"{ENV.OAUTH2_JWT_ISS}/oauth/userinfo",
         "jwks_uri": f"{ENV.OAUTH2_JWT_ISS}/oauth/jwks.json",
-        # RECOMENDADOS / IMPORTANTES
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],
         "subject_types_supported": ["public"],
@@ -141,16 +139,15 @@ def well_known():
             "profile",
             "email",
         ],
-        # PKCE (importante)
         "code_challenge_methods_supported": ["S256"],
     }
 
 
 @router.get("/jwks.json")
 def jwks():
-    # Extrai apenas a chave PÚBLICA para enviar ao cliente
+    # Return only the public key material.
     public_key = KEY.as_dict(add_kid=True)
-    public_key.pop("d", None)  # Remove parte privada por segurança
+    public_key.pop("d", None)
     public_key.pop("p", None)
     public_key.pop("q", None)
     public_key.pop("dp", None)

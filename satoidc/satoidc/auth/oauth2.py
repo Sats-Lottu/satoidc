@@ -47,7 +47,7 @@ JWT_CONFIG = {
 
 
 def exists_nonce(nonce, req):
-    """Check nonce existance"""
+    """Check nonce existence."""
     exists = (
         db.query(OAuth2AuthorizationCode)
         .filter(

@@ -11,7 +11,7 @@ app = FastAPI(title="Identity Service", version="0.1.0")
 app.add_middleware(AuthMiddleware)
 app.add_middleware(
     SessionMiddleware,
-    secret_key=ENV.SESSION_MIDDLEWARE_SECRECT_KEY,
+    secret_key=ENV.SESSION_MIDDLEWARE_SECRET_KEY,
     same_site="lax",
     https_only=False,
     session_cookie="client_session",

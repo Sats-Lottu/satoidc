@@ -150,7 +150,7 @@ SYNC_DATABASE_URL=sqlite:///satoidc.db
 OAUTH2_JWT_ISS=http://localhost:8000
 OAUTH2_JWT_ALG=RS256
 OAUTH2_TOKEN_EXPIRES_IN=300
-SESSION_MIDDLEWARE_SECRECT_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
+SESSION_MIDDLEWARE_SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
 ```
 
 For production-like deployments, configure PostgreSQL and strong secrets through the environment.

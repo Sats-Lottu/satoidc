@@ -22,8 +22,7 @@ async def lnurl_auth_callback(
     query: Annotated[LnurlAuthCallbackIn, Depends()], session: Session
 ):
     response = {"status": "ERROR", "reason": "Unknown error"}
-    # 1) k1 precisa ser esperado (emitido por nós), não reutilizado,
-    #  não expirado, e action precisa bater com o que foi emitido
+    # 1) k1 must be expected, unused, not expired, and match its action.
     cutoff = datetime.now(timezone.utc) - timedelta(
         seconds=ENV.LNURL_K1_TTL_SECONDS
     )
@@ -44,11 +43,11 @@ async def lnurl_auth_callback(
     if challenge.action != query.action:
         return {"status": "ERROR", "reason": "Action mismatch"}
 
-    # 2) verifica assinatura (k1 assinado pela linkingPrivKey do wallet)
+    # 2) Verify the signature: wallet signs k1 with linkingPrivKey.
     if not verify(query.k1, query.key, query.sig):
         return {"status": "ERROR", "reason": "Bad Signature Error"}
 
-    # 3) resolve/gera usuário por linkingKey (pubkey derivada por domínio)
+    # 3) Resolve or create a user by linkingKey.
     db_user = await session.scalar(
         select(User).where(User.lnurl_pubkey == query.key)
     )
@@ -79,7 +78,7 @@ async def lnurl_auth_callback(
             await session.commit()
             response = {"status": "OK"}
         case "link":
-            # “link” = vincular esse linkingKey a uma conta já logada
+            # Link this linkingKey to an already authenticated account.
             user = await session.scalar(
                 select(User).where(User.id == challenge.user_id)
             )
@@ -88,8 +87,7 @@ async def lnurl_auth_callback(
             await session.commit()
             response = {"status": "OK"}
         case "auth":
-            # “auth” = autorizar uma ação stateless (sem login).
-            # aqui você normalmente valida também "o que está sendo autorizado"
+            # Authorize a stateless action without login.
             response = {"status": "OK"}
         case _:
             response = {"status": "ERROR", "reason": "Unknown action"}

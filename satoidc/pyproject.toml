@@ -84,31 +84,9 @@ run = "fastapi dev satoidc"
 test = "pytest"
 test_e2e = "pytest -m e2e tests/e2e"
 lint = "ruff check"
-spellcheck = "typos --config pyproject.toml --force-exclude README.md"
+spellcheck = "typos --config pyproject.toml --force-exclude ."
 format = "ruff format"
 pre_format = "ruff check --fix"
 playwright_install = "playwright install chromium"
 start_public_client = "python ../examples/public_client.py --client-id"
 post_test = "coverage html"
-
-[tool.typos.default]
-extend-ignore-identifiers-re = [
-    "selectin",
-    "lnurl",
-    "satoidc",
-    "SECRECT",
-]
-extend-ignore-words-re = [
-    "SECRECT",
-]
-extend-ignore-re = [
-    "SESSION_MIDDLEWARE_SECRECT_KEY",
-    "SECRECT",
-]
-
-[tool.typos.files]
-extend-exclude = [
-    "poetry.lock",
-    "satoidc/**/*.py",
-    "setup_wizard/**/*.py",
-]

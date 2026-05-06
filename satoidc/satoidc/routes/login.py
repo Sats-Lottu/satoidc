@@ -30,7 +30,7 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 
 
 def encode_query_value(value: str) -> str:
-    """URL-encode seguro para valores em querystring."""
+    """Safely URL-encode querystring values."""
     return quote(value or "", safe="")
 
 
@@ -55,7 +55,7 @@ async def login_post(
     request: Request,
     login_form: LoginForm,
 ):
-    # (A) anti-post-direto / anti-replay do login flow
+    # (A) Prevent direct posts and replay attempts in the login flow.
     expected_nonce = request.session.get("login_nonce")
     if (
         not expected_nonce
@@ -67,10 +67,10 @@ async def login_post(
 
     request.session.pop("login_nonce", None)
 
-    # (B) redirect_to seguro e URL-encoded para querystring em caso de erro
+    # (B) Keep redirect_to URL-encoded when returning validation errors.
     nxt = login_form.redirect_to
 
-    # (C) autentica
+    # (C) Authenticate the user.
     user = await session.scalar(
         select(User).where(
             (User.email == login_form.identifier)
@@ -85,7 +85,7 @@ async def login_post(
             status_code=303,
         )
 
-    # (D) grava sessão e redireciona (redirect_to pode conter query)
+    # (D) Store the session and redirect. redirect_to may contain a query.
     request.session["user_id"] = user.id.hex
     return RedirectResponse(url=nxt, status_code=303)
 
@@ -138,7 +138,7 @@ async def login_page(
 ):
     if request.session.get("user_id"):
         return RedirectResponse(redirect_to, status_code=303)
-    # gera nonce do login (não confundir com OIDC nonce)
+    # Generate a login nonce; do not confuse it with the OIDC nonce.
     login_nonce = uuid.uuid4().hex
     request.session["login_nonce"] = login_nonce
 

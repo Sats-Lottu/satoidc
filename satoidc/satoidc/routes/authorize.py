@@ -5,7 +5,7 @@ from fastapi import Request
 from nicegui import APIRouter, ui
 
 from satoidc.auth.oauth2 import authorization
-from satoidc.auth.scopes import scopes as avalible_scopes
+from satoidc.auth.scopes import scopes as available_scopes
 
 router = APIRouter()
 
@@ -42,19 +42,19 @@ async def authorize_get(request: Request):
                     ui.label("🔐 Identity").classes("font-semibold")
 
                     ui.label("✔ Identify you").classes("font-medium")
-                    ui.label(f"{avalible_scopes['openid']}").classes(
+                    ui.label(f"{available_scopes['openid']}").classes(
                         "text-sm text-gray-500"
                     )
                 if "profile" in scopes:
                     ui.label("✔ View your profile").classes("font-medium")
-                    ui.label(f"{avalible_scopes['profile']}").classes(
+                    ui.label(f"{available_scopes['profile']}").classes(
                         "text-sm text-gray-500"
                     )
                 if "email" in scopes:
                     ui.label("📧 Contact").classes("font-semibold mt-2")
 
                     ui.label("✔ Access your email").classes("font-medium")
-                    ui.label(f"{avalible_scopes['email']}").classes(
+                    ui.label(f"{available_scopes['email']}").classes(
                         "text-sm text-gray-500"
                     )
             with (

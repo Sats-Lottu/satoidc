@@ -29,10 +29,8 @@ def verify(k1: str, key: str, sig: str) -> True:
         return False
 
 
-# Basicamente um EventEmitter global para emitir eventos de autenticação
-#  via LNURL, que podem ser ouvidos em outros lugares do código para criar
-#  sessões, etc.
+# Global event emitter for LNURL authentication events used to create
+# sessions in other routes.
 lnurl_auth_events = Event[dict]()
-# Usamos o armazenamento geral do NiceGUI para guardar temporariamente
-#  os logins via LNURL, associando um Nonce a um user_id
+# NiceGUI general storage keeps temporary LNURL login data by nonce.
 lnurl_auth_temp_storage = app.storage.general

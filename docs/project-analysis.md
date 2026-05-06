@@ -70,7 +70,7 @@ Important settings:
 - `OAUTH2_JWT_SECRET_KEY`: configured but current ID token signing uses generated RSA `KEY`.
 - `OAUTH2_JWT_ALG`: defaults to `RS256`.
 - `OAUTH2_TOKEN_EXPIRES_IN`: defaults to `300`.
-- `SESSION_MIDDLEWARE_SECRECT_KEY`: session signing secret. Name has a typo: `SECRECT`.
+- `SESSION_MIDDLEWARE_SECRET_KEY`: session signing secret.
 
 ## Database Model
 
