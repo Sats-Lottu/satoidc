@@ -116,4 +116,4 @@ Operacoes manuais devem registrar `actor` quando houver usuario autenticado. Job
 
 ## Compatibility Notes
 
-O contrato alvo usa `/.well-known/openid-configuration` e `/.well-known/jwks.json`. As rotas atuais sob `/oauth` podem continuar como alias temporario para clientes existentes, mas o documento de descoberta canonico deve apontar para o endpoint JWKS root.
+O contrato alvo usa `/.well-known/openid-configuration` e `/.well-known/jwks.json`. Os endpoints OAuth continuam sob `/oauth`, mas discovery e JWKS nao devem depender do prefixo `/oauth`.

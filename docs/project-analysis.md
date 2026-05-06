@@ -148,7 +148,7 @@ Supported grants/endpoints:
 
 OIDC metadata route:
 
-- `GET /oauth/.well-known/openid-configuration`
+- `GET /.well-known/openid-configuration`
 
 Token/user routes:
 
@@ -157,7 +157,7 @@ Token/user routes:
 - `POST /oauth/introspect`
 - `POST /oauth/revoke`
 - `GET /oauth/userinfo`
-- `GET /oauth/jwks.json`
+- `GET /.well-known/jwks.json`
 
 Scopes:
 

@@ -93,7 +93,7 @@ For a deeper technical map, see [docs/project-analysis.md](docs/project-analysis
 | OAuth2 Authorization Code | Implemented | Main supported flow. |
 | OpenID Connect ID Token | Implemented | Signed with RS256 in current metadata. |
 | PKCE | Implemented | Required for the Authorization Code Grant. |
-| Discovery | Implemented | Served at `/oauth/.well-known/openid-configuration`. |
+| Discovery | Implemented | Served at `/.well-known/openid-configuration`. |
 | JWKS | Implemented | Current key is generated at process startup. |
 | UserInfo | Implemented | Returns claims based on granted scopes. |
 | Introspection | Implemented | Authlib endpoint registered. |
@@ -114,8 +114,8 @@ For a deeper technical map, see [docs/project-analysis.md](docs/project-analysis
 | `/oauth/userinfo` | UserInfo endpoint. |
 | `/oauth/introspect` | Token introspection endpoint. |
 | `/oauth/revoke` | Token revocation endpoint. |
-| `/oauth/.well-known/openid-configuration` | OIDC discovery metadata. |
-| `/oauth/jwks.json` | Public signing keys. |
+| `/.well-known/openid-configuration` | OIDC discovery metadata. |
+| `/.well-known/jwks.json` | Public signing keys. |
 | `/auth/lnurl/callback` | LNURL-auth wallet callback. |
 
 ---
@@ -175,7 +175,7 @@ The stack reads optional overrides from `.env`; use `.env.example` as the baseli
 ## OIDC Discovery
 
 ```bash
-curl http://localhost:8000/oauth/.well-known/openid-configuration
+curl http://localhost:8000/.well-known/openid-configuration
 ```
 
 Expected metadata includes:
@@ -186,7 +186,7 @@ Expected metadata includes:
   "authorization_endpoint": "http://localhost:8000/authorize",
   "token_endpoint": "http://localhost:8000/oauth/token",
   "userinfo_endpoint": "http://localhost:8000/oauth/userinfo",
-  "jwks_uri": "http://localhost:8000/oauth/jwks.json",
+  "jwks_uri": "http://localhost:8000/.well-known/jwks.json",
   "response_types_supported": ["code"],
   "grant_types_supported": ["authorization_code", "refresh_token"],
   "id_token_signing_alg_values_supported": ["RS256"],
@@ -267,7 +267,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 ### Future Protocol Work
 
 - [ ] Publish a stable OIDC contract and conformance checklist.
-- [ ] Decide whether to expose discovery at root `/.well-known/openid-configuration`.
+- [x] Expose discovery at root `/.well-known/openid-configuration`.
 - [ ] Evaluate Nostr identity integration.
 - [ ] Revisit implicit/hybrid support before advertising those flows.
 - [ ] Track Authlib/FastAPI ecosystem support and simplify the adapter layer when viable.

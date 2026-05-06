@@ -45,4 +45,3 @@
 - O MVP deve usar Vault Transit desde o inicio ou comecar por banco com chave privada criptografada?
 - Qual permissao administrativa deve controlar rotacao manual: `root`, `admin` ou ambas?
 - Qual sera o TTL real de ID Token e Access Token apos consolidacao das configuracoes OAuth2?
-- As rotas atuais `/oauth/.well-known/openid-configuration` e `/oauth/jwks.json` serao mantidas indefinidamente ou apenas como alias de migracao?

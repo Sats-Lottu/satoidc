@@ -21,4 +21,6 @@ Core modules:
 - `routes/`: UI and API routes.
 - `setup_wizard/`: first root user bootstrap.
 
-Database uses async sessions for route dependencies and a separate sync session for Authlib SQLAlchemy helpers. Both URLs must point to the same database.
+Database uses async sessions for route dependencies and a separate sync session boundary for Authlib SQLAlchemy helpers. Authlib remains synchronous because the installed Authlib server helpers are sync-only; SatOIDC isolates those calls behind a thread-local `scoped_session` and runs Authlib calls from async OAuth routes in a threadpool. Both async and sync URLs must point to the same database.
+
+OIDC discovery is canonical at `/.well-known/openid-configuration`, with `jwks_uri` pointing to `/.well-known/jwks.json`. OAuth protocol endpoints remain under `/oauth`, such as `/oauth/token`, `/oauth/userinfo`, `/oauth/introspect`, and `/oauth/revoke`.

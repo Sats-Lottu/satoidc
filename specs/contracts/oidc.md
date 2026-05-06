@@ -5,16 +5,16 @@ Updated: 2026-05-06
 
 ## Endpoints
 
-Current implementation exposes OIDC metadata under:
+Current implementation exposes canonical OIDC metadata under:
 
-- `GET /oauth/.well-known/openid-configuration`
+- `GET /.well-known/openid-configuration`
 
 Current metadata points to:
 
 - `authorization_endpoint`: `<issuer>/authorize`
 - `token_endpoint`: `<issuer>/oauth/token`
 - `userinfo_endpoint`: `<issuer>/oauth/userinfo`
-- `jwks_uri`: `<issuer>/oauth/jwks.json`
+- `jwks_uri`: `<issuer>/.well-known/jwks.json`
 
 ## Supported Values
 
@@ -35,6 +35,4 @@ Current metadata points to:
 
 ## Open Questions
 
-- Should discovery also be exposed at the standard root path `/.well-known/openid-configuration`?
-- Should refresh token issuance be explicitly enabled and tested?
 - Should JWKS come from persistent configured key material instead of process memory?

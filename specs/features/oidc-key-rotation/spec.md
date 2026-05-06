@@ -352,7 +352,7 @@ GET /.well-known/openid-configuration
 GET /.well-known/jwks.json
 ```
 
-Existing `/oauth/.well-known/openid-configuration` and `/oauth/jwks.json` routes may remain temporarily as compatibility aliases, but canonical discovery should point to the root well-known endpoints above.
+Discovery and JWKS should use the root well-known endpoints above. OAuth protocol endpoints may remain under `/oauth`.
 
 ## Traceability
 
