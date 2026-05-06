@@ -19,11 +19,18 @@
 ## Conventions
 
 - Use `specs/` for Spec-Driven Development. For behavior changes, create or update a spec before implementation when the change affects auth, OIDC/OAuth2 behavior, LNURL-auth, persistence, security, user flows, or public contracts.
+- Use `DESIGN.md` as the source of truth for SatOIDC interface conventions before changing NiceGUI pages.
 - Follow the existing FastAPI plus NiceGUI routing style.
 - Keep protocol behavior aligned with OpenID Connect, OAuth2, Authlib, and LNURL-auth semantics.
 - Prefer existing helpers in `satoidc/satoidc/auth/`, `satoidc/satoidc/models/`, and `satoidc/satoidc/validators.py` before adding new abstractions.
 - Keep route-level UI changes consistent with the existing NiceGUI component and class patterns.
 - Add focused tests for protocol, auth, validation, and persistence changes; broaden tests when behavior crosses route/model boundaries.
+
+## UI Verification
+
+- After meaningful NiceGUI changes, run `cd satoidc; poetry run task run` and inspect the affected route on desktop and mobile widths.
+- Check for text overlap, clipped controls, broken QR rendering, unreadable contrast, and missing empty/error states.
+- For auth and OIDC UI changes, verify direct navigation and redirected flows.
 
 ## Safety And Boundaries
 

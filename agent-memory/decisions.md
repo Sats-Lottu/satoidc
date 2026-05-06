@@ -14,3 +14,4 @@ updated: 2026-05-06
 - 2026-05-06: Keep project memory in root `agent-memory/` so agents can discover it without scanning implementation directories.
 - 2026-05-06: Keep `AGENTS.md` as the canonical agent instruction file. Add tool-specific adapters only if a tool requires them later.
 - 2026-05-06: Adopt a `specs/` folder for Spec-Driven Development, targeting a spec-anchored workflow where specs and implementation evolve together.
+- 2026-05-06: Add `DESIGN.md` because SatOIDC has a browser-facing NiceGUI interface and needs stable UI conventions.

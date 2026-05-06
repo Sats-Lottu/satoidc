@@ -23,6 +23,7 @@ Important paths:
 - `satoidc/migrations/`: Alembic migrations.
 - `examples/`: OIDC client examples.
 - `specs/`: Spec-Driven Development workspace for feature specs, flows, contracts, and SDD decisions.
+- `DESIGN.md`: SatOIDC interface guidelines for NiceGUI pages, colors, layout, components, accessibility, and visual verification.
 
 The repository root is also the Obsidian vault root for project memory.
 
