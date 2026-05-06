@@ -1,253 +1,308 @@
-# SatOIDC
+<p align="center">
+  <img src="satoidc/statics/imgs/logo.png" alt="SatOIDC logo" width="120" />
+</p>
 
-**Satoshi OpenID Connect 1.0 Provider**
+<h1 align="center">SatOIDC</h1>
+
+<p align="center">
+  <strong>Satoshi OpenID Connect Provider</strong><br />
+  Identity, OAuth2/OIDC and Lightning-native authentication for Bitcoin-first applications.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-3776AB.svg" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.129-009688.svg" />
+  <img alt="Status" src="https://img.shields.io/badge/status-beta-orange.svg" />
+</p>
 
 ---
 
-## 🚀 Overview
+## Overview
 
-**SatOIDC** é um provedor **OpenID Connect 1.0 (OIDC)** que implementa autenticação baseada em Bitcoin/Lightning por meio do protocolo LNURL-auth, mantendo compatibilidade com o ecossistema OpenID Connect.
+**SatOIDC** is an OpenID Connect 1.0 Provider that combines traditional federated identity with Bitcoin/Lightning authentication through LNURL-auth.
 
-O projeto implementa o papel de **OpenID Provider (OP)** conforme especificado pelo padrão OpenID Connect 1.0, possibilitando:
+The project implements an **OpenID Provider (OP)** with:
 
-* Autenticação federada
-* Emissão de ID Tokens (JWT)
-* Fluxos OAuth 2.0 compatíveis
-* Integração com aplicações web modernas
+- OAuth2 Authorization Code Flow with OpenID Connect support.
+- ID Token issuance with JWT/JWKS.
+- PKCE support for public clients.
+- UserInfo, discovery, introspection and revocation endpoints.
+- Password-based login plus LNURL-auth login/registration flows.
+- NiceGUI web interface for onboarding, login, consent, profile and client management.
+
+SatOIDC is currently a **beta implementation**. The codebase already contains the main protocol and UI building blocks, while the roadmap focuses on production hardening, tests, key management and permission consistency.
 
 ---
 
-## 🧱 Arquitetura
+## Interface
 
-```text
-┌───────────────┐
-│   Client App  │
-│ (Relying Party)│
-└───────┬───────┘
-        │ Authorization Request
-        ▼
-┌─────────────────────┐
-│      SatOIDC        │
-│  OpenID Provider    │
-├─────────────────────┤
-│ Authorization EP    │
-│ Token EP            │
-│ UserInfo EP         │
-│ JWKS EP             │
-└─────────────────────┘
+The web UI is built with **NiceGUI** and follows the project interface conventions in [DESIGN.md](DESIGN.md).
 
+Current screens include:
+
+- Home and onboarding.
+- Login with password or Lightning wallet.
+- Account registration with terms acceptance.
+- OAuth2/OIDC consent screen.
+- User profile and wallet status.
+- Developer/admin dashboard foundations.
+- OAuth2 client registration.
+
+> Screenshots are not committed yet. The UI can be reviewed locally after running the development server.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Client["OIDC Client / Relying Party"]
+    Browser["User Browser"]
+    App["SatOIDC<br/>FastAPI + NiceGUI"]
+    Authlib["Authlib<br/>OAuth2/OIDC Engine"]
+    DB["Database<br/>SQLite or PostgreSQL"]
+    Wallet["Lightning Wallet"]
+
+    Client --> Browser
+    Browser --> App
+    App --> Authlib
+    Authlib --> DB
+    App --> DB
+    Browser --> Wallet
+    Wallet --> App
 ```
 
----
+Main implementation areas:
 
-## 🔐 Protocol Support
+- `satoidc/satoidc/auth/`: OAuth2/OIDC, security and LNURL-auth helpers.
+- `satoidc/satoidc/fastapi_oauth2/`: FastAPI/Starlette adapter for Authlib.
+- `satoidc/satoidc/routes/`: FastAPI and NiceGUI routes.
+- `satoidc/satoidc/models/`: SQLAlchemy models.
+- `satoidc/migrations/`: Alembic migrations.
+- `examples/`: relying-party client examples.
 
-SatOIDC implementa:
-
-* ✅ OAuth 2.0 Authorization Framework
-* ✅ OpenID Connect 1.0 Core
-* ✅ Discovery (`.well-known/openid-configuration`)
-* ✅ JWKS Endpoint
-* ✅ ID Token (JWT assinado)
-* ✅ PKCE (opcional / recomendado)
-* ✅ Refresh Tokens
+For a deeper technical map, see [docs/project-analysis.md](docs/project-analysis.md) and [docs/architecture.md](docs/architecture.md).
 
 ---
 
-## 📡 Endpoints
+## Protocol Support
 
-| Endpoint                                  | Descrição              |
-| ----------------------------------------- | ---------------------- |
-| `/authorize`                              | Authorization Endpoint |
-| `/oauth/token`                            | Token Endpoint         |
-| `/oauth/userinfo`                         | UserInfo Endpoint      |
-| `/oauth/.well-known/openid-configuration` | OIDC Discovery         |
-| `/oauth/jwks.json`                        | Chaves públicas        |
-
----
-
-## 🔑 ID Token
-
-O ID Token segue o padrão JWT:
-
-```json
-{
-  "iss": "https://satoidc.example.com",
-  "sub": "user-public-key-or-identifier",
-  "aud": "client_id",
-  "exp": 1710000000,
-  "iat": 1709990000,
-  "nonce": "xyz"
-}
-```
-
-### Assinatura
-
-* Algoritmo recomendado: `RS256`
-* Chaves expostas via endpoint JWKS
+| Capability | Status | Notes |
+| --- | --- | --- |
+| OAuth2 Authorization Code | Implemented | Main supported flow. |
+| OpenID Connect ID Token | Implemented | Signed with RS256 in current metadata. |
+| PKCE | Implemented | Required for the Authorization Code Grant. |
+| Discovery | Implemented | Served at `/oauth/.well-known/openid-configuration`. |
+| JWKS | Implemented | Current key is generated at process startup. |
+| UserInfo | Implemented | Returns claims based on granted scopes. |
+| Introspection | Implemented | Authlib endpoint registered. |
+| Revocation | Implemented | Authlib endpoint registered. |
+| Refresh Token Grant | Registered | Needs validation around refresh token issuance. |
+| LNURL-auth | Implemented | Login, register, link and auth actions exist. |
+| Implicit/Hybrid | Experimental | Grant classes are registered but not advertised in discovery. |
 
 ---
 
-## 🛠️ Instalação
+## Endpoints
+
+| Endpoint | Description |
+| --- | --- |
+| `/authorize` | Authorization consent page. |
+| `/oauth/authorize` | Authorization decision POST. |
+| `/oauth/token` | Token endpoint. |
+| `/oauth/userinfo` | UserInfo endpoint. |
+| `/oauth/introspect` | Token introspection endpoint. |
+| `/oauth/revoke` | Token revocation endpoint. |
+| `/oauth/.well-known/openid-configuration` | OIDC discovery metadata. |
+| `/oauth/jwks.json` | Public signing keys. |
+| `/auth/lnurl/callback` | LNURL-auth wallet callback. |
+
+---
+
+## Quick Start
 
 ```bash
 git clone https://github.com/Sats-Lottu/satoidc.git
-cd satoidc
+cd satoidc/satoidc
 poetry install
 poetry run alembic upgrade head
+poetry run task run
 ```
 
----
+The development server is available at:
 
-## ⚙️ Configuração
-
-Exemplo de arquivo `.env`:
-
-```env
-OAUTH2_JWT_SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
-SESSION_MIDDLEWARE_SECRECT_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
-```
-
----
-
-## ▶️ Execução
-
-```bash
-cd satoidc
-poetry run fastapi dev satoidc
-```
-
-Servidor disponível em:
-
-```
+```text
 http://localhost:8000
 ```
 
+The first deployment path should run the setup wizard to create a root user when no root permission exists.
+
 ---
 
-## 🔍 Descoberta OIDC
+## Configuration
+
+Create a `.env` file inside `satoidc/` for local development:
+
+```env
+DATABASE_URL=sqlite+aiosqlite:///satoidc.db
+SYNC_DATABASE_URL=sqlite:///satoidc.db
+OAUTH2_JWT_ISS=http://localhost:8000
+OAUTH2_JWT_ALG=RS256
+OAUTH2_TOKEN_EXPIRES_IN=300
+SESSION_MIDDLEWARE_SECRECT_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
+```
+
+For production-like deployments, configure PostgreSQL and strong secrets through the environment.
+
+---
+
+## Docker Compose
+
+```bash
+docker compose up --build
+```
+
+The compose stack starts:
+
+- PostgreSQL 16.
+- SatOIDC with migrations, setup wizard and FastAPI runtime.
+
+The app service maps container port `8000` to a random host port by default through `0:8000`.
+
+---
+
+## OIDC Discovery
 
 ```bash
 curl http://localhost:8000/oauth/.well-known/openid-configuration
 ```
 
-Resposta esperada:
+Expected metadata includes:
 
 ```json
 {
   "issuer": "http://localhost:8000",
-  "authorization_endpoint": "...",
-  "token_endpoint": "...",
-  "userinfo_endpoint": "...",
-  "jwks_uri": "...",
-  "id_token_signing_alg_values_supported": ["ES256"]
+  "authorization_endpoint": "http://localhost:8000/authorize",
+  "token_endpoint": "http://localhost:8000/oauth/token",
+  "userinfo_endpoint": "http://localhost:8000/oauth/userinfo",
+  "jwks_uri": "http://localhost:8000/oauth/jwks.json",
+  "response_types_supported": ["code"],
+  "grant_types_supported": ["authorization_code", "refresh_token"],
+  "id_token_signing_alg_values_supported": ["RS256"],
+  "code_challenge_methods_supported": ["S256"]
 }
 ```
 
 ---
 
-## 🔄 Fluxos Suportados
+## Client Examples
 
-### Authorization Code Flow (recomendado)
+NiceGUI relying-party examples are available in [examples](examples/):
 
-```text
-Client → /authorize → User Auth → Code → /token → ID Token
-```
+| Example | Focus |
+| --- | --- |
+| `basic_client.py` | Confidential client using `client_secret`. |
+| `public_client.py` | Public client using PKCE and `token_endpoint_auth_method=none`. |
 
-### Implicit Flow (opcional)
-
-```text
-Client → /authorize → ID Token direto
-```
-
----
-
-## 🧩 Integração com Cliente OIDC
-
-Exemplos completos de integração como **Relying Party (Client)** estão disponíveis na pasta:
-
-```
-/examples
-```
-
-O diretório contém aplicações de exemplo demonstrando como configurar um cliente OIDC apontando para o SatOIDC via `/.well-known/openid-configuration`, incluindo:
-
-* Registro de client
-* Authorization Code Flow
-* Validação de ID Token
-* Consumo do endpoint `/userinfo`
-
-Consulte a pasta `examples` no repositório para instruções de execução e configuração específicas de cada exemplo.
-
----
-
-## 🛡️ Segurança
-
-* Tokens assinados (JWT)
-* Suporte a PKCE
-* HTTPS obrigatório em produção
-* Proteção contra replay via nonce
-
----
-
-## 📚 Conformidade
-
-SatOIDC segue:
-
-* OpenID Connect Core 1.0
-
-* OAuth 2.0 – RFC 6749
-
-* JSON Web Token (JWT) – RFC 7519
-
-* JSON Web Key (JWK) – RFC 7517
-
-* OAuth 2.0 Authorization Server Metadata – RFC 8414
-
-* Proof Key for Code Exchange (PKCE) – RFC 7636
-
-A camada de Authorization Server é construída utilizando **[Authlib](https://pypi.org/project/Authlib/)**, biblioteca madura para implementação de OAuth 2.0, OpenID Connect e JOSE (JWT, JWK, JWS) em Python.
-
-O Authlib é utilizado como motor de protocolo (emissão e validação de tokens, fluxos OAuth/OIDC e assinatura JWT) embora não tenha suporte nativo para Fastapi.
-
-
----
-
-## 🧪 Testes
+Public client example:
 
 ```bash
-task test
+cd satoidc
+poetry run task start_public_client <client-id>
 ```
 
 ---
 
-## 🧭 Roadmap
+## Tests And Validation
 
-* [ ] Integração com LNURL-auth
-* [ ] Integração com Nostr
-* [ ] Refatoração quando Authlib tiver suporte nativo para Fastapi
-* [ ] Implementar Rotação de chaves
+```bash
+cd satoidc
+poetry run task test
+```
 
----
+Current state: the test command is configured, but the repository still needs meaningful tests. The latest project analysis found that pytest collects zero tests.
 
-## 🤝 Contribuição
+Useful sanity check:
 
-1. Fork
-2. Crie uma branch
-3. Commit
-4. Pull Request
-
----
-
-## 📄 Licença
-
-MIT License
+```bash
+cd satoidc
+poetry run python -m compileall satoidc setup_wizard tests
+```
 
 ---
 
-## ₿ Filosofia
+## Roadmap
 
-> “Don’t trust. Verify.”
+### Current State
 
-SatOIDC nasce com a proposta de unir **identidade federada tradicional (OIDC)** com os princípios de soberania individual inspirados por Satoshi Nakamoto.
+- [x] FastAPI/NiceGUI application shell.
+- [x] SQLAlchemy models and Alembic migration baseline.
+- [x] OAuth2/OIDC Authorization Code foundation.
+- [x] OIDC discovery, JWKS and UserInfo endpoints.
+- [x] LNURL-auth login/register callback flow.
+- [x] Setup wizard for initial root user.
+- [x] NiceGUI relying-party examples.
+- [x] Spec-Driven Development workspace in `specs/`.
+- [x] Project architecture and risk documentation in `docs/`.
 
+### Production Hardening
+
+- [ ] Add tests for validators, redirects, LNURL-auth, OIDC metadata, token flow and client registration.
+- [ ] Replace process-local JWT signing key with persistent key material and a key-rotation plan.
+- [ ] Normalize the permission model across enum, migration, UI and access checks.
+- [ ] Harden login redirect handling and add regression tests for open redirect prevention.
+- [ ] Revisit LNURL challenge lifecycle so invalid signatures do not consume valid challenges.
+- [ ] Validate refresh token issuance and revocation behavior end to end.
+- [ ] Make session/cookie settings production-aware, including HTTPS-only cookies.
+
+### Product And Developer Experience
+
+- [ ] Finish profile account actions: nickname, email, password and wallet link/unlink.
+- [ ] Finish developer dashboard and OAuth2 client management.
+- [ ] Add client metadata validation for redirect URIs, scopes, grant types and auth methods.
+- [ ] Add screenshots to this README once the UI stabilizes.
+- [ ] Normalize text encoding in README/examples/legal docs where mojibake appears.
+
+### Future Protocol Work
+
+- [ ] Publish a stable OIDC contract and conformance checklist.
+- [ ] Decide whether to expose discovery at root `/.well-known/openid-configuration`.
+- [ ] Evaluate Nostr identity integration.
+- [ ] Revisit implicit/hybrid support before advertising those flows.
+- [ ] Track Authlib/FastAPI ecosystem support and simplify the adapter layer when viable.
+
+---
+
+## Security Notes
+
+- Use HTTPS in production.
+- Use strong environment secrets.
+- Persist and rotate signing keys before production use.
+- Treat local SQLite files and NiceGUI storage as development state.
+- Review [docs/known-issues.md](docs/known-issues.md) before production deployment.
+
+---
+
+## Project Methodology
+
+SatOIDC uses:
+
+- [AGENTS.md](AGENTS.md) for agent-facing project instructions.
+- [DESIGN.md](DESIGN.md) for web interface conventions.
+- [specs](specs/) for Spec-Driven Development.
+- [agent-memory](agent-memory/) for durable project memory.
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
+---
+
+## Philosophy
+
+> Don't trust. Verify.
+
+SatOIDC aims to connect traditional federated identity with individual sovereignty principles inspired by Satoshi Nakamoto.
