@@ -80,9 +80,10 @@ Main implementation areas:
 - `satoidc/satoidc/routes/`: FastAPI and NiceGUI routes.
 - `satoidc/satoidc/models/`: SQLAlchemy models.
 - `satoidc/migrations/`: Alembic migrations.
-- `examples/`: relying-party client examples.
+- `examples/`: relying-party client examples. See [examples/README.md](examples/README.md).
+- `satoidc/`: Poetry project root. See [satoidc/README.md](satoidc/README.md).
 
-For a deeper technical map, see [docs/project-analysis.md](docs/project-analysis.md) and [docs/architecture.md](docs/architecture.md).
+For a deeper technical map, start from [docs/README.md](docs/README.md), especially [docs/project-analysis.md](docs/project-analysis.md) and [docs/architecture.md](docs/architecture.md).
 
 ---
 
@@ -98,9 +99,9 @@ For a deeper technical map, see [docs/project-analysis.md](docs/project-analysis
 | UserInfo | Implemented | Returns claims based on granted scopes. |
 | Introspection | Implemented | Authlib endpoint registered. |
 | Revocation | Implemented | Authlib endpoint registered. |
-| Refresh Token Grant | Registered | Needs validation around refresh token issuance. |
+| Refresh Token Grant | Implemented | Registered with refresh token issuance enabled and covered by focused tests. |
 | LNURL-auth | Implemented | Login, register, link and auth actions exist. |
-| Implicit/Hybrid | Experimental | Grant classes are registered but not advertised in discovery. |
+| Implicit/Hybrid | Not advertised | Not registered for the current provider contract. |
 
 ---
 
@@ -221,7 +222,15 @@ cd satoidc
 poetry run task test
 ```
 
-Current state: the test command is configured, but the repository still needs meaningful tests. The latest project analysis found that pytest collects zero tests.
+The default test task excludes tests marked `e2e`. Time-sensitive behavior such as authorization-code expiration, refresh-token windows and LNURL challenge expiration is covered with `freezegun`.
+
+Browser e2e tests are separate from the default test task:
+
+```bash
+cd satoidc
+poetry run task playwright_install
+poetry run task test_e2e
+```
 
 Useful sanity check:
 
@@ -245,15 +254,17 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [x] NiceGUI relying-party examples.
 - [x] Spec-Driven Development workspace in `specs/`.
 - [x] Project architecture and risk documentation in `docs/`.
+- [x] Unit/integration test baseline for validators, OAuth/OIDC metadata, grants, LNURL-auth, setup wizard, security helpers and time-sensitive behavior.
+- [x] Browser e2e smoke/responsive test baseline for public pages and well-known endpoints.
 
 ### Production Hardening
 
-- [ ] Add tests for validators, redirects, LNURL-auth, OIDC metadata, token flow and client registration.
+- [ ] Expand full OAuth browser authorization-code e2e coverage, including real client redirects and token exchange.
 - [ ] Replace process-local JWT signing key with persistent key material and a key-rotation plan.
 - [ ] Normalize the permission model across enum, migration, UI and access checks.
 - [ ] Harden login redirect handling and add regression tests for open redirect prevention.
 - [ ] Revisit LNURL challenge lifecycle so invalid signatures do not consume valid challenges.
-- [ ] Validate refresh token issuance and revocation behavior end to end.
+- [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
 - [ ] Make session/cookie settings production-aware, including HTTPS-only cookies.
 
 ### Product And Developer Experience
@@ -290,8 +301,9 @@ SatOIDC uses:
 
 - [AGENTS.md](AGENTS.md) for agent-facing project instructions.
 - [DESIGN.md](DESIGN.md) for web interface conventions.
-- [specs](specs/) for Spec-Driven Development.
-- [agent-memory](agent-memory/) for durable project memory.
+- [docs](docs/README.md) for architecture, analysis and known issues.
+- [specs](specs/README.md) and [specs/index.md](specs/index.md) for Spec-Driven Development.
+- [agent-memory](agent-memory/index.md) for durable project memory.
 
 ---
 

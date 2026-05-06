@@ -11,3 +11,11 @@ Good candidates in SatOIDC:
 - Logout and session handling.
 
 Keep flows observable and step-based. Link to contracts when request/response shape matters.
+
+## Current Flows
+
+- [Authorization Code Flow](authorization-code.md)
+- [Login Flow](login.md)
+- [LNURL-auth Flow](lnurl-auth.md)
+
+Keep this list aligned with [../index.md](../index.md).

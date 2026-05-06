@@ -4,9 +4,11 @@ This folder is the Spec-Driven Development workspace for SatOIDC.
 
 Use it to make product intent, business rules, protocol constraints, acceptance criteria, and implementation decisions explicit before changing code. Specs should stay versioned with the code and evolve with every feature change.
 
+Start from [index.md](index.md). Keep every active feature, flow, contract, or decision linked there to avoid orphan specs.
+
 ## Workflow
 
-1. Create or update a feature spec in `features/` using `_template.md`.
+1. Create or update a feature spec in `features/` using [_template.md](_template.md).
 2. Link related flows, contracts, and decisions when the change affects protocol behavior, APIs, persistence, security, or UI.
 3. Review the spec before implementation.
 4. Implement the smallest code change that satisfies the spec.
@@ -21,10 +23,10 @@ Specs and code coexist in the repository. Humans edit specs as the durable sourc
 
 ## Folder Map
 
-- `features/`: product or technical feature specifications.
-- `flows/`: user, auth, OAuth2/OIDC, LNURL, and operational flows.
-- `contracts/`: API, token, event, database, and integration contracts.
-- `decisions/`: short SDD-level decisions that affect specs or implementation.
+- `features/`: product or technical feature specifications. See [features/README.md](features/README.md).
+- `flows/`: user, auth, OAuth2/OIDC, LNURL, and operational flows. See [flows/README.md](flows/README.md).
+- `contracts/`: API, token, event, database, and integration contracts. See [contracts/README.md](contracts/README.md).
+- `decisions/`: short SDD-level decisions that affect specs or implementation. See [decisions/README.md](decisions/README.md).
 - `_template.md`: default template for new specs.
 
 ## Governance Rules

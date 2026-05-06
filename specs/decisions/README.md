@@ -11,3 +11,5 @@ YYYY-MM-DD-short-decision.md
 ```
 
 Each decision should include context, decision, consequences, and links to related specs.
+
+No decision files are tracked yet. When one is added, link it from this file and from [../index.md](../index.md).

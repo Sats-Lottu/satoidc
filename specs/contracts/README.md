@@ -12,3 +12,9 @@ Good candidates in SatOIDC:
 - Client metadata shape.
 
 Contracts should be precise enough to generate or validate tests from them.
+
+## Current Contracts
+
+- [OIDC Contract](oidc.md): discovery, JWKS, token, UserInfo, introspection, and revocation expectations.
+
+Keep this list aligned with [../index.md](../index.md).

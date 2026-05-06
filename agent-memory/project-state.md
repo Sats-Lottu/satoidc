@@ -35,3 +35,9 @@ Documentation added after full project analysis:
 - `docs/known-issues.md`: prioritized technical debt.
 - `specs/contracts/oidc.md`: draft OIDC contract.
 - `specs/flows/authorization-code.md`, `specs/flows/login.md`, `specs/flows/lnurl-auth.md`: draft SDD flow docs.
+
+Current test structure:
+
+- `poetry run task test` runs unit/integration tests with browser e2e tests deselected by default.
+- `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
+- `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.

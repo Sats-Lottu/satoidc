@@ -6,11 +6,13 @@ Updated: 2026-05-06
 
 SatOIDC is a Python OpenID Connect Provider built with FastAPI, NiceGUI, Authlib, SQLAlchemy, Alembic, and Poetry. It aims to provide OAuth2/OIDC authentication while adding Bitcoin/Lightning login through LNURL-auth.
 
-The current implementation is an early application prototype with real protocol integration pieces, a UI surface, database models, migrations, Docker deployment, and OIDC client examples. The main technical debt is around tests, permission consistency, security hardening, and protocol contract validation.
+The current implementation is an early application prototype with real protocol integration pieces, a UI surface, database models, migrations, Docker deployment, OIDC client examples, unit/integration tests, and a browser e2e smoke baseline. The main technical debt is around permission consistency, persistent signing keys, security hardening, and deeper protocol contract validation.
 
 ## Repository Layout
 
-- `README.md`: project overview, setup notes, endpoint list, roadmap. It currently renders mojibake in this shell session and has a RS256/ES256 mismatch.
+- `README.md`: project overview, setup notes, endpoint list, roadmap, and documentation entry points.
+- `AGENTS.md`: canonical AI-agent instructions and documentation map.
+- `docs/README.md`: documentation index.
 - `compose.yaml`: Postgres plus SatOIDC service.
 - `satoidc/`: Python project root for Poetry.
 - `satoidc/satoidc/`: application package.
@@ -42,6 +44,9 @@ The current implementation is an early application prototype with real protocol 
 - Run migrations: `cd satoidc; poetry run alembic upgrade head`
 - Run dev server: `cd satoidc; poetry run task run`
 - Run tests: `cd satoidc; poetry run task test`
+- Install Playwright browser: `cd satoidc; poetry run task playwright_install`
+- Run browser e2e tests: `cd satoidc; poetry run task test_e2e`
+- Run lint: `cd satoidc; poetry run ruff check`
 - Compile sanity check: `cd satoidc; poetry run python -m compileall satoidc setup_wizard tests`
 - Public client example: `cd satoidc; poetry run task start_public_client <client-id>`
 
@@ -139,9 +144,7 @@ Supported grants/endpoints:
 
 - Authorization Code Grant with OpenID Connect support.
 - PKCE `CodeChallenge(required=True)`.
-- Implicit Grant class registered.
-- Hybrid Grant class registered.
-- Refresh Token Grant class registered.
+- Refresh Token Grant registered with refresh token generation enabled.
 - Introspection endpoint.
 - Revocation endpoint.
 - Bearer token resource protection.
@@ -259,24 +262,25 @@ Root creation paths:
 Run on 2026-05-06:
 
 - `poetry run python -m compileall satoidc setup_wizard tests`: passed.
-- `poetry run task test`: failed because pytest collected `0` tests. Coverage reported `0%` and no data collected.
+- `poetry run ruff check`: passed after adding time-sensitive tests.
+- `poetry run task test`: passed with `33 passed, 10 deselected`; browser e2e tests are deselected by default.
+- `poetry run task test_e2e`: passed with Playwright browser smoke/responsive tests.
 
 ## Current Gaps And Risks
 
 ### High Priority
 
-- Tests are effectively absent. `satoidc/tests/__init__.py` is the only test file.
 - `login_post` redirects to submitted `redirect_to` without applying `safe_redirect`; `/register` does sanitize redirects. This may allow open redirects when `/login?redirect_to=...` is supplied directly.
 - `auth/oauth2.py` generates the RSA signing key in memory on process start. Existing ID tokens can become unverifiable after restart, and multi-instance deployment will have inconsistent JWKS.
-- `ResourceProtector.acquire_token` appears inconsistent with the local `FastAPIOAuth2Request` constructor. It calls `FastAPIOAuth2Request(request.method, request.url, {}, request.headers)`, but the constructor expects a single Starlette `Request`.
+- The OIDC key-rotation spec exists in `specs/features/oidc-key-rotation/`, but implementation still needs persistent storage, `kid` headers, JWKS retention, admin controls, and audit events.
+- Browser e2e coverage still needs a full OAuth authorization-code client flow, not only public pages and well-known endpoints.
 
 ### Medium Priority
 
 - Permission names are inconsistent. `PermissionsEnum` has `root`, `admin`, and `support`; the initial migration contains `DRAW_OPERATOR`; UI checks use `"developer"`, `"admin"`, and `"root"` strings.
 - `LnurlAuthChallenge` is marked verified before signature validation; a bad signature consumes the challenge.
 - `User.nickname` is non-null in the model, but LNURL registration creates a user with `nickname=None`.
-- Refresh Token Grant is registered, but `create_bearer_token_generator` defaults `OAUTH2_REFRESH_TOKEN_GENERATOR` to `False`. Refresh token issuance needs explicit validation.
-- README states RS256 in one section and ES256 in discovery example.
+- Refresh Token Grant has focused tests, but still needs broader end-to-end client-flow coverage.
 - README and examples render mojibake in this shell session, likely due to encoding mismatch in stored files or terminal decoding.
 
 ### Lower Priority
@@ -290,9 +294,9 @@ Run on 2026-05-06:
 ## Suggested Documentation Next Steps
 
 - Normalize README encoding and protocol claims.
-- Add first SDD specs for login redirect safety, persistent JWKS, permissions model, and LNURL-auth challenge lifecycle.
-- Add tests for validators, `safe_redirect`, LNURL signature/challenge behavior, OAuth metadata, and login flow.
-- Add a protocol contract document for OIDC discovery, JWKS, token, userinfo, and LNURL callback.
+- Add or update SDD specs for login redirect safety, permissions model, and LNURL-auth challenge lifecycle.
+- Implement the drafted OIDC key rotation spec.
+- Expand tests for full browser authorization-code flow, client registration validation, and signed JWT `exp` behavior.
 
 ## Related Files
 

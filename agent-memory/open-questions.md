@@ -17,3 +17,4 @@ updated: 2026-05-06
 - What is the intended permission taxonomy: root/admin/support only, or should developer/client-management permissions exist?
 - Should `create_client` require developer permission rather than only authenticated session?
 - Should LNURL `auth` action be removed until an explicit stateless authorization contract exists?
+- Should time-sensitive OIDC token tests cover signed JWT `exp` validation end-to-end once persistent key rotation is implemented?

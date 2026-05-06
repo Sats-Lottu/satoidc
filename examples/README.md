@@ -1,109 +1,87 @@
-# Examples – SatoIDC Clients (NiceGUI)
+# Examples - SatOIDC Clients
 
-Este diretório contém **exemplos de Relying Parties (OIDC Clients)** integrando com o **SatOIDC** utilizando exclusivamente **NiceGUI**.
+This directory contains NiceGUI relying-party examples that integrate with SatOIDC through OAuth2/OIDC.
 
----
+## Goal
 
-## 🎯 Objetivo
+The examples show how to:
 
-Os exemplos mostram como:
+- Configure an OIDC client.
+- Redirect the browser to `/authorize`.
+- Receive an authorization code.
+- Exchange the code for tokens at `/oauth/token`.
+- Validate the ID Token.
+- Consume `/oauth/userinfo`.
+- Keep an authenticated NiceGUI client session.
 
-* Configurar um cliente OIDC
-* Redirecionar para `/authorize`
-* Receber `authorization_code`
-* Trocar código por tokens no `/token`
-* Validar o `id_token`
-* Consumir o endpoint `/userinfo`
-* Manter sessão autenticada na aplicação NiceGUI
-
----
-
-## 🧱 Arquitetura do Fluxo
+## Flow
 
 ```text
 NiceGUI App (Client)
-        │
-        ▼
-   SatoIDC (/authorize)
-        │
-        ▼
+        |
+        v
+   SatOIDC (/authorize)
+        |
+        v
  Redirect + code
-        │
-        ▼
-   SatOIDC (/token)
-        │
-        ▼
-     ID Token + Access Token
+        |
+        v
+   SatOIDC (/oauth/token)
+        |
+        v
+ ID Token + Access Token
 ```
 
----
+## Prerequisites
 
-## ⚙️ Pré-requisitos
+- Python 3.11+.
+- SatOIDC running locally, usually at `http://localhost:8000`.
+- A client registered in SatOIDC.
 
-* Python 3.11+
-* SatOIDC rodando localmente (ex: `http://localhost:8000`)
-* Cliente previamente registrado no SatOIDC
+## Running
 
----
-
-## ▶️ Executando um exemplo
+From the Poetry project root:
 
 ```bash
-cd examples
-python basic_client.py
+cd satoidc
+poetry run python ../examples/basic_client.py
 ```
 
-ou
+For the public PKCE client:
 
 ```bash
-cd examples
-python public_client.py
+cd satoidc
+poetry run task start_public_client <client-id>
 ```
 
-Aplicação disponível normalmente em:
+Client examples usually listen on:
 
-```
+```text
 http://localhost:8001
 ```
 
----
+## Configuration
 
-## 🔑 Configuração Necessária
-
-No exemplo `basic_client`, configure:
+For `basic_client.py`, configure:
 
 ```python
 CLIENT_ID = "your-client-id"
 CLIENT_SECRET = "your-client-secret"
 ```
 
-O `redirect_uri` configurado no SatOIDC deve coincidir com o definido no exemplo.
+The `redirect_uri` registered in SatOIDC must match the URI used by the example.
 
----
+## Examples
 
-## 🧪 O que cada exemplo demonstra
+| Example | Focus |
+| --- | --- |
+| `basic_client.py` | Confidential OIDC client using a client secret. |
+| `public_client.py` | Public OIDC client using PKCE. |
 
-| Exemplo           | Foco                            |
-| ----------------- | ------------------------------- |
-| `basic_client`    | Login OIDC mínimo funcional     |
-| `public_client`   | Login OIDC usando PKCE          |
+## Security
 
----
+- Use HTTPS in production.
+- Do not expose `client_secret` in frontend code.
+- Prefer the public client example for browser-only applications.
 
-## 🧠 Observações Técnicas
-
-* Todos utilizam **Authorization Code Flow**
-* HTTPS é obrigatório em ambiente de produção
-
----
-
-## 🛡️ Segurança
-
-Para uso real:
-
-* Utilize HTTPS
-* Não exponha `client_secret` no frontend
-
----
-
-Esses exemplos servem como base para integrar o SatOIDC em aplicações web modernas baseadas em NiceGUI.
+See the repository [README](../README.md) and [OIDC contract](../specs/contracts/oidc.md) for the provider endpoint contract.

@@ -14,7 +14,14 @@ updated: 2026-05-06
 - `obsidian vault="satoidc" vault`: validated after initialization; resolves to `C:\Users\luss1\Documents\GitHub\satoidc`.
 - `obsidian vault="satoidc" read path="agent-memory/index.md"`: validated after initialization; reads the project memory index.
 - `Get-ChildItem -Recurse specs`: validated the SDD folder structure after creating `specs/`.
-- `cd satoidc; poetry run task test`: ran on 2026-05-06; failed because pytest collected zero tests and coverage collected no data.
+- `cd satoidc; poetry run task test`: ran on 2026-05-06 after test coverage updates; passed with e2e tests deselected by default.
+- `cd satoidc; poetry run task playwright_install`: ran on 2026-05-06 with network approval; installed Chromium for Playwright e2e tests.
+- `cd satoidc; poetry run task test_e2e`: ran on 2026-05-06 with browser subprocess approval; passed browser e2e smoke/responsive tests.
+- `cd satoidc; poetry run ruff check`: ran on 2026-05-06 after adding time-sensitive tests; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-06 after adding `freezegun` tests; passed with `33 passed, 10 deselected` and coverage at 58%.
+- Markdown documentation link/orphan check with PowerShell: ran on 2026-05-06 after documentation index updates; no broken Markdown links and no unreferenced Markdown files outside root entry points.
+- `cd satoidc; poetry run ruff check`: ran on 2026-05-06 after documentation/index cleanup; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-06 after documentation/index cleanup; passed with `33 passed, 10 deselected` and coverage at 58%.
 - `cd satoidc; poetry run python -m compileall satoidc setup_wizard tests`: ran on 2026-05-06; passed.
 - `obsidian vault="satoidc" search query="JWT" path="agent-memory" limit=10`: ran on 2026-05-06; found new memory files.
 - `obsidian vault="satoidc" search query="Spec-Driven" path="specs" limit=10`: ran on 2026-05-06; found SDD docs.

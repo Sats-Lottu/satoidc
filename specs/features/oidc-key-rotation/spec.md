@@ -12,10 +12,11 @@
   - `satoidc/satoidc/models/`
   - `satoidc/migrations/`
 - Related specs:
-  - `specs/contracts/oidc.md`
-  - `specs/features/oidc-key-rotation/design.md`
-  - `specs/features/oidc-key-rotation/api-contract.md`
-  - `specs/features/oidc-key-rotation/test-plan.md`
+  - [OIDC Contract](../../contracts/oidc.md)
+  - [Design](design.md)
+  - [API Contract](api-contract.md)
+  - [Test Plan](test-plan.md)
+  - [Tasks](tasks.md)
 
 ## Intent
 

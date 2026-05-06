@@ -9,3 +9,9 @@ YYYY-MM-DD-short-feature-name.md
 ```
 
 Start from `../_template.md` and keep each spec focused enough to review with the code change it drives.
+
+## Current Feature Specs
+
+- [OIDC Key Rotation](oidc-key-rotation/spec.md): draft specification for generation, activation, JWKS publication, retention, retirement, and audit of OIDC signing keys.
+
+Keep this list aligned with [../index.md](../index.md).
