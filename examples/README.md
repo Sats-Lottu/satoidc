@@ -44,7 +44,9 @@ From the Poetry project root:
 
 ```bash
 cd satoidc
-poetry run python ../examples/basic_client.py
+poetry run python ../examples/basic_client.py \
+  --client-id <client-id> \
+  --client-secret <client-secret>
 ```
 
 For the public PKCE client:
@@ -54,22 +56,55 @@ cd satoidc
 poetry run task start_public_client <client-id>
 ```
 
+Equivalent direct command:
+
+```bash
+cd satoidc
+poetry run python ../examples/public_client.py --client-id <client-id>
+```
+
 Client examples usually listen on:
 
 ```text
 http://localhost:8001
 ```
 
-## Configuration
+Register this redirect URI for the example client:
 
-For `basic_client.py`, configure:
-
-```python
-CLIENT_ID = "your-client-id"
-CLIENT_SECRET = "your-client-secret"
+```text
+http://localhost:8001/auth/callback
 ```
 
-The `redirect_uri` registered in SatOIDC must match the URI used by the example.
+## Configuration
+
+Both examples accept command-line options and environment variables:
+
+| Option | Environment variable | Default |
+| --- | --- | --- |
+| `--client-id` | `SATOIDC_CLIENT_ID` | Required |
+| `--provider-url` | `SATOIDC_PROVIDER_URL` | `http://localhost:8000` |
+| `--scope` | `SATOIDC_SCOPE` | `openid email profile` |
+| `--host` | `SATOIDC_CLIENT_HOST` | `localhost` |
+| `--port` | `SATOIDC_CLIENT_PORT` | `8001` |
+| `--storage-secret` | `SATOIDC_EXAMPLE_STORAGE_SECRET` | Development placeholder |
+
+`basic_client.py` also requires:
+
+| Option | Environment variable | Default |
+| --- | --- | --- |
+| `--client-secret` | `SATOIDC_CLIENT_SECRET` | Required |
+
+Example using environment variables:
+
+```bash
+cd satoidc
+SATOIDC_CLIENT_ID=<client-id> \
+SATOIDC_CLIENT_SECRET=<client-secret> \
+poetry run python ../examples/basic_client.py
+```
+
+Use a strong `SATOIDC_EXAMPLE_STORAGE_SECRET` whenever the example is exposed
+outside local development.
 
 ## Examples
 
@@ -77,6 +112,16 @@ The `redirect_uri` registered in SatOIDC must match the URI used by the example.
 | --- | --- |
 | `basic_client.py` | Confidential OIDC client using a client secret. |
 | `public_client.py` | Public OIDC client using PKCE. |
+
+Both examples:
+
+- Discover provider metadata from `/.well-known/openid-configuration`.
+- Use `/auth/callback` as the redirect path.
+- Store validated ID Token claims in NiceGUI per-user storage.
+- Validate `exp`, `aud`, and `iss` before reusing the local session.
+- Show a small authenticated session page with the returned subject, issuer and
+  email when available.
+- Render callback errors in the browser and log details server-side.
 
 ## Security
 
