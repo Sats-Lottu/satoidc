@@ -184,13 +184,7 @@ def well_known():
 
 def jwks():
     # Return only the public key material.
-    public_key = KEY.as_dict(add_kid=True)
-    public_key.pop("d", None)
-    public_key.pop("p", None)
-    public_key.pop("q", None)
-    public_key.pop("dp", None)
-    public_key.pop("dq", None)
-    public_key.pop("qi", None)
+    public_key = KEY.as_dict(private=False)
 
     return {"keys": [public_key]}
 

@@ -9,7 +9,6 @@ from authlib.integrations.sqla_oauth2 import (
     create_revocation_endpoint,
     create_save_token_func,
 )
-from authlib.jose import JsonWebKey
 from authlib.oauth2.rfc6749 import grants
 from authlib.oauth2.rfc7636 import CodeChallenge
 from authlib.oauth2.rfc7662 import (
@@ -17,6 +16,7 @@ from authlib.oauth2.rfc7662 import (
 )
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
+from joserfc import jwk
 
 from satoidc.fastapi_oauth2 import (
     AuthorizationServer,
@@ -31,7 +31,7 @@ from satoidc.models import (
 from satoidc.models.database import db
 from satoidc.settings import ENV
 
-KEY = JsonWebKey.generate_key("RSA", 2048, is_private=True)
+KEY = jwk.generate_key("RSA", 2048, private=True, auto_kid=True)
 
 JWT_CONFIG = {
     "key": KEY,
