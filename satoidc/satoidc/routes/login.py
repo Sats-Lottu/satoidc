@@ -18,6 +18,18 @@ from satoidc.auth.lnurl import (
 from satoidc.auth.security import verify_password
 from satoidc.models import LnurlAuthChallenge, User
 from satoidc.models.database import get_session
+from satoidc.routes.ui_components import (
+    DIALOG_CLASSES,
+    ERROR_TEXT,
+    INPUT_CLASSES,
+    LINK_CLASSES,
+    MUTED_TEXT,
+    PRIMARY_BUTTON_CLASSES,
+    SECONDARY_BUTTON_CLASSES,
+    auth_context_panel,
+    auth_shell,
+    card,
+)
 from satoidc.settings import ENV
 
 router = APIRouter()
@@ -111,18 +123,19 @@ class LNURLAuthQRLogin:
             f"{self.base_url}auth/lnurl/callback?tag=login&k1={self.k1}&action={self.action}"
         )
         qrcode = segno.make_qr(lnurl_auth, error="l")
-        ui.label("Login with LN Wallet")
+        ui.label("Login with LN Wallet").classes("text-lg font-bold")
         with ui.link(target=f"lightning:{lnurl_auth}").tooltip(
             "Open in Lightning Wallet"
         ):
             ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
-                "w-64"
+                "w-64 h-64"
             ).tooltip(
                 "Scan with your Lightning Wallet to login to your"
                 " account without password"
             )
         ui.label(lnurl_auth).classes(
-            "mt-2 w-full break-all text-xs text-center"
+            "mt-2 w-full break-all text-xs text-center "
+            "text-slate-600 dark:text-slate-400"
         ).on("click", lambda e: ui.clipboard.write(lnurl_auth)).on(
             "click",
             lambda e: ui.notify("LNURL copied to clipboard!", type="positive"),
@@ -153,75 +166,109 @@ async def login_page(
             lnurl_auth_temp_storage[str(login_nonce)] = data.get("user_id")
             ui.navigate.to(f"/auth/lnurl/redirect?redirect_to={redirect_to}")
 
-    # QR Code Dialog
     with (
         ui.dialog() as dialog,
-        ui.card().classes("w-full max-w-lg mx-auto items-center"),
+        card(f"{DIALOG_CLASSES} max-w-lg mx-auto items-center gap-4"),
     ):
         lnurl_auth_login.qrcode()
-        ui.button("Close", on_click=dialog.close)
+        ui.button("Close", icon="close", on_click=dialog.close).props(
+            "outline"
+        ).classes(SECONDARY_BUTTON_CLASSES)
 
-    # Header
-    with (
-        ui.header(elevated=True)
-        .style("background-color:#3874c8; color:white")
-        .classes("items-center justify-between px-4")
-    ):
-        with (
-            ui.row()
-            .classes("items-center gap-2")
-            .on("click", lambda: ui.navigate.to("/"))
+    with auth_shell():
+        with ui.grid(columns=2).classes(
+            "w-full gap-6 items-stretch max-md:grid-cols-1"
         ):
-            ui.icon("verified_user")
-            ui.label("SatOIDC").classes("text-lg font-bold")
-
-    with ui.card().classes("w-full max-w-lg mx-auto items-center"):
-        ui.label("Sign in").classes("text-2xl font-bold")
-        ui.label("Use your account to continue.").classes("text-gray-500")
-        match err:
-            case None:
-                pass
-            case "invalid":
-                ui.label("Invalid credentials.").classes("text-red-500 mb-2")
-            case "bad_flow":
-                ui.label("Invalid login flow. Please try again.").classes(
-                    "text-red-500 mb-2"
-                )
-            case _:
-                ui.label("Unknown error!").classes("text-red-500 mb-2")
-
-        with (
-            ui.element("form")
-            .props('method="post" action="/login"')
-            .classes("flex flex-col gap-3 w-full")
-        ):
-            ui.input("Email or Login").props(
-                "name='identifier' autocomplete='username'"
-            ).classes("w-full")
-            ui.input("Password").props(
-                "name='password' type='password'"
-                " autocomplete='current-password'"
-            ).classes("w-full")
-
-            # hidden redirect_to + login_nonce
-            ui.element("input").props(
-                f"type='hidden' name='redirect_to' value='{redirect_to}'"
+            auth_context_panel(
+                eyebrow="SatOIDC Access",
+                title="Credentials or Lightning wallet access.",
+                body=(
+                    "Use the standard account flow for OAuth/OIDC sessions, "
+                    "or open the LNURL-auth QR action when wallet-based "
+                    "access is more convenient."
+                ),
+                features=[
+                    (
+                        "shield",
+                        "Nonce-protected flow",
+                        "Each login page render creates a fresh form nonce.",
+                    ),
+                    (
+                        "qr_code",
+                        "Wallet fallback",
+                        "LNURL-auth remains available as a floating QR "
+                        "action.",
+                    ),
+                    (
+                        "route",
+                        "Redirect-aware",
+                        "The original destination is preserved after login.",
+                    ),
+                ],
             )
-            ui.element("input").props(
-                f"type='hidden' name='login_nonce' value='{login_nonce}'"
-            )
+            with card("max-w-lg w-full mx-auto items-stretch gap-4"):
+                with ui.column().classes("gap-1"):
+                    ui.label("Sign in").classes("text-2xl font-bold")
+                    ui.label("Use your account to continue.").classes(
+                        MUTED_TEXT
+                    )
+                match err:
+                    case None:
+                        pass
+                    case "invalid":
+                        ui.label("Invalid credentials.").classes(
+                            f"{ERROR_TEXT} mb-2"
+                        )
+                    case "bad_flow":
+                        ui.label(
+                            "Invalid login flow. Please try again."
+                        ).classes(f"{ERROR_TEXT} mb-2")
+                    case _:
+                        ui.label("Unknown error.").classes(
+                            f"{ERROR_TEXT} mb-2"
+                        )
 
-            with ui.row().classes("gap-4 w-full justify-center"):
-                ui.button(
-                    "Cancel", on_click=lambda: ui.navigate.to("/")
-                ).props("outline")
-                ui.button("Login").props("type='submit'")
+                with (
+                    ui.element("form")
+                    .props('method="post" action="/login"')
+                    .classes("flex flex-col gap-3 w-full")
+                ):
+                    ui.input("Email or Login").props(
+                        "name='identifier' autocomplete='username'"
+                    ).classes(INPUT_CLASSES)
+                    ui.input("Password").props(
+                        "name='password' type='password'"
+                        " autocomplete='current-password'"
+                    ).classes(INPUT_CLASSES)
 
-        with ui.row().classes("gap-4 mt-4 justify-center"):
-            ui.label("Don't have an account?")
-            ui.link("register", "/register")
+                    ui.element("input").props(
+                        "type='hidden' name='redirect_to' "
+                        f"value='{redirect_to}'"
+                    )
+                    ui.element("input").props(
+                        "type='hidden' name='login_nonce' "
+                        f"value='{login_nonce}'"
+                    )
+
+                    with ui.row().classes(
+                        "gap-3 w-full justify-end max-sm:flex-col-reverse"
+                    ):
+                        ui.button(
+                            "Cancel",
+                            icon="close",
+                            on_click=lambda: ui.navigate.to("/"),
+                        ).classes(SECONDARY_BUTTON_CLASSES)
+                        ui.button("Login", icon="login").props(
+                            "type='submit'"
+                        ).classes(PRIMARY_BUTTON_CLASSES)
+
+                with ui.row().classes("gap-2 mt-2 justify-center"):
+                    ui.label("Don't have an account?").classes(MUTED_TEXT)
+                    ui.link("Register", "/register").classes(LINK_CLASSES)
     with ui.page_sticky(x_offset=18, y_offset=18):
-        ui.button(icon="qr_code", on_click=dialog.open).props("fab")
+        ui.button(icon="qr_code", on_click=dialog.open).props(
+            'fab aria-label="Open LNURL login QR code"'
+        ).classes(PRIMARY_BUTTON_CLASSES)
 
 
 @router.page("/auth/lnurl/redirect")

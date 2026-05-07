@@ -6,6 +6,7 @@ from satoidc.auth.middleware import AuthMiddleware
 from satoidc.auth.oauth2 import config_oauth
 from satoidc.routes import routers
 from satoidc.settings import ENV
+from satoidc.ui_theme import apply_theme
 
 app = FastAPI(title="Identity Service", version="0.1.0")
 app.add_middleware(AuthMiddleware)
@@ -40,5 +41,6 @@ config_oauth(app)
 for router in routers:
     app.include_router(router)
 
+apply_theme()
 
 ui.run_with(app, title="SatOIDC - Identity Service")

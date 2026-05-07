@@ -1,3 +1,5 @@
+# ruff: noqa: PLR1702
+
 from typing import Annotated
 from uuid import UUID
 
@@ -9,14 +11,41 @@ from sqlalchemy.orm import joinedload, with_loader_criteria
 
 from satoidc.models import Permission, User
 from satoidc.models.database import get_session
+from satoidc.routes.ui_components import (
+    MUTED_TEXT,
+    PRIMARY_BUTTON_CLASSES,
+    SECONDARY_BUTTON_CLASSES,
+    SUCCESS_TEXT,
+    TECH_TEXT,
+    card,
+    footer,
+    page_shell,
+)
 
 router = APIRouter()
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
-@ui.page("/profile", dark=True)
-async def profile(session: Session, request: Request):  # noqa: PLR0915, E501
+def _field_row(label: str, value: str, action_label: str, icon: str):
+    with ui.row().classes(
+        "w-full items-center justify-between gap-3 max-sm:flex-col "
+        "max-sm:items-stretch"
+    ):
+        with ui.column().classes("gap-1"):
+            ui.label(label).classes(f"text-sm {MUTED_TEXT}")
+            ui.label(value).classes("text-base break-all")
+        ui.button(
+            action_label,
+            icon=icon,
+            on_click=lambda: ui.notify(
+                f"{action_label} is not available yet."
+            ),
+        ).classes(SECONDARY_BUTTON_CLASSES)
+
+
+@ui.page("/profile")
+async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
     user_id = request.session.get("user_id")
     user = await session.scalar(
         select(User)
@@ -37,253 +66,188 @@ async def profile(session: Session, request: Request):  # noqa: PLR0915, E501
         .where(User.id == UUID(user_id))
     )
     permissions = {perm.permission_type for perm in user.permissions}
-    ui.label("Profile").classes("text-2xl font-bold")
-    ui.separator()
 
-    with ui.footer().classes("bg-transparent justify-end"):
-        ui.label("Made with ❤️ by Sats Lottu").classes("text-sm text-gray-500")
-
-    with ui.column().classes("w-full max-w-5xl mx-auto gap-6"):  # noqa: PLR1702,
-        # Header resumido do perfil
-        with ui.card().classes(
-            "w-full p-6 bg-[#111827] text-white shadow-xl rounded-2xl"
-        ):
-            with ui.row().classes("w-full items-center justify-between"):
+    with page_shell("max-w-5xl"):
+        with card("gap-4"):
+            with ui.row().classes(
+                "w-full items-center justify-between gap-4 max-sm:flex-col "
+                "max-sm:items-stretch"
+            ):
                 with ui.column().classes("gap-2"):
                     ui.label(user.nickname or "Unnamed User").classes(
                         "text-2xl font-semibold"
                     )
                     ui.label(user.email or "No email linked").classes(
-                        "text-gray-400"
+                        MUTED_TEXT
                     )
-                    with ui.row().classes("items-center gap-2 mt-2"):
+                    with ui.row().classes("items-center gap-2 flex-wrap"):
                         if user.lnurl_pubkey:
                             ui.chip("Wallet linked", icon="link").props(
-                                "color=green outline"
+                                "outline"
+                            ).classes(
+                                "border-emerald-300 text-emerald-700 "
+                                "dark:border-emerald-800 "
+                                "dark:text-emerald-400"
                             )
                         else:
                             ui.chip("No wallet", icon="link_off").props(
-                                "color=red outline"
+                                "outline"
+                            ).classes(
+                                "border-red-300 text-red-700 "
+                                "dark:border-red-800 dark:text-red-400"
                             )
                         for perm in user.permissions:
                             ui.chip(perm.permission_type, icon="check").props(
-                                "color=blue outline"
+                                "outline"
+                            ).classes(
+                                "border-blue-300 text-blue-700 "
+                                "dark:border-blue-800 dark:text-sky-300"
                             )
-                        """ui.chip("Developer", icon="developer_mode").props(
-                            "color=orange outline"
-                        )
-                        ui.chip("Standard user", icon="person").props(
-                            "color=blue outline"
-                        )"""
+                ui.button(
+                    "Logout",
+                    icon="logout",
+                    on_click=lambda: ui.navigate.to("/logout"),
+                ).classes(SECONDARY_BUTTON_CLASSES)
 
-                with ui.column().classes("items-end gap-2"):
-                    ui.button(
-                        "Logout",
-                        icon="logout",
-                        on_click=lambda: ui.navigate.to("/logout"),
-                    ).props("outline color=primary")
+        with ui.grid(columns=2).classes(
+            "w-full gap-6 max-md:grid-cols-1"
+        ):
+            with ui.column().classes("gap-6"):
+                with card("gap-4"):
+                    ui.label("User Info").classes("text-xl font-semibold")
+                    ui.separator()
+                    _field_row(
+                        "Nickname",
+                        user.nickname or "Not set",
+                        "Change nickname",
+                        "edit",
+                    )
+                    ui.separator()
+                    _field_row(
+                        "Email",
+                        user.email or "No email linked",
+                        "Change email",
+                        "mail",
+                    )
 
-        # Grid principal
-        with ui.row().classes("w-full gap-6 items-stretch"):
-            with ui.column().classes("flex-1 min-w-[300px] gap-6"):
-                # Informações pessoais
-                with ui.card().classes(
-                    "w-full p-5 bg-[#111827] text-white rounded-2xl shadow-lg"
-                ):
-                    ui.label("User Info").classes("text-xl font-semibold mb-4")
-                    ui.separator().classes("mb-4")
-
-                    with ui.row().classes(
-                        "w-full items-center justify-between"
-                    ):
-                        with ui.column().classes("gap-1"):
-                            ui.label("Nickname").classes(
-                                "text-gray-400 text-sm"
-                            )
-                            ui.label(user.nickname or "Not set").classes(
-                                "text-base"
-                            )
-                        ui.button(
-                            "Change nickname",
-                            icon="edit",
-                            on_click=lambda: ui.notify(
-                                "Abrir modal para alterar nickname"
-                            ),
-                        ).props("outline")
-
-                    ui.separator().classes("my-3")
-
-                    with ui.row().classes(
-                        "w-full items-center justify-between"
-                    ):
-                        with ui.column().classes("gap-1"):
-                            ui.label("Email").classes("text-gray-400 text-sm")
-                            ui.label(user.email or "No email linked").classes(
-                                "text-base break-all"
-                            )
-                        ui.button(
-                            "Change email",
-                            icon="mail",
-                            on_click=lambda: ui.notify(
-                                "Abrir modal para alterar email"
-                            ),
-                        ).props("outline")
-
-                # Segurança
-                with ui.card().classes(
-                    "w-full p-5 bg-[#111827] text-white rounded-2xl shadow-lg"
-                ):
-                    ui.label("Security").classes("text-xl font-semibold mb-4")
-                    ui.separator().classes("mb-4")
-
+                with card("gap-4"):
+                    ui.label("Security").classes("text-xl font-semibold")
+                    ui.separator()
                     ui.label(
                         "Manage your account credentials and access methods."
-                    ).classes("text-gray-400 mb-4")
+                    ).classes(MUTED_TEXT)
                     ui.button(
                         "Change password",
                         icon="lock",
                         on_click=lambda: ui.notify(
-                            "Abrir modal para alterar senha"
+                            "Change password is not available yet."
                         ),
-                    ).props("color=primary")
-
-                # Permissões de desenvolvedor
-                with ui.card().classes(
-                    "w-full p-5 bg-[#111827] text-white rounded-2xl shadow-lg"
-                ):
-                    ui.label("Developer Access").classes(
-                        "text-xl font-semibold mb-4"
                     )
-                    ui.separator().classes("mb-4")
+
+                with card("gap-4"):
+                    ui.label("Developer Access").classes(
+                        "text-xl font-semibold"
+                    )
+                    ui.separator()
                     if {"developer", "admin", "root"} & permissions:
                         ui.label(
                             "Your account already has developer permissions."
-                        ).classes("text-green-400 mb-4")
+                        ).classes(SUCCESS_TEXT)
                         ui.button(
                             "Go to Developer Dashboard",
                             icon="dashboard",
                             on_click=lambda: ui.navigate.to(
                                 "/dashboard/developer"
                             ),
-                        ).props("color=orange")
+                        ).classes(PRIMARY_BUTTON_CLASSES)
                     if {"admin", "root"} & permissions:
                         ui.label(
-                            "Your account has admin permissions, which include"
-                            " developer access."
-                        ).classes("text-green-400 mb-4")
+                            "Your account has admin permissions, which "
+                            "include developer access."
+                        ).classes(SUCCESS_TEXT)
                         ui.button(
                             "Go to Admin Dashboard",
                             icon="admin_panel_settings",
                             on_click=lambda: ui.navigate.to(
                                 "/dashboard/admin"
                             ),
-                        ).props("color=orange")
-
+                        ).classes(PRIMARY_BUTTON_CLASSES)
                     if not permissions:
                         ui.label(
-                            "Request access to developer features, APIs and"
-                            " application registration."
-                        ).classes("text-gray-400 mb-4")
+                            "Request access to developer features, APIs and "
+                            "application registration."
+                        ).classes(MUTED_TEXT)
                         ui.button(
                             "Request developer permissions",
                             icon="code",
                             on_click=lambda: ui.notify(
-                                "Solicitação enviada para análise"
+                                "Developer permission request sent for review."
                             ),
-                        ).props("color=orange outline")
+                        ).classes(SECONDARY_BUTTON_CLASSES)
 
-            with ui.column().classes("flex-1 min-w-[300px] gap-6"):
-                # Wallet / LNURL
-                with ui.card().classes(
-                    "w-full p-5 bg-[#111827] text-white rounded-2xl shadow-lg"
-                ):
+            with ui.column().classes("gap-6"):
+                with card("gap-4"):
                     ui.label("Wallet Connection").classes(
-                        "text-xl font-semibold mb-4"
+                        "text-xl font-semibold"
                     )
-                    ui.separator().classes("mb-4")
-
+                    ui.separator()
                     with ui.column().classes("gap-2"):
                         ui.label("LNURL Pubkey").classes(
-                            "text-gray-400 text-sm"
+                            f"text-sm {MUTED_TEXT}"
                         )
                         ui.label(
                             user.lnurl_pubkey or "No wallet linked"
-                        ).classes("text-sm break-all text-white")
+                        ).classes(TECH_TEXT)
 
-                    ui.separator().classes("my-4")
-
-                    with ui.row().classes("gap-3"):
+                    with ui.row().classes("gap-3 flex-wrap"):
                         if user.lnurl_pubkey:
                             ui.button(
                                 "Unlink wallet",
                                 icon="link_off",
                                 on_click=lambda: ui.notify(
-                                    "Confirmar deslinkar wallet"
+                                    "Wallet unlink is not available yet."
                                 ),
-                            ).props("color=negative outline")
+                            ).classes(SECONDARY_BUTTON_CLASSES)
                             ui.button(
                                 "Relink wallet",
                                 icon="link",
                                 on_click=lambda: ui.notify(
-                                    "Iniciar novo processo de vinculação"
+                                    "Wallet relink is not available yet."
                                 ),
-                            ).props("outline")
+                            ).classes(SECONDARY_BUTTON_CLASSES)
                         else:
                             ui.button(
                                 "Link wallet",
                                 icon="bolt",
                                 on_click=lambda: ui.notify(
-                                    "Iniciar fluxo LNURL-auth"
+                                    "Wallet link is not available yet."
                                 ),
-                            ).props("color=positive")
+                            ).classes(PRIMARY_BUTTON_CLASSES)
 
-                # Ações rápidas
-                with ui.card().classes(
-                    "w-full p-5 bg-[#111827] text-white rounded-2xl shadow-lg"
-                ):
-                    ui.label("Quick Actions").classes(
-                        "text-xl font-semibold mb-4"
+                with card("gap-4"):
+                    ui.label("Quick Actions").classes("text-xl font-semibold")
+                    ui.separator()
+                    for label, icon in [
+                        ("Edit nickname", "person"),
+                        ("Edit email", "alternate_email"),
+                        ("Change password", "password"),
+                    ]:
+                        ui.button(
+                            label,
+                            icon=icon,
+                            on_click=lambda label=label: ui.notify(
+                                f"{label} is not available yet."
+                            ),
+                        ).classes(f"w-full {SECONDARY_BUTTON_CLASSES}")
+                    wallet_label = (
+                        "Unlink wallet" if user.lnurl_pubkey else "Link wallet"
                     )
-                    ui.separator().classes("mb-4")
-
-                    with ui.column().classes("w-full gap-3"):
-                        ui.button(
-                            "Edit nickname",
-                            icon="person",
-                            on_click=lambda: ui.notify(
-                                "Abrir edição de nickname"
-                            ),
-                        ).props("outline").classes("w-full")
-
-                        ui.button(
-                            "Edit email",
-                            icon="alternate_email",
-                            on_click=lambda: ui.notify(
-                                "Abrir edição de email"
-                            ),
-                        ).props("outline").classes("w-full")
-
-                        ui.button(
-                            "Change password",
-                            icon="password",
-                            on_click=lambda: ui.notify(
-                                "Abrir edição de senha"
-                            ),
-                        ).props("outline").classes("w-full")
-
-                        if user.lnurl_pubkey:
-                            ui.button(
-                                "Unlink wallet",
-                                icon="link_off",
-                                on_click=lambda: ui.notify(
-                                    "Confirmar deslinkar wallet"
-                                ),
-                            ).props("outline color=negative").classes("w-full")
-                        else:
-                            ui.button(
-                                "Link wallet",
-                                icon="link",
-                                on_click=lambda: ui.notify(
-                                    "Iniciar vínculo da wallet"
-                                ),
-                            ).props("outline color=positive").classes("w-full")
+                    wallet_icon = "link_off" if user.lnurl_pubkey else "link"
+                    ui.button(
+                        wallet_label,
+                        icon=wallet_icon,
+                        on_click=lambda: ui.notify(
+                            f"{wallet_label} is not available yet."
+                        ),
+                    ).classes(f"w-full {SECONDARY_BUTTON_CLASSES}")
+    footer()

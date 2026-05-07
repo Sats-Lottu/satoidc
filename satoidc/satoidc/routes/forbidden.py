@@ -1,15 +1,27 @@
 from nicegui import APIRouter, ui
 
+from satoidc.routes.ui_components import (
+    ERROR_TEXT,
+    MUTED_TEXT,
+    PRIMARY_BUTTON_CLASSES,
+    card,
+    page_shell,
+)
+
 router = APIRouter()
 
 
 @router.page("/forbidden")
 async def forbidden_get():
-    with ui.column().classes("self-center items-center h-full w-full"):
-        ui.label("Forbidden").classes("text-2xl font-bold text-red-500")
-        ui.label("You don't have permission to access this page.").classes(
-            "text-red-500"
-        )
-        ui.button("Go to home", on_click=lambda: ui.navigate.to("/")).classes(
-            "mt-4"
-        )
+    with page_shell("max-w-lg"):
+        with card("items-center gap-3 text-center"):
+            ui.icon("block").classes(f"{ERROR_TEXT} text-5xl")
+            ui.label("Forbidden").classes("text-2xl font-bold")
+            ui.label("You don't have permission to access this page.").classes(
+                MUTED_TEXT
+            )
+            ui.button(
+                "Go to home",
+                icon="home",
+                on_click=lambda: ui.navigate.to("/"),
+            ).classes(f"mt-2 {PRIMARY_BUTTON_CLASSES}")
