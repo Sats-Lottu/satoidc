@@ -14,6 +14,7 @@ Search before reading. Record only stable facts, decisions, validated commands, 
 
 - [[project-state]]
 - [[architecture]]
+- [[ui-index]]
 - [[risks]]
 - [[decisions]]
 - [[commands]]

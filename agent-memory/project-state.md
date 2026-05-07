@@ -24,7 +24,7 @@ Important paths:
 - `satoidc/DockerFile`, `satoidc/entrypoint.sh`, `compose.yaml`, `.dockerignore`, `.env.example`: production-like Docker Compose stack with PostgreSQL healthcheck, cached Poetry dependency install, non-root app runtime, migrations, setup wizard, and FastAPI startup.
 - `examples/`: OIDC client examples.
 - `specs/`: Spec-Driven Development workspace for feature specs, flows, contracts, and SDD decisions.
-- `DESIGN.md`: SatOIDC interface guidelines for NiceGUI pages, colors, layout, components, accessibility, and visual verification.
+- `DESIGN.md`: SatOIDC product design system for premium NiceGUI/Quasar/Tailwind UI, including global theme strategy, shared primitives, screen patterns, accessibility, and visual verification.
 
 The repository root is also the Obsidian vault root for project memory.
 
@@ -41,3 +41,7 @@ Current test structure:
 - `poetry run task test` runs unit/integration tests with browser e2e tests deselected by default.
 - `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
+
+UI design support:
+
+- `C:\Users\luss1\.codex\skills\nicegui-premium-design\`: reusable Codex skill for premium NiceGUI SaaS redesign work. Use it when modernizing SatOIDC screens or creating new NiceGUI UI patterns.
