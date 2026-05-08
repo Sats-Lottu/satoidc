@@ -1,13 +1,23 @@
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
+from starlette.requests import Request
 
+import satoidc.auth.security as security_module
+from satoidc.auth.middleware import AuthMiddleware
 from satoidc.auth.security import (
+    authorize_page_request,
+    get_active_user_permissions,
     hash_password,
     is_authorized,
+    page_security,
     verify_password,
 )
 from satoidc.enums import PermissionsEnum
+from satoidc.models import Permission
 from satoidc.utils import safe_redirect
 
 
@@ -39,6 +49,11 @@ def test_permission_modes_require_all_or_any():
         {PermissionsEnum.ADMIN, PermissionsEnum.SUPPORT},
         mode="all",
     )
+    assert is_authorized(
+        {"developer"},
+        {"developer", PermissionsEnum.ADMIN},
+        mode="any",
+    )
 
 
 def test_invalid_permission_mode_is_rejected():
@@ -48,6 +63,148 @@ def test_invalid_permission_mode_is_rejected():
             {PermissionsEnum.ADMIN},
             mode="invalid",
         )
+
+
+async def test_active_user_permissions_filters_disabled_and_expired(
+    db_session, make_user
+):
+    user = await make_user()
+    now = datetime.now(timezone.utc)
+    db_session.add_all(
+        [
+            Permission(
+                user_id=user.id,
+                granted_by=None,
+                permission_type=PermissionsEnum.ADMIN,
+                expiration_date=None,
+                reason="active",
+            ),
+            Permission(
+                user_id=user.id,
+                granted_by=None,
+                permission_type=PermissionsEnum.SUPPORT,
+                expiration_date=now + timedelta(days=1),
+                reason="disabled",
+                disabled=True,
+            ),
+            Permission(
+                user_id=user.id,
+                granted_by=None,
+                permission_type=PermissionsEnum.ROOT,
+                expiration_date=now - timedelta(days=1),
+                reason="expired",
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    permissions = await get_active_user_permissions(user.id)
+
+    assert permissions == {str(PermissionsEnum.ADMIN)}
+
+
+async def test_authorize_page_request_redirects_for_missing_or_invalid_session(
+):
+    missing_session = SimpleNamespace(session={})
+    invalid_session = SimpleNamespace(session={"user_id": "not-a-uuid"})
+
+    missing_response = await authorize_page_request(
+        missing_session, {PermissionsEnum.ROOT}
+    )
+    invalid_response = await authorize_page_request(
+        invalid_session, {PermissionsEnum.ROOT}
+    )
+
+    assert missing_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+    assert missing_response.headers["location"] == "/login"
+    assert invalid_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+    assert invalid_response.headers["location"] == "/login"
+
+
+async def test_authorize_page_request_redirects_for_missing_permissions():
+    request = SimpleNamespace(session={"user_id": uuid4().hex})
+
+    response = await authorize_page_request(
+        request,
+        {PermissionsEnum.ROOT},
+        session_factory=_empty_session_factory,
+    )
+
+    assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+    assert response.headers["location"] == "/forbidden"
+
+
+async def _empty_session_factory():
+    if False:
+        yield None
+
+
+async def test_authorize_page_request_allows_authorized_user(
+    db_session, make_user
+):
+    user = await make_user()
+    db_session.add(
+        Permission(
+            user_id=user.id,
+            granted_by=None,
+            permission_type=PermissionsEnum.ROOT,
+            expiration_date=None,
+            reason="root",
+        )
+    )
+    await db_session.commit()
+    request = SimpleNamespace(session={"user_id": user.id.hex})
+
+    assert (
+        await authorize_page_request(request, {PermissionsEnum.ADMIN}) is None
+    )
+
+
+async def test_page_security_decorator_returns_page_result(monkeypatch):
+    request = SimpleNamespace(session={"user_id": uuid4().hex})
+    monkeypatch.setattr(
+        security_module,
+        "ui",
+        SimpleNamespace(
+            context=SimpleNamespace(client=SimpleNamespace(request=request))
+        ),
+    )
+
+    async def allow_access(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        security_module, "authorize_page_request", allow_access
+    )
+
+    @page_security(permissions=[PermissionsEnum.ADMIN])
+    async def page():
+        return "rendered"
+
+    assert await page() == "rendered"
+
+
+async def test_page_security_decorator_returns_redirect(monkeypatch):
+    request = SimpleNamespace(session={})
+    redirect = SimpleNamespace(status_code=HTTPStatus.TEMPORARY_REDIRECT)
+    monkeypatch.setattr(
+        security_module,
+        "ui",
+        SimpleNamespace(
+            context=SimpleNamespace(client=SimpleNamespace(request=request))
+        ),
+    )
+
+    async def deny_access(*args, **kwargs):
+        return redirect
+
+    monkeypatch.setattr(security_module, "authorize_page_request", deny_access)
+
+    @page_security()
+    async def page():
+        raise AssertionError("protected page should not render")
+
+    assert await page() is redirect
 
 
 def test_safe_redirect_accepts_only_relative_paths():
@@ -73,3 +230,26 @@ def test_auth_middleware_allows_public_oauth_route(app_client):
     response = app_client.get("/.well-known/jwks.json")
 
     assert response.status_code == HTTPStatus.OK
+
+
+async def test_auth_middleware_allows_authenticated_protected_route():
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/profile",
+            "query_string": b"",
+            "headers": [],
+            "server": ("testserver", 80),
+            "scheme": "https",
+            "client": ("testclient", 50000),
+            "state": {},
+        }
+    )
+    request.scope["session"] = {"user_id": "user-1"}
+    middleware = AuthMiddleware(app=lambda scope, receive, send: None)
+
+    async def call_next(req):
+        return "ok"
+
+    assert await middleware.dispatch(request, call_next) == "ok"

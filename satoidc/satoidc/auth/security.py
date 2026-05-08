@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from functools import wraps
 from typing import Literal
 from uuid import UUID
@@ -26,21 +27,79 @@ PermissionMode = Literal["all", "any"]
 
 
 def is_authorized(
-    user_permissions: set[str],
-    required_permissions: set[str],
+    user_permissions: Iterable[str],
+    required_permissions: Iterable[str],
     *,
     mode: PermissionMode = "all",
 ) -> bool:
-    if PermissionsEnum.ROOT in user_permissions:
+    user_permission_values = {
+        str(permission) for permission in user_permissions
+    }
+    required_permission_values = {
+        str(permission) for permission in required_permissions
+    }
+
+    if str(PermissionsEnum.ROOT) in user_permission_values:
         return True
 
     if mode == "all":
-        return required_permissions.issubset(user_permissions)
+        return required_permission_values.issubset(user_permission_values)
 
     if mode == "any":
-        return not required_permissions.isdisjoint(user_permissions)
+        return not required_permission_values.isdisjoint(
+            user_permission_values
+        )
 
     raise ValueError(f"Invalid permission mode: {mode}")
+
+
+async def get_active_user_permissions(
+    user_id: UUID,
+    *,
+    session_factory=get_session,
+) -> set[str]:
+    async for session in session_factory():
+        result = await session.scalars(
+            select(Permission.permission_type).where(
+                Permission.user_id == user_id,
+                Permission.disabled.is_(False),
+                or_(
+                    Permission.expiration_date > func.now(),
+                    Permission.expiration_date.is_(None),
+                ),
+            )
+        )
+        return {str(permission) for permission in result.all()}
+    return set()
+
+
+async def authorize_page_request(
+    request,
+    required_permissions: Iterable[str],
+    *,
+    mode: PermissionMode = "any",
+    session_factory=get_session,
+) -> RedirectResponse | None:
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse("/login")
+
+    try:
+        user_uuid = UUID(user_id)
+    except (TypeError, ValueError):
+        return RedirectResponse("/login")
+
+    user_permissions = await get_active_user_permissions(
+        user_uuid, session_factory=session_factory
+    )
+    if not is_authorized(
+        user_permissions,
+        required_permissions,
+        mode=mode,
+    ):
+        return RedirectResponse("/forbidden")
+
+    return None
 
 
 def page_security(
@@ -54,30 +113,15 @@ def page_security(
         @wraps(page_func)
         async def wrapper(*args, **kwargs):
             request = ui.context.client.request
-            user_id = request.session.get("user_id")
-            if not user_id:
-                return RedirectResponse("/login")
-            async for session in get_session():
-                result = await session.scalars(
-                    select(Permission.permission_type).where(
-                        Permission.user_id == UUID(user_id),
-                        Permission.disabled.is_(False),
-                        or_(
-                            Permission.expiration_date > func.now(),
-                            Permission.expiration_date.is_(None),
-                        ),
-                    )
-                )
-                user_permissions = set(result.all())
-            print(f"User {user_id} permissions: {user_permissions}")
-            if not is_authorized(
-                user_permissions,
+            redirect = await authorize_page_request(
+                request,
                 required_permissions,
                 mode=mode,
-            ):
-                return RedirectResponse("/forbidden")
+            )
+            if redirect:
+                return redirect
 
-            await page_func(*args, **kwargs)
+            return await page_func(*args, **kwargs)
 
         return wrapper
 
