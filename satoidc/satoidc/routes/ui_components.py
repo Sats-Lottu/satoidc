@@ -171,53 +171,19 @@ def _mobile_nav(nav_items: list[tuple[str, str, str]]):
 def _theme_toggle():
     dark_mode = ui.dark_mode(value=False)
 
-    def set_theme(is_dark: bool) -> None:
-        dark_mode.set_value(is_dark)
-        ui.run_javascript(
-            f"""
-            const dark = {str(is_dark).lower()};
-            localStorage.setItem('satoidc-theme', dark ? 'dark' : 'light');
-            document.documentElement.classList.toggle('dark', dark);
-            document.body.classList.toggle('dark', dark);
-            if (window.Quasar?.Dark) {{
-              window.Quasar.Dark.set(dark);
-            }}
-            """
+    with ui.row().classes(
+        "items-center gap-1 rounded-full border border-slate-200/80 "
+        "bg-white/70 px-2 py-1 text-slate-700 transition-all duration-200 "
+        "dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-100"
+    ):
+        ui.icon("wb_sunny").classes("text-lg").bind_name_from(
+            dark_mode,
+            "value",
+            backward=lambda value: "dark_mode" if value else "wb_sunny",
         )
-
-    ui.run_javascript(
-        """
-        const storedTheme = localStorage.getItem('satoidc-theme');
-        const dark = storedTheme === 'dark';
-        document.documentElement.classList.toggle('dark', dark);
-        document.body.classList.toggle('dark', dark);
-        if (window.Quasar?.Dark) {
-          window.Quasar.Dark.set(dark);
-        }
-        """
-    )
-
-    light_button = ui.button(
-        icon="wb_sunny", on_click=lambda: set_theme(True)
-    ).props(
-        'flat round aria-label="Switch color theme"'
-    ).classes(
-        "h-10 w-10 border border-slate-200/80 bg-white/70 "
-        "text-amber-600 hover:bg-slate-200/70 transition-all duration-200"
-    )
-    light_button.bind_visibility_from(
-        dark_mode, "value", backward=lambda value: not value
-    )
-
-    dark_button = ui.button(
-        icon="dark_mode", on_click=lambda: set_theme(False)
-    ).props(
-        'flat round aria-label="Switch color theme"'
-    ).classes(
-        "h-10 w-10 border border-slate-800 bg-slate-900/70 "
-        "text-slate-100 hover:bg-slate-800 transition-all duration-200"
-    )
-    dark_button.bind_visibility_from(dark_mode, "value")
+        ui.switch().props(
+            'dense color="info" aria-label="Switch color theme"'
+        ).bind_value(dark_mode)
 
 
 def app_header(  # noqa: PLR1702
