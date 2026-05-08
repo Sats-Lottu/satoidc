@@ -7,9 +7,9 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from satoidc.auth.lnurl import lnurl_auth_events, verify
-from satoidc.auth.lnurl_schemas import LnurlAuthCallbackIn
 from satoidc.models import LnurlAuthChallenge, User
 from satoidc.models.database import get_session
+from satoidc.schemas.lnurl import LnurlAuthCallbackIn
 from satoidc.settings import ENV
 
 router = APIRouter(prefix="/auth", tags=["LNURL Auth"])

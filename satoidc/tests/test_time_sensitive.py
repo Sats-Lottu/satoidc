@@ -4,13 +4,13 @@ from uuid import UUID
 from freezegun import freeze_time
 from sqlalchemy import select
 
-from satoidc.auth.lnurl_schemas import LnurlAuthCallbackIn
 from satoidc.models import (
     LnurlAuthChallenge,
     OAuth2AuthorizationCode,
     OAuth2Token,
 )
 from satoidc.routes.lnurl_auth import lnurl_auth_callback
+from satoidc.schemas.lnurl import LnurlAuthCallbackIn
 from satoidc.settings import ENV
 
 

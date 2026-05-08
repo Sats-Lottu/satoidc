@@ -3,10 +3,9 @@ from typing import Annotated, Optional
 from urllib.parse import quote
 
 import segno
-from fastapi import Depends, Form, Request
+from fastapi import Depends, Request
 from fastapi.responses import RedirectResponse
 from nicegui import APIRouter, ui
-from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +29,7 @@ from satoidc.routes.ui_components import (
     auth_shell,
     card,
 )
+from satoidc.schemas.login import LoginForm
 from satoidc.settings import ENV
 
 router = APIRouter()
@@ -49,16 +49,6 @@ def encode_query_value(value: str) -> str:
 # ==========================================================
 # LOGIN
 # ==========================================================
-
-
-class LoginSchema(BaseModel):
-    identifier: str
-    password: str
-    redirect_to: Optional[str] = None
-    login_nonce: Optional[str] = None
-
-
-LoginForm = Annotated[LoginSchema, Form()]
 
 
 @router.post("/login")
@@ -102,7 +92,7 @@ async def login_post(
     return RedirectResponse(url=nxt, status_code=303)
 
 
-class LNURLAuthQRLogin:
+class LNURLAuthQRLogin:  # pragma: no cover
     def __init__(self, base_url: str, session: Session):
         self.base_url = base_url
         self.k1 = None
@@ -148,7 +138,7 @@ async def login_page(
     request: Request,
     redirect_to: Optional[str] = "/profile",
     err: Optional[str] = None,
-):
+):  # pragma: no cover
     if request.session.get("user_id"):
         return RedirectResponse(redirect_to, status_code=303)
     # Generate a login nonce; do not confuse it with the OIDC nonce.

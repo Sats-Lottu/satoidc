@@ -1,11 +1,14 @@
 import uuid
+from html import escape
 from pathlib import Path
 from typing import Annotated, Optional
+from urllib.parse import quote
 
 import segno
 from fastapi import Depends
 from fastapi.responses import RedirectResponse
 from nicegui import APIRouter, ui
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
@@ -28,6 +31,7 @@ from satoidc.routes.ui_components import (
     auth_shell,
     card,
 )
+from satoidc.schemas.register import RegisterForm
 from satoidc.settings import ENV
 from satoidc.utils import safe_redirect
 from satoidc.validators import (
@@ -45,7 +49,63 @@ router = APIRouter()
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
-class LNURLAuthQRRegister:
+def register_redirect(
+    err: str, redirect_to: Optional[str] = "/profile"
+) -> RedirectResponse:
+    redirect_to = safe_redirect(redirect_to)
+    return RedirectResponse(
+        f"/register?err={err}&redirect_to={quote(redirect_to, safe='')}",
+        status_code=303,
+    )
+
+
+@router.post("/register")
+async def register_post(
+    session: Session,
+    request: Request,
+    register_form: RegisterForm,
+):
+    redirect_to = safe_redirect(register_form.redirect_to)
+    login = register_form.login.strip()
+    email = register_form.email.strip().lower()
+    nickname = (register_form.nickname or "").strip() or "Satoshi"
+
+    if not register_form.terms_accepted:
+        return register_redirect("terms", redirect_to)
+
+    validation_errors = validate_registration_form(
+        login,
+        nickname,
+        register_form.password,
+        email,
+    )
+    if validation_errors:
+        return register_redirect("invalid", redirect_to)
+
+    if register_form.password != register_form.confirm_password:
+        return register_redirect("password_mismatch", redirect_to)
+
+    existing_user = await session.scalar(
+        select(User).where((User.login == login) | (User.email == email))
+    )
+    if existing_user:
+        return register_redirect("duplicate", redirect_to)
+
+    user = User(
+        lnurl_pubkey=None,
+        login=login,
+        email=email,
+        nickname=nickname,
+        password_hash=hash_password(register_form.password),
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    request.session["user_id"] = str(user.id)
+    return RedirectResponse(redirect_to, status_code=303)
+
+
+class LNURLAuthQRRegister:  # pragma: no cover
     def __init__(self, base_url: str, session: Session):
         self.base_url = base_url
         self.k1 = None
@@ -86,8 +146,11 @@ class LNURLAuthQRRegister:
 
 @router.page("/register")
 async def register_page(  # noqa: PLR0915
-    request: Request, session: Session, redirect_to: Optional[str] = "/profile"
-):
+    request: Request,
+    session: Session,
+    redirect_to: Optional[str] = "/profile",
+    err: Optional[str] = None,
+):  # pragma: no cover
     redirect_to = safe_redirect(redirect_to)
     if request.session.get("user_id"):
         return RedirectResponse(redirect_to, status_code=303)
@@ -151,93 +214,29 @@ async def register_page(  # noqa: PLR0915
                 with ui.column().classes("gap-1"):
                     ui.label("Create account").classes("text-2xl font-bold")
                     ui.label("Fill in the details below.").classes(MUTED_TEXT)
-                login_field = (
-                    ui.input(
-                        "Login",
-                        validation={"Invalid login!": is_valid_login},
-                    )
-                    .classes(INPUT_CLASSES)
-                    .tooltip("Lowercase letters and numbers, 6-30 characters")
-                )
-                email_field = (
-                    ui.input(
-                        "Email",
-                        validation={"Invalid email!": is_valid_email},
-                    )
-                    .props("type=email")
-                    .classes(INPUT_CLASSES)
-                ).tooltip("Enter a valid email address")
-                nickname_field = (
-                    ui.input("Nickname (optional)", value="Satoshi")
-                    .classes(INPUT_CLASSES)
-                    .tooltip(
-                        "Letters, numbers, dots, underscores or hyphens, "
-                        "2-80 characters"
-                    )
-                )
-
-                password_field = (
-                    ui.input(
-                        "Password",
-                        password=True,
-                        password_toggle_button=True,
-                        validation={
-                            "Weak password!": lambda v: (
-                                is_valid_password(v) if len(v) >= 0 else True
-                            ),
-                        },
-                    )
-                    .classes(INPUT_CLASSES)
-                    .tooltip(
-                        "Password requirements:\n"
-                        "- 8-128 characters\n"
-                        "- At least one uppercase letter (A-Z)\n"
-                        "- At least one lowercase letter (a-z)\n"
-                        "- At least one number (0-9)\n"
-                        "- At least one special character (!@#$...)"
-                    )
-                )
-                ui.input(
-                    "Confirm password",
-                    password=True,
-                    password_toggle_button=True,
-                    validation={
-                        "Not same password!": lambda value: (
-                            password_field.value == value
+                match err:
+                    case None:
+                        pass
+                    case "invalid":
+                        ui.label("Invalid registration data.").classes(
+                            "text-sm text-red-600 dark:text-red-400"
                         )
-                    },
-                ).classes(INPUT_CLASSES)
-
-                async def submit():
-                    validation_errors = validate_registration_form(
-                        login_field.value,
-                        nickname_field.value,
-                        password_field.value,
-                        email_field.value,
-                    ).values()
-                    if validation_errors:
-                        ui.notify(
-                            "\n".join(validation_errors), type="negative"
+                    case "password_mismatch":
+                        ui.label("Passwords do not match.").classes(
+                            "text-sm text-red-600 dark:text-red-400"
                         )
-                        return
-                    login = login_field.value.strip()
-                    email = email_field.value.strip().lower()
-                    nickname = (nickname_field.value or "").strip() or None
-                    pw_hash = hash_password(password_field.value)
-
-                    user = User(
-                        lnurl_pubkey=None,
-                        login=login,
-                        email=email,
-                        nickname=nickname,
-                        password_hash=pw_hash,
-                    )
-                    session.add(user)
-                    await session.commit()
-                    await session.refresh(user)
-                    request.session["user_id"] = str(user.id)
-                    ui.notify("Account created!", type="positive")
-                    ui.navigate.to(redirect_to or "/")
+                    case "duplicate":
+                        ui.label("Login or email already exists.").classes(
+                            "text-sm text-red-600 dark:text-red-400"
+                        )
+                    case "terms":
+                        ui.label("Terms acceptance is required.").classes(
+                            "text-sm text-red-600 dark:text-red-400"
+                        )
+                    case _:
+                        ui.label("Unable to create account.").classes(
+                            "text-sm text-red-600 dark:text-red-400"
+                        )
 
                 with (
                     ui.dialog(value=True) as dialog_terms,
@@ -254,20 +253,103 @@ async def register_page(  # noqa: PLR0915
                         "text-sm leading-7"
                     )
 
-                with ui.row().classes("gap-1 items-center flex-wrap"):
-                    checkbox_terms = ui.checkbox("I accept the ")
-                    ui.link("terms of service.").on(
-                        "click", dialog_terms.open
-                    ).classes(LINK_CLASSES)
-
-                with ui.row().classes("gap-3 mt-4 w-full"):
-                    ui.button(
-                        "Create account", icon="person_add", on_click=submit
-                    ).classes(
-                        f"w-full {PRIMARY_BUTTON_CLASSES}"
-                    ).bind_enabled_from(
-                        checkbox_terms, "value"
+                with (
+                    ui.element("form")
+                    .props('method="post" action="/register"')
+                    .classes("flex flex-col gap-3 w-full")
+                ):
+                    (
+                        ui.input(
+                            "Login",
+                            validation={"Invalid login!": is_valid_login},
+                        )
+                        .props("name='login' autocomplete='username'")
+                        .classes(INPUT_CLASSES)
+                        .tooltip(
+                            "Lowercase letters and numbers, 6-30 characters"
+                        )
                     )
+                    (
+                        ui.input(
+                            "Email",
+                            validation={"Invalid email!": is_valid_email},
+                        )
+                        .props("name='email' type=email autocomplete='email'")
+                        .classes(INPUT_CLASSES)
+                    ).tooltip("Enter a valid email address")
+                    (
+                        ui.input("Nickname (optional)", value="Satoshi")
+                        .props("name='nickname' autocomplete='nickname'")
+                        .classes(INPUT_CLASSES)
+                        .tooltip(
+                            "Letters, numbers, dots, underscores or hyphens, "
+                            "2-80 characters"
+                        )
+                    )
+
+                    password_field = (
+                        ui.input(
+                            "Password",
+                            password=True,
+                            password_toggle_button=True,
+                            validation={
+                                "Weak password!": lambda v: (
+                                    is_valid_password(v)
+                                    if len(v) >= 0
+                                    else True
+                                ),
+                            },
+                        )
+                        .props(
+                            "name='password' autocomplete='new-password'"
+                        )
+                        .classes(INPUT_CLASSES)
+                        .tooltip(
+                            "Password requirements:\n"
+                            "- 8-128 characters\n"
+                            "- At least one uppercase letter (A-Z)\n"
+                            "- At least one lowercase letter (a-z)\n"
+                            "- At least one number (0-9)\n"
+                            "- At least one special character (!@#$...)"
+                        )
+                    )
+                    ui.input(
+                        "Confirm password",
+                        password=True,
+                        password_toggle_button=True,
+                        validation={
+                            "Not same password!": lambda value: (
+                                password_field.value == value
+                            )
+                        },
+                    ).props(
+                        "name='confirm_password' autocomplete='new-password'"
+                    ).classes(
+                        INPUT_CLASSES
+                    )
+
+                    ui.element("input").props(
+                        "type='hidden' name='redirect_to' "
+                        f"value='{escape(redirect_to, quote=True)}'"
+                    )
+
+                    with ui.row().classes("gap-1 items-center flex-wrap"):
+                        checkbox_terms = ui.checkbox("I accept the ")
+                        checkbox_terms.props(
+                            "name='terms_accepted' value='true'"
+                        )
+                        ui.link("terms of service.").on(
+                            "click", dialog_terms.open
+                        ).classes(LINK_CLASSES)
+
+                    with ui.row().classes("gap-3 mt-1 w-full"):
+                        ui.button(
+                            "Create account", icon="person_add"
+                        ).props("type='submit'").classes(
+                            f"w-full {PRIMARY_BUTTON_CLASSES}"
+                        ).bind_enabled_from(
+                            checkbox_terms, "value"
+                        )
     with ui.page_sticky(x_offset=18, y_offset=18):
         ui.button(icon="qr_code", on_click=dialog.open).props(
             'fab aria-label="Open LNURL registration QR code"'
