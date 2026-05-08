@@ -5,7 +5,7 @@ tags:
 type: command
 project: satoidc
 status: active
-updated: 2026-05-06
+updated: 2026-05-08
 ---
 
 # Validated Commands
@@ -30,3 +30,7 @@ updated: 2026-05-06
 - `docker compose build satoidc`: ran on 2026-05-06 with Docker access approval; passed.
 - `docker compose up -d`: ran on 2026-05-06 with Docker access approval; Postgres became healthy, migrations ran, SatOIDC started, and `http://127.0.0.1:8000/` returned `200 OK`.
 - `docker compose down`: ran on 2026-05-06 after validation; stopped the temporary stack while preserving volumes.
+- `cd satoidc; poetry run ruff check`: ran on 2026-05-08 after schema, registration, and coverage changes; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-08 after adding focused coverage tests and `pragma: no cover` annotations for UI-only code; passed with `75 passed, 10 deselected` and 100% measured line coverage.
+- `cd satoidc; poetry run task test_e2e`: ran on 2026-05-08 after coverage changes; passed with `10 passed`.
+- `cd satoidc; poetry run task test`: ran on 2026-05-08 after adding `page_security` tests and refactoring; passed with `81 passed, 10 deselected` and 100% measured line coverage.

@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-05-06
+Updated: 2026-05-08
 
 ## System Context
 
@@ -66,6 +66,18 @@ The project uses:
 
 Both must point to the same database through `DATABASE_URL` and `SYNC_DATABASE_URL`.
 
+### Schemas
+
+Request and form schemas live in `satoidc/satoidc/schemas/`.
+
+Current schema modules:
+
+- `lnurl.py`: LNURL callback query schema.
+- `login.py`: password login form schema.
+- `register.py`: password registration form schema.
+
+The old `auth/lnurl_schemas.py` path remains as a compatibility re-export.
+
 ### LNURL-auth
 
 LNURL-auth is implemented with challenge records, bech32 LNURL generation, secp256k1 signature verification, and NiceGUI event callbacks.
@@ -115,10 +127,28 @@ sequenceDiagram
     S->>B: Set session user_id and redirect
 ```
 
+## Request Flow: Password Registration
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant S as SatOIDC
+    participant D as Database
+
+    B->>S: GET /register
+    S->>B: Render NiceGUI form
+    B->>S: POST /register
+    S->>S: Validate terms, fields, password confirmation, redirect
+    S->>D: Check duplicate login/email
+    S->>D: Store User with hashed password
+    S->>B: Set session user_id and redirect
+```
+
 ## Security Boundaries
 
 - Middleware protects non-public paths by checking `request.session["user_id"]`.
-- `page_security` adds permission checks for selected NiceGUI pages.
+- `page_security` adds permission checks for selected NiceGUI pages. It validates session UUID shape, loads active non-disabled permissions, ignores expired permissions, treats `root` as all-powerful, and redirects unauthorized users to `/forbidden`.
 - OAuth consent POST validates session and CSRF token.
+- Password registration sanitizes `redirect_to` before redirecting.
 - LNURL callback validates challenge freshness, action, replay flag, and signature.
 - Production deployment must configure strong secrets, persistent signing keys, HTTPS, secure cookies, and database-backed runtime state.

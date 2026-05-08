@@ -1,6 +1,6 @@
 # SatOIDC Project Analysis
 
-Updated: 2026-05-06
+Updated: 2026-05-08
 
 ## Summary
 
@@ -20,6 +20,7 @@ The current implementation is an early application prototype with real protocol 
 - `satoidc/satoidc/fastapi_oauth2/`: local adapter layer that makes Authlib work with FastAPI/Starlette requests.
 - `satoidc/satoidc/models/`: SQLAlchemy models and session setup.
 - `satoidc/satoidc/routes/`: NiceGUI and FastAPI routes.
+- `satoidc/satoidc/schemas/`: Pydantic request/form schemas used by API and browser form endpoints.
 - `satoidc/setup_wizard/`: first root-user setup app.
 - `satoidc/migrations/`: Alembic migrations.
 - `examples/`: NiceGUI relying-party clients.
@@ -162,6 +163,8 @@ Token/user routes:
 - `GET /oauth/userinfo`
 - `GET /.well-known/jwks.json`
 
+Schemas are centralized in `satoidc/satoidc/schemas/`; legacy `auth/lnurl_schemas.py` only re-exports LNURL schemas for compatibility.
+
 Scopes:
 
 - `openid`
@@ -205,8 +208,10 @@ Callback behavior:
 Public:
 
 - `/`: landing page.
-- `/register`: account registration with password form and optional LNURL QR.
+- `/register`: account registration page with password form and optional LNURL QR.
+- `POST /register`: validates registration, creates a user, stores `request.session["user_id"]`, and redirects already logged in.
 - `/login`: password login and LNURL QR.
+- `POST /login`: nonce-protected password login.
 - `/logout`: clears session.
 - `/forbidden`: access denied page.
 
@@ -266,21 +271,27 @@ Run on 2026-05-06:
 - `poetry run task test`: passed with `33 passed, 10 deselected`; browser e2e tests are deselected by default.
 - `poetry run task test_e2e`: passed with Playwright browser smoke/responsive tests.
 
+Run on 2026-05-08 after schema, registration, and coverage changes:
+
+- `poetry run ruff check`: passed.
+- `poetry run task test`: passed with `81 passed, 10 deselected` and 100% measured line coverage.
+- `poetry run task test_e2e`: passed with `10 passed`.
+
 ## Current Gaps And Risks
 
 ### High Priority
 
-- `login_post` redirects to submitted `redirect_to` without applying `safe_redirect`; `/register` does sanitize redirects. This may allow open redirects when `/login?redirect_to=...` is supplied directly.
 - `auth/oauth2.py` generates the RSA signing key in memory on process start. Existing ID tokens can become unverifiable after restart, and multi-instance deployment will have inconsistent JWKS.
 - The OIDC key-rotation spec exists in `specs/features/oidc-key-rotation/`, but implementation still needs persistent storage, `kid` headers, JWKS retention, admin controls, and audit events.
 - Browser e2e coverage still needs a full OAuth authorization-code client flow, not only public pages and well-known endpoints.
+- `login_post` redirects to submitted `redirect_to` without applying `safe_redirect`; registration now sanitizes redirects, but login still needs the same hardening.
 
 ### Medium Priority
 
 - Permission names are inconsistent. `PermissionsEnum` has `root`, `admin`, and `support`; the initial migration contains `DRAW_OPERATOR`; UI checks use `"developer"`, `"admin"`, and `"root"` strings.
 - `LnurlAuthChallenge` is marked verified before signature validation; a bad signature consumes the challenge.
 - `User.nickname` is non-null in the model, but LNURL registration creates a user with `nickname=None`.
-- Refresh Token Grant has focused tests, but still needs broader end-to-end client-flow coverage.
+- Refresh Token Grant has focused unit/integration coverage, but still needs broader end-to-end client-flow coverage.
 - README and examples render mojibake in this shell session, likely due to encoding mismatch in stored files or terminal decoding.
 
 ### Lower Priority
@@ -302,6 +313,7 @@ Run on 2026-05-06:
 
 - `docs/architecture.md`
 - `docs/known-issues.md`
+- `docs/changes-2026-05-08.md`
 - `specs/index.md`
 - `agent-memory/index.md`
 - `agent-memory/architecture.md`

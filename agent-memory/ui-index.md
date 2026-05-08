@@ -25,7 +25,7 @@ Before implementing NiceGUI UI behavior, check the official docs at `https://nic
 
 - `/` in `satoidc/satoidc/routes/home.py`: public home. Uses `app_header`, official GitHub mark in nav, product hero, primary register/login actions, and value cards for OIDC, LNURL-auth, and developer console.
 - `/login` in `satoidc/satoidc/routes/login.py`: sign-in form plus floating LNURL QR action. Uses `auth_shell`, `auth_context_panel`, QR dialog, nonce-protected POST flow, password login, LNURL event redirect, and responsive two-column desktop/single-column mobile composition.
-- `/register` in `satoidc/satoidc/routes/register.py`: registration form plus floating LNURL QR action and terms dialog. Uses `auth_shell`, `auth_context_panel`, validators, account creation, terms acceptance, LNURL event redirect, and responsive two-column desktop/single-column mobile composition.
+- `/register` in `satoidc/satoidc/routes/register.py`: registration form plus floating LNURL QR action and terms dialog. Uses `auth_shell`, `auth_context_panel`, client-side validators, terms acceptance, LNURL event redirect, and responsive two-column desktop/single-column mobile composition. Password account creation now happens in `POST /register`, not inside the page render callback.
 - `/auth/lnurl/redirect` in `satoidc/satoidc/routes/login.py`: transient LNURL redirect page after wallet auth.
 - `/forbidden` in `satoidc/satoidc/routes/forbidden.py`: public/protected access-denied screen with shared page shell/card.
 
