@@ -5,7 +5,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-06
+updated: 2026-05-08
 ---
 
 # Project State
@@ -45,3 +45,4 @@ Current test structure:
 UI design support:
 
 - `C:\Users\luss1\.codex\skills\nicegui-premium-design\`: reusable Codex skill for premium NiceGUI SaaS redesign work. Use it when modernizing SatOIDC screens or creating new NiceGUI UI patterns.
+- NiceGUI UI behavior should be checked against `https://nicegui.io/` and `https://nicegui.io/documentation`; custom JavaScript or DOM/browser-storage workarounds require explicit user authorization.

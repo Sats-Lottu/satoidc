@@ -51,6 +51,13 @@ Avoid these qualities:
 
 Prefer global UI configuration first, then shared components, then route-level Tailwind classes.
 
+Use the official NiceGUI framework and documentation as the primary references for UI behavior:
+
+- Framework: `https://nicegui.io/`
+- Documentation: `https://nicegui.io/documentation`
+
+Do not add custom JavaScript, `ui.run_javascript`, direct DOM manipulation, manual `localStorage` handling, or browser-side workarounds for NiceGUI UI behavior unless the user explicitly authorizes it. Prefer NiceGUI native APIs, bindings such as `bind_value`/`bind_*`, events, refreshable components, storage abstractions, Quasar props, and Tailwind/classes. If JavaScript is ever authorized, keep it narrow and document why the NiceGUI API was insufficient.
+
 Use this order:
 
 1. Global theme in `satoidc/satoidc/ui_theme.py`:

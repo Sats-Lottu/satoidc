@@ -5,7 +5,7 @@ tags:
 type: decision
 project: satoidc
 status: active
-updated: 2026-05-06
+updated: 2026-05-08
 ---
 
 # Decisions
@@ -20,3 +20,4 @@ updated: 2026-05-06
 - 2026-05-06: Track OIDC signing key lifecycle as a dedicated feature spec at `specs/features/oidc-key-rotation/`; prefer Vault Transit for the final cryptographic backend, with encrypted private-key storage acceptable only as an MVP fallback.
 - 2026-05-07: Rework `DESIGN.md` as the canonical SatOIDC product design system for premium NiceGUI/Quasar/Tailwind SaaS UI. Future interface changes should update global NiceGUI defaults and shared primitives before local route styling.
 - 2026-05-07: Add reusable Codex skill `nicegui-premium-design` at `C:\Users\luss1\.codex\skills\nicegui-premium-design\` for NiceGUI redesign work, including global theme workflow, shared primitive patterns, Tailwind recipes, and verification checklist.
+- 2026-05-08: NiceGUI UI behavior must use the official NiceGUI documentation first and prefer native NiceGUI APIs. Custom JavaScript, direct DOM manipulation, and manual browser storage workarounds require explicit user authorization.

@@ -36,6 +36,8 @@
 - Use `DESIGN.md` as the source of truth for SatOIDC interface conventions before changing NiceGUI pages.
 - Keep standalone Markdown discoverable through an index. Link new docs from `README.md`, `docs/README.md`, `specs/index.md`, or `agent-memory/index.md` as appropriate.
 - Follow the existing FastAPI plus NiceGUI routing style.
+- For NiceGUI UI behavior, check the official framework docs first: https://nicegui.io/ and https://nicegui.io/documentation.
+- Do not add custom JavaScript, `ui.run_javascript`, direct DOM manipulation, or browser storage workarounds for NiceGUI screens unless the user explicitly authorizes it. Prefer NiceGUI native APIs, bindings, events, refreshable components, storage abstractions, Quasar props, and Tailwind/classes.
 - Keep protocol behavior aligned with OpenID Connect, OAuth2, Authlib, and LNURL-auth semantics.
 - Authlib server helpers are synchronous in the current 1.7.x line used here. Keep Authlib database operations behind the sync session boundary and call them from async routes through threadpool helpers instead of mixing async SQLAlchemy sessions into Authlib callbacks.
 - Prefer existing helpers in `satoidc/satoidc/auth/`, `satoidc/satoidc/models/`, and `satoidc/satoidc/validators.py` before adding new abstractions.

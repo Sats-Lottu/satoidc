@@ -6,12 +6,14 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-07
+updated: 2026-05-08
 ---
 
 # UI Screen Index
 
 Use this note before changing SatOIDC NiceGUI screens. The visual source of truth is [[../DESIGN|DESIGN.md]], supported by the reusable Codex skill `nicegui-premium-design`.
+
+Before implementing NiceGUI UI behavior, check the official docs at `https://nicegui.io/` and `https://nicegui.io/documentation`. Do not add custom JavaScript, `ui.run_javascript`, direct DOM manipulation, or manual browser storage workarounds without explicit user authorization; prefer NiceGUI native bindings, events, refreshable components, storage abstractions, Quasar props, and Tailwind/classes.
 
 ## Global UI Layer
 
