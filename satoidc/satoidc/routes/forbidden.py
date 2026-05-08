@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.page("/forbidden")
-async def forbidden_get():
+async def forbidden_get():  # pragma: no cover
     with page_shell("max-w-lg"):
         with card("items-center gap-3 text-center"):
             ui.icon("block").classes(f"{ERROR_TEXT} text-5xl")

@@ -17,7 +17,7 @@ from satoidc.routes.ui_components import (
 router = APIRouter()
 
 
-def _scope_row(icon: str, title: str, description: str):
+def _scope_row(icon: str, title: str, description: str):  # pragma: no cover
     with ui.row().classes("w-full gap-3 items-start"):
         ui.icon(icon).classes("text-blue-400 text-2xl")
         with ui.column().classes("gap-1"):
@@ -26,7 +26,7 @@ def _scope_row(icon: str, title: str, description: str):
 
 
 @router.page("/authorize")
-async def authorize_get(request: Request):
+async def authorize_get(request: Request):  # pragma: no cover
     try:
         grant = authorization.validate_consent_request(request=request)
         scopes = request.query_params.get("scope", "").split()

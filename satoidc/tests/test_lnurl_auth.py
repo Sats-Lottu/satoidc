@@ -2,9 +2,9 @@ import ecdsa
 from sqlalchemy import select
 
 from satoidc.auth.lnurl import url_encode, verify
-from satoidc.auth.lnurl_schemas import LnurlAuthCallbackIn
-from satoidc.models import LnurlAuthChallenge
+from satoidc.models import LnurlAuthChallenge, User
 from satoidc.routes.lnurl_auth import lnurl_auth_callback
+from satoidc.schemas.lnurl import LnurlAuthCallbackIn
 
 
 def _wallet_signature(k1: str) -> tuple[str, str]:
@@ -78,3 +78,160 @@ async def test_lnurl_callback_rejects_unknown_challenge(db_session):
         "status": "ERROR",
         "reason": "Invalid or expired k1",
     }
+
+
+async def test_lnurl_callback_rejects_action_mismatch(db_session):
+    k1 = "4" * 64
+    key, signature = _wallet_signature(k1)
+    challenge = LnurlAuthChallenge(k1=k1, action="login")
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig=signature,
+            action="register",
+        ),
+        db_session,
+    )
+
+    assert response == {"status": "ERROR", "reason": "Action mismatch"}
+
+
+async def test_lnurl_callback_rejects_bad_signature(db_session):
+    k1 = "5" * 64
+    key, _signature = _wallet_signature(k1)
+    challenge = LnurlAuthChallenge(k1=k1, action="login")
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig="0" * 16,
+            action="login",
+        ),
+        db_session,
+    )
+
+    assert response == {"status": "ERROR", "reason": "Bad Signature Error"}
+
+
+async def test_lnurl_register_callback_creates_wallet_user(db_session):
+    k1 = "6" * 64
+    key, signature = _wallet_signature(k1)
+    challenge = LnurlAuthChallenge(k1=k1, action="register")
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig=signature,
+            action="register",
+        ),
+        db_session,
+    )
+
+    user = await db_session.scalar(
+        select(User).where(User.lnurl_pubkey == key)
+    )
+
+    assert response == {"status": "OK"}
+    assert user.lnurl_pubkey == key
+
+
+async def test_lnurl_login_rejects_unlinked_wallet(db_session):
+    k1 = "7" * 64
+    key, signature = _wallet_signature(k1)
+    challenge = LnurlAuthChallenge(k1=k1, action="login")
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig=signature,
+            action="login",
+        ),
+        db_session,
+    )
+
+    assert response == {
+        "status": "ERROR",
+        "reason": "User not found for this linkingKey",
+    }
+
+
+async def test_lnurl_link_callback_updates_existing_user(
+    db_session, make_user
+):
+    k1 = "8" * 64
+    key, signature = _wallet_signature(k1)
+    user = await make_user(lnurl_pubkey=None)
+    challenge = LnurlAuthChallenge(k1=k1, action="link", user_id=user.id)
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig=signature,
+            action="link",
+        ),
+        db_session,
+    )
+
+    await db_session.refresh(user)
+    assert response == {"status": "OK"}
+    assert user.lnurl_pubkey == key
+
+
+async def test_lnurl_auth_callback_accepts_stateless_auth(db_session):
+    k1 = "9" * 64
+    key, signature = _wallet_signature(k1)
+    challenge = LnurlAuthChallenge(k1=k1, action="auth")
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig=signature,
+            action="auth",
+        ),
+        db_session,
+    )
+
+    assert response == {"status": "OK"}
+
+
+async def test_lnurl_callback_rejects_missing_action(db_session):
+    k1 = "a" * 64
+    key, signature = _wallet_signature(k1)
+    challenge = LnurlAuthChallenge(k1=k1, action="weird")
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        type(
+            "UnknownActionQuery",
+            (),
+            {
+                "k1": k1,
+                "key": key,
+                "sig": signature,
+                "action": "weird",
+            },
+        )(),
+        db_session,
+    )
+
+    assert response == {"status": "ERROR", "reason": "Unknown action"}

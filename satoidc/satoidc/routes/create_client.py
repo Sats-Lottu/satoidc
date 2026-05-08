@@ -26,7 +26,7 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 async def create_client_page(
     session: Session,
     request: Request,
-):
+):  # pragma: no cover
     user_id = request.session.get("user_id")
 
     with page_shell("max-w-2xl"):

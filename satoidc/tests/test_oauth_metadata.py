@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from satoidc.auth.oauth2 import generate_user_info
 from satoidc.models import User
+from satoidc.routes.oauth2 import well_known_root
 
 
 def test_oidc_discovery_metadata_matches_advertised_contract(app_client):
@@ -19,6 +20,7 @@ def test_oidc_discovery_metadata_matches_advertised_contract(app_client):
     assert "refresh_token" in metadata["grant_types_supported"]
     assert metadata["id_token_signing_alg_values_supported"] == ["RS256"]
     assert metadata["code_challenge_methods_supported"] == ["S256"]
+    assert well_known_root()["issuer"] == metadata["issuer"]
 
 
 def test_jwks_endpoint_exposes_only_public_key_material(app_client):

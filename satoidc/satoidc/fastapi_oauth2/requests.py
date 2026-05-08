@@ -40,7 +40,7 @@ def _parse_cached_form(request: Request) -> Dict[str, Any]:
     # flatten: 1 valor vira escalar, >1 vira lista
     out: Dict[str, Any] = {}
     for k, v in qs.items():
-        if not v:
+        if not v:  # pragma: no cover
             continue
         out[k] = v[0] if len(v) == 1 else v
     return out

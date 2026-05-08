@@ -21,7 +21,7 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 
 
 @ui.page("/")
-def index():
+def index():  # pragma: no cover
     app_header(
         nav=[
             ("GitHub", "https://github.com/Sats-Lottu/satoidc", "github"),

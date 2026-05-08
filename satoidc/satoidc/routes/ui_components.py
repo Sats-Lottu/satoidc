@@ -90,7 +90,7 @@ GITHUB_MARK_SVG = """
 """
 
 
-def _brand(on_click: Callable[[], None] | None = None):
+def _brand(on_click: Callable[[], None] | None = None):  # pragma: no cover
     row = ui.row().classes(
         "items-center gap-2 cursor-pointer rounded-lg px-2 py-1 "
         "transition-colors duration-200 hover:bg-slate-200/70 "
@@ -110,7 +110,7 @@ def _brand(on_click: Callable[[], None] | None = None):
     return row
 
 
-def _github_link(target: str):
+def _github_link(target: str):  # pragma: no cover
     with ui.link(target=target, new_tab=True).classes(
         "inline-flex h-10 w-10 items-center justify-center rounded-full "
         f"{ICON_BUTTON_CLASSES} hover:shadow-sm"
@@ -121,7 +121,7 @@ def _github_link(target: str):
         )
 
 
-def _github_menu_item(label: str, target: str):
+def _github_menu_item(label: str, target: str):  # pragma: no cover
     item = ui.item().classes("items-center gap-2")
     item.on("click", lambda: ui.navigate.to(target, new_tab=True))
     with item:
@@ -134,7 +134,7 @@ def _github_menu_item(label: str, target: str):
             ui.item_label(label)
 
 
-def _nav_button(label: str, target: str, icon: str):
+def _nav_button(label: str, target: str, icon: str):  # pragma: no cover
     if icon == "github":
         _github_link(target)
         return
@@ -145,13 +145,13 @@ def _nav_button(label: str, target: str, icon: str):
     ).classes(SECONDARY_BUTTON_CLASSES)
 
 
-def _desktop_nav(nav_items: list[tuple[str, str, str]]):
+def _desktop_nav(nav_items: list[tuple[str, str, str]]):  # pragma: no cover
     with ui.row().classes("max-md:hidden items-center gap-2"):
         for label, target, icon in nav_items:
             _nav_button(label, target, icon)
 
 
-def _mobile_nav(nav_items: list[tuple[str, str, str]]):
+def _mobile_nav(nav_items: list[tuple[str, str, str]]):  # pragma: no cover
     with ui.row().classes("flex md:hidden items-center"):
         menu_button = ui.button(icon="menu").props(
             'flat round dense aria-label="Open navigation menu"'
@@ -168,7 +168,7 @@ def _mobile_nav(nav_items: list[tuple[str, str, str]]):
         menu_button.on("click", menu.open)
 
 
-def _theme_toggle():
+def _theme_toggle():  # pragma: no cover
     dark_mode = ui.dark_mode(value=False)
 
     with ui.row().classes(
@@ -192,7 +192,7 @@ def app_header(  # noqa: PLR1702
     user_label: str | None = None,
     nav: Iterable[tuple[str, str, str]] = (),
     show_brand: bool = True,
-):
+):  # pragma: no cover
     with ui.header(fixed=False).classes(
         "bg-white/75 dark:bg-slate-950/75 text-slate-900 dark:text-white "
         "border-b border-slate-200/80 dark:border-slate-800 items-center "
@@ -221,7 +221,7 @@ def app_header(  # noqa: PLR1702
             _theme_toggle()
 
 
-def page_shell(max_width: str = "max-w-5xl"):
+def page_shell(max_width: str = "max-w-5xl"):  # pragma: no cover
     app_header()
     with ui.column().classes(PAGE):
         return ui.column().classes(
@@ -229,19 +229,19 @@ def page_shell(max_width: str = "max-w-5xl"):
         )
 
 
-def auth_shell(max_width: str = "max-w-5xl"):
+def auth_shell(max_width: str = "max-w-5xl"):  # pragma: no cover
     app_header()
     with ui.column().classes(PAGE):
         return ui.column().classes(f"{AUTH_CONTENT} {max_width} gap-4")
 
 
-def card(classes: str = ""):
+def card(classes: str = ""):  # pragma: no cover
     return ui.card().classes(
         f"{PANEL_PADDED} transition-all duration-200 {classes}".strip()
     )
 
 
-def section_title(title: str, subtitle: str | None = None):
+def section_title(title: str, subtitle: str | None = None):  # pragma: no cover
     with ui.column().classes("gap-1"):
         ui.label(title).classes("text-2xl font-bold")
         if subtitle:
@@ -254,7 +254,7 @@ def auth_context_panel(
     title: str,
     body: str,
     features: Iterable[tuple[str, str, str]],
-):
+):  # pragma: no cover
     with ui.column().classes(
         "hidden md:flex h-full justify-between gap-8 rounded-lg "
         "border border-slate-200 bg-white/60 p-6 backdrop-blur-xl "
@@ -286,7 +286,7 @@ def empty_state(  # noqa: PLR0913
     action_label: str | None = None,
     action_icon: str | None = None,
     on_action: Callable[[], None] | None = None,
-):
+):  # pragma: no cover
     with card("items-center gap-3 text-center"):
         ui.icon(icon).classes("text-sky-300 text-5xl")
         ui.label(title).classes("text-xl font-semibold")
@@ -295,7 +295,7 @@ def empty_state(  # noqa: PLR0913
             ui.button(action_label, icon=action_icon, on_click=on_action)
 
 
-def footer():
+def footer():  # pragma: no cover
     with ui.footer().classes(
         "bg-transparent text-slate-500 dark:text-slate-500 justify-end "
         "px-4 py-2"

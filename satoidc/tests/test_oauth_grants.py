@@ -1,8 +1,14 @@
 import time
 from types import SimpleNamespace
 
-from satoidc.auth.oauth2 import IntrospectionEndpoint, RefreshTokenGrant
-from satoidc.models import OAuth2Token
+from satoidc.auth.oauth2 import (
+    AuthorizationCodeGrant,
+    IntrospectionEndpoint,
+    OpenIDCode,
+    RefreshTokenGrant,
+    exists_nonce,
+)
+from satoidc.models import OAuth2AuthorizationCode, OAuth2Token
 
 
 class Client:
@@ -38,6 +44,42 @@ async def test_refresh_token_grant_accepts_active_refresh_token(
     assert stored.refresh_token == "refresh-1"
 
 
+async def test_authorization_code_grant_persists_queries_and_deletes_code(
+    db_session, make_user
+):
+    user = await make_user()
+    grant = AuthorizationCodeGrant(SimpleNamespace(), SimpleNamespace())
+    grant.request.client = SimpleNamespace(client_id="client-1")
+    request = SimpleNamespace(
+        payload=SimpleNamespace(
+            data={
+                "nonce": "nonce-1",
+                "code_challenge": "challenge",
+                "code_challenge_method": "S256",
+            },
+            client_id="client-1",
+            redirect_uri="https://client.example/callback",
+            scope="openid profile",
+        ),
+        user=user,
+    )
+
+    code = grant.generate_authorization_code()
+    auth_code = grant.save_authorization_code(code, request)
+    stored = grant.query_authorization_code(code, grant.client)
+    minimum_urlsafe_token_length = 64
+
+    assert len(code) > minimum_urlsafe_token_length
+    assert auth_code.code == code
+    assert stored.code_challenge == "challenge"
+    assert exists_nonce("nonce-1", request) is True
+    assert grant.authenticate_user(stored).id == user.id
+
+    grant.delete_authorization_code(stored)
+
+    assert grant.query_authorization_code(code, grant.client) is None
+
+
 async def test_refresh_token_grant_revokes_old_refresh_token(
     db_session, make_user
 ):
@@ -61,6 +103,30 @@ async def test_refresh_token_grant_revokes_old_refresh_token(
     )
 
     assert grant.authenticate_refresh_token("refresh-2") is None
+
+
+async def test_grants_ignore_expired_or_unknown_credentials(
+    db_session, make_user
+):
+    user = await make_user()
+    expired_code = OAuth2AuthorizationCode(
+        code="expired-code",
+        client_id="client-1",
+        redirect_uri="https://client.example/callback",
+        scope="openid",
+        user_id=user.id,
+        auth_time=int(time.time()) - 301,
+    )
+    db_session.add(expired_code)
+    await db_session.commit()
+
+    code_grant = AuthorizationCodeGrant(SimpleNamespace(), SimpleNamespace())
+    refresh_grant = RefreshTokenGrant(SimpleNamespace(), SimpleNamespace())
+
+    assert code_grant.query_authorization_code(
+        "expired-code", Client("client-1")
+    ) is None
+    assert refresh_grant.authenticate_refresh_token("missing") is None
 
 
 async def test_introspection_uses_absolute_exp_and_client_permission(
@@ -95,3 +161,45 @@ async def test_introspection_uses_absolute_exp_and_client_permission(
     assert payload["username"] == str(user.id)
     assert payload["exp"] == issued_at + 300
     assert payload["iat"] == issued_at
+
+
+async def test_refresh_grant_and_introspection_cover_refresh_hint(
+    db_session, make_user
+):
+    user = await make_user()
+    token = OAuth2Token(
+        user_id=user.id,
+        client_id="client-1",
+        token_type="Bearer",
+        access_token="access-4",
+        refresh_token="refresh-4",
+        scope="openid",
+        issued_at=int(time.time()),
+        expires_in=300,
+    )
+    db_session.add(token)
+    await db_session.commit()
+
+    refresh_grant = RefreshTokenGrant(SimpleNamespace(), SimpleNamespace())
+    endpoint = IntrospectionEndpoint()
+
+    assert refresh_grant.authenticate_user(token).id == user.id
+    assert endpoint.query_token("refresh-4", "refresh_token").id == token.id
+    assert endpoint.query_token("refresh-4", None).id == token.id
+
+
+def test_openid_code_delegates_config_nonce_and_userinfo():
+    request = SimpleNamespace(payload=SimpleNamespace(client_id="client-x"))
+    openid = OpenIDCode(require_nonce=True)
+    user = SimpleNamespace(
+        id="user-1",
+        email="satoshi@example.com",
+        nickname="Satoshi",
+        lnurl_pubkey="wallet-key",
+    )
+
+    assert openid.exists_nonce("nonce-x", request) is False
+    assert openid.get_jwt_config(None)["alg"] == "RS256"
+    assert openid.generate_user_info(user, "email profile")["email"] == (
+        "satoshi@example.com"
+    )

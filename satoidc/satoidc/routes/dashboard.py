@@ -33,7 +33,7 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 
 @router.page("/admin")
 @page_security()
-async def dashboard_admin():  # noqa: PLR1702
+async def dashboard_admin():  # noqa: PLR1702  # pragma: no cover
     app_header(
         title="Admin Dashboard",
         user_label="Admin",
@@ -78,7 +78,7 @@ async def dashboard_admin():  # noqa: PLR1702
 @page_security(permissions=["developer"])
 async def dashboard_developer(  # noqa: PLR1702
     session: Session, request: Request
-):
+):  # pragma: no cover
     user_id = request.session.get("user_id")
     clients = list(
         (

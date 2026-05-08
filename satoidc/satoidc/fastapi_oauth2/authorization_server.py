@@ -50,7 +50,7 @@ class AuthorizationServer(_AuthorizationServer):
             with open(
                 metadata_file, encoding="utf-8"
             ) as metadata_file_content:
-                metadata = metadata_class(json.loads(metadata_file_content))
+                metadata = metadata_class(json.load(metadata_file_content))
                 metadata.validate()
                 self.metadata = metadata
 

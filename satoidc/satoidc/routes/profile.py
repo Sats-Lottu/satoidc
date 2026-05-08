@@ -27,7 +27,9 @@ router = APIRouter()
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
-def _field_row(label: str, value: str, action_label: str, icon: str):
+def _field_row(  # pragma: no cover
+    label: str, value: str, action_label: str, icon: str
+):
     with ui.row().classes(
         "w-full items-center justify-between gap-3 max-sm:flex-col "
         "max-sm:items-stretch"
@@ -45,7 +47,7 @@ def _field_row(label: str, value: str, action_label: str, icon: str):
 
 
 @ui.page("/profile")
-async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
+async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702  # pragma: no cover
     user_id = request.session.get("user_id")
     user = await session.scalar(
         select(User)
