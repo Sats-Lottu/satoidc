@@ -25,3 +25,5 @@ updated: 2026-05-08
 - 2026-05-08: Keep browser-facing NiceGUI pages focused on rendering and move persistence/session behavior into FastAPI endpoints when a route has form submission behavior, as done for `POST /register`.
 - 2026-05-08: Use `pragma: no cover` only for UI rendering glue, compatibility shims, or defensive branches that are not useful unit-test targets; maintain behavior coverage through focused unit/integration tests and visual coverage through Playwright e2e smoke tests.
 - 2026-05-08: Treat `page_security` as authorization logic rather than UI glue. Keep it covered by focused tests and delegate database permission loading plus request authorization to testable helpers.
+- 2026-05-08: SatOIDC theme changes should prefer NiceGUI `ui.colors(...)`, `default_props`, `default_classes`, and shared Tailwind class helpers. Do not use broad CSS injection through `ui.add_head_html` for normal visual theming.
+- 2026-05-08: Use the shared `responsive_grid()` helper for route grids instead of `ui.grid(columns=...)` when mobile collapse is required. The helper emits Tailwind grid classes on a plain element.

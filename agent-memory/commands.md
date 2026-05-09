@@ -34,3 +34,6 @@ updated: 2026-05-08
 - `cd satoidc; poetry run task test`: ran on 2026-05-08 after adding focused coverage tests and `pragma: no cover` annotations for UI-only code; passed with `75 passed, 10 deselected` and 100% measured line coverage.
 - `cd satoidc; poetry run task test_e2e`: ran on 2026-05-08 after coverage changes; passed with `10 passed`.
 - `cd satoidc; poetry run task test`: ran on 2026-05-08 after adding `page_security` tests and refactoring; passed with `81 passed, 10 deselected` and 100% measured line coverage.
+- `cd satoidc; poetry run ruff check satoidc tests`: ran on 2026-05-08 after SatOIDC light/dark UI harmonization using NiceGUI `ui.colors` plus Tailwind classes; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-08 after SatOIDC light/dark UI harmonization using NiceGUI `ui.colors` plus Tailwind classes; passed with `81 passed, 10 deselected` and 100% measured line coverage.
+- `cd satoidc; poetry run task test_e2e`: ran on 2026-05-08 after SatOIDC light/dark UI harmonization using NiceGUI `ui.colors` plus Tailwind classes; passed with `10 passed`.
