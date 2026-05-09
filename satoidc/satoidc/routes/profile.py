@@ -20,6 +20,7 @@ from satoidc.routes.ui_components import (
     card,
     footer,
     page_shell,
+    responsive_grid,
 )
 
 router = APIRouter()
@@ -111,9 +112,7 @@ async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
                     on_click=lambda: ui.navigate.to("/logout"),
                 ).classes(SECONDARY_BUTTON_CLASSES)
 
-        with ui.grid(columns=2).classes(
-            "w-full gap-6 max-md:grid-cols-1"
-        ):
+        with responsive_grid(2, "gap-6"):
             with ui.column().classes("gap-6"):
                 with card("gap-4"):
                     ui.label("User Info").classes("text-xl font-semibold")

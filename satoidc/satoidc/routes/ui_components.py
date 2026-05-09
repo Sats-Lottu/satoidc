@@ -1,55 +1,77 @@
 from collections.abc import Callable, Iterable
 
-from nicegui import ui
+from nicegui import context, ui
 
 PAGE = (
-    "min-h-screen w-full bg-slate-50 text-slate-900 "
-    "dark:bg-slate-950 dark:text-slate-100 selection:bg-blue-500/30"
+    "min-h-screen w-full bg-gradient-to-br from-sky-50/90 via-[#F6F8FC] "
+    "to-indigo-50/70 text-slate-950 dark:from-slate-950 "
+    "dark:via-slate-950 dark:to-slate-900 dark:text-slate-50 "
+    "selection:bg-sky-400/30"
 )
 CONTENT = "w-full max-w-5xl mx-auto px-4 py-8 md:px-6 md:py-10"
 AUTH_CONTENT = "w-full mx-auto px-4 py-8 sm:py-10"
 PANEL = (
-    "w-full rounded-2xl border border-slate-200 bg-white/80 text-slate-900 "
-    "shadow-xl backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 "
-    "dark:text-slate-100"
+    "w-full rounded-2xl border border-slate-200/70 bg-white/75 "
+    "text-slate-950 shadow-xl shadow-slate-200/60 backdrop-blur-xl "
+    "dark:border-white/10 dark:bg-slate-900/80 dark:text-slate-50 "
+    "dark:shadow-2xl dark:shadow-black/20"
 )
 PANEL_PADDED = f"{PANEL} p-5"
 MUTED_TEXT = "text-slate-600 dark:text-slate-400"
 ERROR_TEXT = "text-red-600 dark:text-red-400"
 SUCCESS_TEXT = "text-emerald-700 dark:text-emerald-400"
 LINK_CLASSES = (
-    "text-blue-700 dark:text-sky-300 hover:text-blue-600 "
+    "text-sky-700 dark:text-sky-300 hover:text-sky-600 "
     "dark:hover:text-sky-200 transition-colors duration-200"
 )
 ICON_BUTTON_CLASSES = (
-    "text-slate-700 dark:text-slate-200 hover:bg-slate-200/70 "
-    "dark:hover:bg-slate-800 border border-slate-200/80 "
-    "dark:border-slate-800 bg-white/50 dark:bg-slate-900/50"
+    "text-slate-700 dark:text-slate-200 hover:bg-white/90 "
+    "dark:hover:bg-slate-800/90 border border-slate-200/70 "
+    "dark:border-white/10 bg-white/65 dark:bg-slate-900/60 "
+    "shadow-sm shadow-slate-200/40 dark:shadow-none"
 )
 PRIMARY_BUTTON_CLASSES = (
-    "rounded-xl px-6 py-3 font-medium bg-amber-500 hover:bg-amber-400 "
-    "text-black shadow-lg hover:shadow-amber-500/20 transition-all "
+    "rounded-lg px-6 py-3 font-semibold !bg-gradient-to-r "
+    "!from-amber-500 !to-orange-500 hover:!from-amber-400 "
+    "hover:!to-orange-400 !text-slate-950 shadow-lg "
+    "shadow-amber-500/20 dark:shadow-orange-950/30 transition-all "
     "duration-200"
 )
 SECONDARY_BUTTON_CLASSES = (
-    "rounded-xl border border-slate-300 dark:border-slate-700 bg-white/60 "
-    "dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 "
-    "text-slate-800 dark:text-slate-100 transition-all duration-200"
+    "rounded-lg border border-slate-200/80 dark:border-white/10 "
+    "!bg-white/70 dark:!bg-slate-900/65 hover:!bg-white/95 "
+    "dark:hover:!bg-slate-800/90 !text-slate-800 dark:!text-slate-100 "
+    "shadow-sm shadow-slate-200/40 dark:shadow-none transition-all "
+    "duration-200"
 )
 INPUT_CLASSES = (
-    "w-full rounded-xl bg-slate-100 dark:bg-slate-800 border "
-    "border-slate-300 dark:border-slate-700 text-slate-900 "
-    "dark:text-slate-100 placeholder:text-slate-400 "
+    "w-full rounded-xl bg-white/70 dark:bg-slate-900/70 border "
+    "border-slate-200/80 dark:border-white/10 text-slate-950 "
+    "dark:text-slate-50 placeholder:text-slate-500 "
     "dark:placeholder:text-slate-500 focus-within:ring-2 "
-    "focus-within:ring-blue-500/40 transition-all duration-200"
+    "focus-within:ring-sky-400/35 transition-all duration-200 "
+    "shadow-sm shadow-slate-200/40 dark:shadow-none"
 )
 DIALOG_CLASSES = (
     "w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto "
-    "rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/95 "
-    "dark:bg-slate-900/95 text-slate-900 dark:text-slate-100 "
-    "p-5 sm:p-6 shadow-2xl backdrop-blur"
+    "rounded-2xl border border-slate-200/70 dark:border-white/10 "
+    "bg-white/90 dark:bg-slate-900/95 text-slate-950 dark:text-slate-50 "
+    "p-5 sm:p-6 shadow-2xl shadow-slate-300/60 "
+    "dark:shadow-black/30 backdrop-blur-xl"
 )
 TECH_TEXT = "text-sm break-all text-slate-900 dark:text-slate-100"
+
+GRID_COLUMNS = {
+    2: "md:grid-cols-2",
+    3: "md:grid-cols-3",
+}
+
+LOGO_ASSETS = {
+    "dark": "statics/imgs/logo.png",
+    "light": "statics/imgs/logo.png",
+    "icon": "statics/imgs/logo.png",
+    "mono": "statics/imgs/logo.png",
+}
 
 GITHUB_MARK_SVG = """
 <svg
@@ -90,22 +112,42 @@ GITHUB_MARK_SVG = """
 """
 
 
+def brand_mark(
+    *,
+    variant: str = "icon",
+    size_classes: str = "h-9 w-9",
+):  # pragma: no cover
+    asset = LOGO_ASSETS.get(variant, LOGO_ASSETS["icon"])
+    with ui.element("div").classes(
+        "flex items-center justify-center rounded-xl border "
+        "border-slate-200/70 bg-white/80 p-1 shadow-sm "
+        "shadow-slate-200/60 dark:border-white/10 dark:bg-white/5 "
+        "dark:shadow-none"
+    ):
+        return ui.image(asset).classes(
+            f"{size_classes} object-contain saturate-125 contrast-110 "
+            "drop-shadow-sm dark:saturate-100 dark:contrast-100"
+        )
+
+
 def _brand(on_click: Callable[[], None] | None = None):  # pragma: no cover
     row = ui.row().classes(
-        "items-center gap-2 cursor-pointer rounded-lg px-2 py-1 "
-        "transition-colors duration-200 hover:bg-slate-200/70 "
-        "dark:hover:bg-slate-800"
+        "items-center gap-2 cursor-pointer rounded-xl px-2 py-1 "
+        "transition-colors duration-200 hover:bg-white/70 "
+        "dark:hover:bg-slate-900/70"
     )
     if on_click:
         row.on("click", on_click)
     with row:
-        ui.image("statics/imgs/logo.png").classes("h-10 w-10 drop-shadow-lg")
+        brand_mark(variant="icon")
         with ui.row().classes("items-baseline gap-0"):
             ui.label("Sat").classes(
-                "text-xl font-bold text-slate-900 dark:text-white"
+                "text-xl font-bold tracking-tight text-slate-950 "
+                "dark:text-white"
             )
             ui.label("OIDC").classes(
-                "text-xl font-bold text-blue-700 dark:text-sky-300"
+                "text-xl font-bold tracking-tight text-sky-600 "
+                "dark:text-sky-300"
             )
     return row
 
@@ -172,9 +214,11 @@ def _theme_toggle():  # pragma: no cover
     dark_mode = ui.dark_mode(value=False)
 
     with ui.row().classes(
-        "items-center gap-1 rounded-full border border-slate-200/80 "
-        "bg-white/70 px-2 py-1 text-slate-700 transition-all duration-200 "
-        "dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-100"
+        "items-center gap-1 rounded-full border border-slate-200/70 "
+        "bg-white/70 px-2 py-1 text-slate-700 shadow-sm "
+        "shadow-slate-200/40 transition-all duration-200 "
+        "dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-100 "
+        "dark:shadow-none"
     ):
         ui.icon("wb_sunny").classes("text-lg").bind_name_from(
             dark_mode,
@@ -186,6 +230,10 @@ def _theme_toggle():  # pragma: no cover
         ).bind_value(dark_mode)
 
 
+def _configure_page_content():  # pragma: no cover
+    context.client.content.classes("p-0 gap-0")
+
+
 def app_header(  # noqa: PLR1702
     *,
     title: str | None = None,
@@ -193,9 +241,10 @@ def app_header(  # noqa: PLR1702
     nav: Iterable[tuple[str, str, str]] = (),
     show_brand: bool = True,
 ):  # pragma: no cover
+    _configure_page_content()
     with ui.header(fixed=False).classes(
-        "bg-white/75 dark:bg-slate-950/75 text-slate-900 dark:text-white "
-        "border-b border-slate-200/80 dark:border-slate-800 items-center "
+        "bg-white/70 dark:bg-slate-950/75 text-slate-950 dark:text-white "
+        "border-b border-slate-200/70 dark:border-white/10 items-center "
         "justify-between px-4 py-2 backdrop-blur-xl"
     ):
         if show_brand:
@@ -241,9 +290,16 @@ def card(classes: str = ""):  # pragma: no cover
     )
 
 
+def responsive_grid(columns: int = 2, classes: str = ""):  # pragma: no cover
+    desktop_columns = GRID_COLUMNS.get(columns, GRID_COLUMNS[2])
+    return ui.element("div").classes(
+        f"grid w-full grid-cols-1 {desktop_columns} {classes}".strip()
+    )
+
+
 def section_title(title: str, subtitle: str | None = None):  # pragma: no cover
     with ui.column().classes("gap-1"):
-        ui.label(title).classes("text-2xl font-bold")
+        ui.label(title).classes("text-2xl font-semibold tracking-tight")
         if subtitle:
             ui.label(subtitle).classes(MUTED_TEXT)
 
@@ -256,21 +312,30 @@ def auth_context_panel(
     features: Iterable[tuple[str, str, str]],
 ):  # pragma: no cover
     with ui.column().classes(
-        "hidden md:flex h-full justify-between gap-8 rounded-lg "
-        "border border-slate-200 bg-white/60 p-6 backdrop-blur-xl "
-        "dark:border-slate-800 dark:bg-slate-900/50"
+        "hidden md:flex flex-col h-full justify-between gap-8 rounded-2xl "
+        "border border-slate-200/70 bg-white/60 p-6 shadow-xl "
+        "shadow-slate-200/40 backdrop-blur-xl dark:border-white/10 "
+        "dark:bg-slate-900/55 dark:shadow-black/10"
     ):
         with ui.column().classes("gap-4"):
-            ui.label(eyebrow).classes("text-sm font-semibold text-sky-300")
-            ui.label(title).classes("text-3xl font-bold leading-tight")
+            ui.label(eyebrow).classes(
+                "text-sm font-semibold text-sky-700 dark:text-sky-300"
+            )
+            ui.label(title).classes(
+                "text-3xl font-semibold leading-tight tracking-tight"
+            )
             ui.label(body).classes(f"text-base leading-7 {MUTED_TEXT}")
         with ui.column().classes("gap-3"):
             for icon, feature_title, feature_body in features:
                 with ui.row().classes(
-                    "gap-3 rounded-xl border border-slate-200 bg-white/70 p-3 "
-                    "dark:border-slate-800 dark:bg-slate-950/35"
+                    "gap-3 rounded-xl border border-slate-200/70 "
+                    "bg-white/70 p-3 shadow-sm shadow-slate-200/30 "
+                    "dark:border-white/10 dark:bg-slate-950/35 "
+                    "dark:shadow-none"
                 ):
-                    ui.icon(icon).classes("text-sky-300 text-2xl")
+                    ui.icon(icon).classes(
+                        "text-sky-600 dark:text-sky-300 text-2xl"
+                    )
                     with ui.column().classes("gap-1"):
                         ui.label(feature_title).classes("font-semibold")
                         ui.label(feature_body).classes(
@@ -296,7 +361,7 @@ def empty_state(  # noqa: PLR0913
 
 
 def footer():  # pragma: no cover
-    with ui.footer().classes(
+    with ui.footer(fixed=False).classes(
         "bg-transparent text-slate-500 dark:text-slate-500 justify-end "
         "px-4 py-2"
     ):

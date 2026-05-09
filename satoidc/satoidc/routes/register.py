@@ -30,6 +30,7 @@ from satoidc.routes.ui_components import (
     auth_context_panel,
     auth_shell,
     card,
+    responsive_grid,
 )
 from satoidc.schemas.register import RegisterForm
 from satoidc.settings import ENV
@@ -178,9 +179,7 @@ async def register_page(  # noqa: PLR0915
         ).classes(SECONDARY_BUTTON_CLASSES)
 
     with auth_shell():
-        with ui.grid(columns=2).classes(
-            "w-full gap-6 items-start max-md:grid-cols-1"
-        ):
+        with responsive_grid(2, "gap-6 items-start"):
             auth_context_panel(
                 eyebrow="SatOIDC Onboarding",
                 title="Create an identity for OIDC and Lightning access.",

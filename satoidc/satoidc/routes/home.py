@@ -11,8 +11,10 @@ from satoidc.routes.ui_components import (
     PRIMARY_BUTTON_CLASSES,
     SECONDARY_BUTTON_CLASSES,
     app_header,
+    brand_mark,
     card,
     footer,
+    responsive_grid,
 )
 
 router = APIRouter()
@@ -31,20 +33,30 @@ def index():  # pragma: no cover
     )
     with ui.column().classes(PAGE):
         with ui.column().classes(
-            "w-full max-w-5xl mx-auto px-4 py-14 md:py-20 gap-8"
+            "w-full max-w-5xl mx-auto px-4 py-12 md:py-20 gap-8"
         ):
             with ui.column().classes("max-w-3xl gap-5"):
-                ui.label("Welcome to SatOIDC").classes(
-                    "text-sm font-semibold text-blue-700 dark:text-sky-300"
-                )
+                with ui.row().classes(
+                    "items-center gap-3 rounded-full border "
+                    "border-slate-200/70 bg-white/65 px-3 py-2 "
+                    "shadow-sm shadow-slate-200/50 backdrop-blur-xl "
+                    "dark:border-white/10 dark:bg-slate-900/60 "
+                    "dark:shadow-none"
+                ):
+                    brand_mark(size_classes="h-8 w-8")
+                    ui.label("SatOIDC Identity Provider").classes(
+                        "text-sm font-semibold text-sky-700 "
+                        "dark:text-sky-300"
+                    )
                 ui.label("OpenID Connect for Bitcoin-native identity").classes(
-                    "text-4xl font-bold leading-tight text-slate-950 "
-                    "dark:text-white md:text-5xl"
+                    "text-4xl font-bold leading-tight tracking-tight "
+                    "text-slate-950 dark:text-white md:text-5xl"
                 )
                 ui.label(
                     "SatOIDC combines standard OAuth2/OIDC flows with "
-                    "Lightning LNURL-auth for secure account access, client "
-                    "registration, and developer-ready identity workflows."
+                    "Lightning LNURL-auth for secure account access, "
+                    "client registration, and developer-ready identity "
+                    "workflows."
                 ).classes(f"text-lg leading-8 {MUTED_TEXT}")
                 with ui.row().classes("gap-3 flex-wrap"):
                     ui.button(
@@ -58,9 +70,7 @@ def index():  # pragma: no cover
                         on_click=lambda: ui.navigate.to("/login"),
                     ).classes(f"{SECONDARY_BUTTON_CLASSES} px-6 py-3")
 
-            with ui.grid(columns=3).classes(
-                "w-full gap-4 max-md:grid-cols-1"
-            ):
+            with responsive_grid(3, "gap-4"):
                 for icon, title, body in [
                     (
                         "verified_user",
@@ -82,13 +92,15 @@ def index():  # pragma: no cover
                     ),
                 ]:
                     with card(
-                        "gap-3 p-5 hover:bg-slate-100 "
-                        "dark:hover:bg-slate-800"
+                        "gap-3 p-5 hover:-translate-y-0.5 "
+                        "hover:bg-white/90 dark:hover:bg-slate-900"
                     ):
                         ui.icon(icon).classes(
-                            "text-blue-700 dark:text-sky-300 text-3xl"
+                            "text-sky-700 dark:text-sky-300 text-3xl"
                         )
-                        ui.label(title).classes("text-lg font-semibold")
+                        ui.label(title).classes(
+                            "text-lg font-semibold tracking-tight"
+                        )
                         ui.label(body).classes(
                             f"text-sm leading-6 {MUTED_TEXT}"
                         )

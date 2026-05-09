@@ -10,7 +10,7 @@ VIEWPORTS = [
 ]
 
 PUBLIC_PAGES = [
-    pytest.param("/", "Welcome to SatOIDC", id="home"),
+    pytest.param("/", "SatOIDC Identity Provider", id="home"),
     pytest.param("/login", "Sign in", id="login"),
     pytest.param("/register", "Create account", id="register"),
     pytest.param("/forbidden", "Forbidden", id="forbidden"),

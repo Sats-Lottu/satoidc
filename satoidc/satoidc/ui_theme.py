@@ -1,34 +1,32 @@
-from nicegui import app as nicegui_app
 from nicegui import ui
 
 
 def apply_theme() -> None:
-    nicegui_app.config.quasar_config = {
-        "brand": {
-            "primary": "#3874C8",
-            "secondary": "#F97316",
-            "accent": "#38BDF8",
-            "dark": "#070B16",
-            "dark-page": "#070B16",
-            "positive": "#16A34A",
-            "negative": "#DC2626",
-            "warning": "#F59E0B",
-            "info": "#38BDF8",
-        }
-    }
+    ui.colors(
+        primary="#3874C8",
+        secondary="#F59E0B",
+        accent="#38BDF8",
+        dark="#070B16",
+        dark_page="#070B16",
+        positive="#16A34A",
+        negative="#DC2626",
+        warning="#F59E0B",
+        info="#38BDF8",
+    )
 
-    ui.button.default_props("flat no-caps")
+    ui.button.default_props("unelevated no-caps")
     ui.button.default_classes(
-        "rounded-xl px-4 py-2 font-medium transition-all duration-200 "
-        "text-slate-800 dark:text-slate-100 hover:bg-slate-200/70 "
-        "dark:hover:bg-slate-800"
+        "rounded-lg px-4 py-2 font-medium transition-all duration-200 "
+        "text-slate-800 dark:text-slate-100 hover:-translate-y-0.5 "
+        "focus-visible:ring-2 focus-visible:ring-sky-400/40"
     )
     field_classes = (
-        "w-full rounded-xl bg-slate-100 dark:bg-slate-800 border "
-        "border-slate-300 dark:border-slate-700 text-slate-900 "
-        "dark:text-slate-100 placeholder:text-slate-400 "
+        "w-full rounded-xl bg-white/70 dark:bg-slate-900/70 border "
+        "border-slate-200/80 dark:border-white/10 text-slate-950 "
+        "dark:text-slate-50 placeholder:text-slate-500 "
         "dark:placeholder:text-slate-500 focus-within:ring-2 "
-        "focus-within:ring-blue-500/40 transition-all duration-200"
+        "focus-within:ring-sky-400/35 transition-all duration-200 "
+        "shadow-sm shadow-slate-200/40 dark:shadow-none"
     )
     ui.input.default_props("outlined dense color=info")
     ui.input.default_classes(field_classes)
@@ -37,12 +35,14 @@ def apply_theme() -> None:
     ui.select.default_props("outlined dense color=info")
     ui.select.default_classes(field_classes)
     ui.card.default_classes(
-        "rounded-2xl border border-slate-200 dark:border-slate-800 "
-        "bg-white/80 dark:bg-slate-900/80 text-slate-900 "
-        "dark:text-slate-100 backdrop-blur shadow-xl"
+        "rounded-2xl border border-slate-200/70 dark:border-white/10 "
+        "bg-white/75 dark:bg-slate-900/80 text-slate-950 "
+        "dark:text-slate-50 backdrop-blur-xl shadow-xl "
+        "shadow-slate-200/60 dark:shadow-black/20"
     )
     ui.table.default_classes(
-        "overflow-hidden rounded-2xl border border-slate-200 "
-        "dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 "
-        "text-slate-900 dark:text-slate-100 shadow-xl"
+        "overflow-hidden rounded-2xl border border-slate-200/70 "
+        "dark:border-white/10 bg-white/75 dark:bg-slate-900/80 "
+        "text-slate-950 dark:text-slate-50 shadow-xl "
+        "shadow-slate-200/50 dark:shadow-black/20 backdrop-blur-xl"
     )

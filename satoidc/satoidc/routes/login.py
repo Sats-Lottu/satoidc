@@ -28,6 +28,7 @@ from satoidc.routes.ui_components import (
     auth_context_panel,
     auth_shell,
     card,
+    responsive_grid,
 )
 from satoidc.schemas.login import LoginForm
 from satoidc.settings import ENV
@@ -166,9 +167,7 @@ async def login_page(
         ).classes(SECONDARY_BUTTON_CLASSES)
 
     with auth_shell():
-        with ui.grid(columns=2).classes(
-            "w-full gap-6 items-stretch max-md:grid-cols-1"
-        ):
+        with responsive_grid(2, "gap-6 items-stretch"):
             auth_context_panel(
                 eyebrow="SatOIDC Access",
                 title="Credentials or Lightning wallet access.",

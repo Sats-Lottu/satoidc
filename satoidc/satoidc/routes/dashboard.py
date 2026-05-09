@@ -24,6 +24,7 @@ from satoidc.routes.ui_components import (
     app_header,
     card,
     empty_state,
+    responsive_grid,
 )
 
 router = APIRouter(prefix="/dashboard")
@@ -177,9 +178,7 @@ async def dashboard_developer(  # noqa: PLR1702
                     ui.label(
                         metadata.get("client_name") or client.client_id
                     ).classes("text-lg font-semibold")
-                    with ui.grid(columns=2).classes(
-                        "w-full gap-3 max-sm:grid-cols-1"
-                    ):
+                    with responsive_grid(2, "gap-3"):
                         for key, value in {
                             "Client ID": info.get(
                                 "client_id", client.client_id
