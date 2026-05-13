@@ -1,4 +1,5 @@
 import uuid
+from html import escape
 from typing import Annotated, Optional
 from urllib.parse import quote
 
@@ -32,6 +33,7 @@ from satoidc.routes.ui_components import (
 )
 from satoidc.schemas.login import LoginForm
 from satoidc.settings import ENV
+from satoidc.utils import safe_redirect
 
 router = APIRouter()
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -71,7 +73,7 @@ async def login_post(
     request.session.pop("login_nonce", None)
 
     # (B) Keep redirect_to URL-encoded when returning validation errors.
-    nxt = login_form.redirect_to
+    nxt = safe_redirect(login_form.redirect_to)
 
     # (C) Authenticate the user.
     user = await session.scalar(
@@ -140,6 +142,7 @@ async def login_page(
     redirect_to: Optional[str] = "/profile",
     err: Optional[str] = None,
 ):  # pragma: no cover
+    redirect_to = safe_redirect(redirect_to)
     if request.session.get("user_id"):
         return RedirectResponse(redirect_to, status_code=303)
     # Generate a login nonce; do not confuse it with the OIDC nonce.
@@ -155,7 +158,10 @@ async def login_page(
     async def _event_handler(data: dict):
         if data.get("k1") == lnurl_auth_login.k1:
             lnurl_auth_temp_storage[str(login_nonce)] = data.get("user_id")
-            ui.navigate.to(f"/auth/lnurl/redirect?redirect_to={redirect_to}")
+            ui.navigate.to(
+                "/auth/lnurl/redirect?"
+                f"redirect_to={encode_query_value(redirect_to)}"
+            )
 
     with (
         ui.dialog() as dialog,
@@ -232,7 +238,7 @@ async def login_page(
 
                     ui.element("input").props(
                         "type='hidden' name='redirect_to' "
-                        f"value='{redirect_to}'"
+                        f"value='{escape(redirect_to, quote=True)}'"
                     )
                     ui.element("input").props(
                         "type='hidden' name='login_nonce' "
@@ -262,6 +268,7 @@ async def login_page(
 
 @router.page("/auth/lnurl/redirect")
 async def lnurl_redirect(request: Request, redirect_to: Optional[str] = "/"):
+    redirect_to = safe_redirect(redirect_to)
     expected_nonce = request.session.get("login_nonce")
     user_id = None
     if expected_nonce:

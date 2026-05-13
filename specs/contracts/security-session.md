@@ -76,8 +76,8 @@ Current flows using password hashing:
 Current behavior:
 
 - Registration sanitizes `redirect_to`.
-- Login currently redirects to submitted `redirect_to` after password login
-  without applying `safe_redirect`; this is a known gap.
+- Login sanitizes `redirect_to` after password login and before LNURL redirect
+  navigation.
 
 ## CSRF And Flow Nonces
 

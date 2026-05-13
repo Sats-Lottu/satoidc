@@ -64,6 +64,57 @@ async def test_login_post_accepts_email_or_login(db_session, make_user):
     assert request.session["user_id"] == user.id.hex
 
 
+async def test_login_post_sanitizes_external_redirect(db_session, make_user):
+    user = await make_user(password_hash=hash_password("StrongPass1!"))
+    request = SimpleNamespace(session={"login_nonce": "nonce"})
+    form = LoginSchema(
+        identifier=user.email,
+        password="StrongPass1!",
+        redirect_to="https://evil.example/callback",
+        login_nonce="nonce",
+    )
+
+    response = await login_post(db_session, request, form)
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == "/"
+    assert request.session["user_id"] == user.id.hex
+
+
+async def test_login_post_sanitizes_host_relative_redirect(
+    db_session, make_user
+):
+    user = await make_user(password_hash=hash_password("StrongPass1!"))
+    request = SimpleNamespace(session={"login_nonce": "nonce"})
+    form = LoginSchema(
+        identifier=user.login,
+        password="StrongPass1!",
+        redirect_to="//evil.example/callback",
+        login_nonce="nonce",
+    )
+
+    response = await login_post(db_session, request, form)
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == "/"
+
+
+async def test_login_post_sanitizes_empty_redirect(db_session, make_user):
+    user = await make_user(password_hash=hash_password("StrongPass1!"))
+    request = SimpleNamespace(session={"login_nonce": "nonce"})
+    form = LoginSchema(
+        identifier=user.login,
+        password="StrongPass1!",
+        redirect_to="",
+        login_nonce="nonce",
+    )
+
+    response = await login_post(db_session, request, form)
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == "/"
+
+
 async def test_lnurl_redirect_moves_transient_user_to_session(monkeypatch):
     monkeypatch.setattr(
         login_module.ui,
@@ -82,6 +133,24 @@ async def test_lnurl_redirect_moves_transient_user_to_session(monkeypatch):
 
     assert request.session["user_id"] == "user-1"
     assert "nonce" not in lnurl_auth_temp_storage
+
+
+async def test_lnurl_redirect_sanitizes_redirect_to(monkeypatch):
+    navigations = []
+    monkeypatch.setattr(
+        login_module.ui,
+        "label",
+        lambda *args, **kwargs: SimpleNamespace(
+            classes=lambda *args, **kwargs: None
+        ),
+    )
+    monkeypatch.setattr(login_module.ui.navigate, "to", navigations.append)
+    request = SimpleNamespace(session={"login_nonce": "nonce"})
+    lnurl_auth_temp_storage["nonce"] = "user-1"
+
+    await lnurl_redirect(request, "https://evil.example")
+
+    assert navigations == ["/"]
 
 
 def test_logout_clears_session_and_redirects_home():
