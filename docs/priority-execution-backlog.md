@@ -76,7 +76,7 @@ Expected outcome:
 
 ### 4. Normalize Permission Taxonomy
 
-Status: unresolved.
+Status: implemented.
 
 Related specs:
 
@@ -86,19 +86,18 @@ Related specs:
 
 Problem:
 
-- `PermissionsEnum` has `root`, `admin`, and `support`.
-- UI and page-security checks also use `developer`.
-- The database migration history and UI expectations are not fully aligned.
+- `developer` was previously used as an ad hoc string in UI checks while the
+  model enum only had `root`, `admin`, and `support`.
 
 Expected outcome:
 
-- Decide whether `developer` is a first-class enum value.
-- Align models, migrations, seed/setup behavior, UI checks, tests, and docs.
-- Keep `root` as all-powerful.
+- `developer` is a first-class enum value.
+- Models, migrations, setup behavior, UI checks, tests, and docs are aligned.
+- `root` remains all-powerful.
 
 ### 5. Implement Permission Requests
 
-Status: specified, not implemented.
+Status: implemented.
 
 Related specs:
 
@@ -108,20 +107,20 @@ Related specs:
 
 Problem:
 
-- Profile still shows a placeholder developer access request action.
-- Admin dashboard still shows static permission request content.
+- Profile previously showed a placeholder developer access request action.
+- Admin dashboard previously showed static permission request content.
 
 Expected outcome:
 
-- Persist developer access requests.
-- Notify admins in the dashboard.
-- Allow admins to approve or deny with audit data.
-- Grant developer access on approval.
-- Add empty states, filters, pending counts, and useful admin summary widgets.
+- Developer access requests are persisted.
+- Admin dashboard shows pending requests and operational counts.
+- Admins can approve or deny with audit data.
+- Approval grants developer access.
+- Empty states, pending counts, and useful admin summary widgets are present.
 
 ### 6. Complete Admin Dashboard Operational Views
 
-Status: specified as part of permission requests, not implemented.
+Status: implemented.
 
 Related specs:
 
@@ -130,12 +129,12 @@ Related specs:
 
 Problem:
 
-- Admin dashboard is not yet an operational console.
+- Admin dashboard was not yet an operational console.
 
 Expected outcome:
 
 - Pending request count.
-- Recent approvals/denials.
+- Recent developer approvals.
 - Total users.
 - Users with developer access.
 - Registered OAuth clients.

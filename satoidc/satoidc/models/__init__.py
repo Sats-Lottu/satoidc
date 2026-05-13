@@ -9,7 +9,15 @@ from authlib.integrations.sqla_oauth2 import (
     OAuth2ClientMixin,
     OAuth2TokenMixin,
 )
-from sqlalchemy import DateTime, ForeignKey, Text, UniqueConstraint, func
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Index,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -17,7 +25,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from satoidc.enums import PermissionsEnum
+from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
 
 table_registry = registry()
 
@@ -61,6 +69,21 @@ class User:
         init=False,
         back_populates="granted_by_user",
     )
+    permission_requests: Mapped[list["PermissionRequest"]] = relationship(
+        "PermissionRequest",
+        foreign_keys="PermissionRequest.requester_id",
+        init=False,
+        back_populates="requester",
+        cascade="all, delete-orphan",
+    )
+    decided_permission_requests: Mapped[list["PermissionRequest"]] = (
+        relationship(
+            "PermissionRequest",
+            foreign_keys="PermissionRequest.decided_by",
+            init=False,
+            back_populates="decider",
+        )
+    )
 
     def get_user_id(self):
         """Fetch user identifier"""
@@ -103,6 +126,64 @@ class Permission:
     __table_args__ = (
         UniqueConstraint(
             "user_id", "permission_type", name="uq_permissions_user_type"
+        ),
+    )
+
+
+@table_registry.mapped_as_dataclass
+class PermissionRequest:
+    __tablename__ = "permission_requests"
+
+    requester_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    permission_type: Mapped[PermissionsEnum] = mapped_column(index=True)
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    status: Mapped[PermissionRequestStatusEnum] = mapped_column(
+        default=PermissionRequestStatusEnum.PENDING, index=True
+    )
+    decision_reason: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, default=None
+    )
+    decided_by: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, default=None, index=True
+    )
+    decided_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    requester: Mapped["User"] = relationship(
+        "User",
+        foreign_keys=[requester_id],
+        init=False,
+        back_populates="permission_requests",
+    )
+    decider: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[decided_by],
+        init=False,
+        back_populates="decided_permission_requests",
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_permission_requests_one_pending_per_user_type",
+            "requester_id",
+            "permission_type",
+            unique=True,
+            sqlite_where=text("status = 'PENDING'"),
+            postgresql_where=text("status = 'PENDING'"),
         ),
     )
 

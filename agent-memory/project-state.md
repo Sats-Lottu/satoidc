@@ -55,6 +55,7 @@ Recent implementation state:
 - `fastapi_oauth2/authorization_server.py` uses `json.load()` for metadata files.
 - `page_security` now delegates to testable helpers for permission loading and page authorization; invalid session UUIDs redirect to `/login`, and protected page return values are preserved.
 - OIDC signing keys are persisted in `oidc_signing_keys`, private JWKs are encrypted with a key derived from `OAUTH2_JWT_SECRET_KEY`, JWKS publishes only `active` and `validating` public keys, and ID Tokens include the active `kid`.
+- `developer` is a first-class permission enum value. Developer access requests persist in `permission_requests`; profile can submit requests, admin dashboard can approve or deny them, and approval grants a `developer` permission.
 
 UI design support:
 

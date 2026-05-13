@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from satoidc.auth.security import page_security
 from satoidc.enums import (
     GrantTypeEnum,
+    PermissionsEnum,
     ResponseTypeEnum,
     TokenEndpointAuthMethodEnum,
 )
@@ -144,7 +145,7 @@ def build_client_metadata(  # noqa: PLR0912, PLR0913
 
 
 @router.page("/create_client")
-@page_security(permissions=["developer", "admin"])
+@page_security(permissions=[PermissionsEnum.DEVELOPER, PermissionsEnum.ADMIN])
 async def create_client_page(
     session: Session,
     request: Request,

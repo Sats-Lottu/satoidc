@@ -50,8 +50,8 @@ def test_permission_modes_require_all_or_any():
         mode="all",
     )
     assert is_authorized(
-        {"developer"},
-        {"developer", PermissionsEnum.ADMIN},
+        {PermissionsEnum.DEVELOPER},
+        {PermissionsEnum.DEVELOPER, PermissionsEnum.ADMIN},
         mode="any",
     )
 

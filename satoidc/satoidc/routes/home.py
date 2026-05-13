@@ -7,6 +7,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
+from satoidc.auth.permissions import has_developer_access
+from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission, User
 from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
@@ -98,7 +100,7 @@ def _home_feature_cards():  # pragma: no cover
 @ui.page("/")
 async def index(session: Session, request: Request):  # pragma: no cover
     user = None
-    permissions: set[str] = set()
+    permissions: set[PermissionsEnum] = set()
     user_id = request.session.get("user_id")
     if user_id:
         try:
@@ -126,13 +128,15 @@ async def index(session: Session, request: Request):  # pragma: no cover
             )
             if user:
                 permissions = {
-                    str(permission.permission_type)
+                    permission.permission_type
                     for permission in user.permissions
                 }
 
     is_signed_in = user is not None
-    can_develop = bool({"developer", "admin", "root"} & permissions)
-    can_admin = bool({"admin", "root"} & permissions)
+    can_develop = has_developer_access(permissions)
+    can_admin = bool(
+        {PermissionsEnum.ADMIN, PermissionsEnum.ROOT} & permissions
+    )
 
     nav_items = [("GitHub", "https://github.com/Sats-Lottu/satoidc", "github")]
     account_items = [("Profile", "/profile", "person")]

@@ -2,7 +2,7 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: project maintainers
 - Created: 2026-05-13
 - Updated: 2026-05-13
@@ -34,10 +34,10 @@ offers a "Request developer permissions" action, but the action only shows a
 notification and persists nothing. The admin dashboard currently renders a
 static permission request row.
 
-The current permission model has `root`, `admin`, and `support` enum values,
-while some UI paths also use the string permission `developer`. This spec
-assumes a developer permission exists as an application permission value, but
-the final taxonomy may be resolved in a separate permission-model spec.
+The permission taxonomy treats `developer` as a first-class application
+permission. `root` remains all-powerful, `admin` includes operational admin
+views, and `developer` grants access to developer dashboard and OAuth client
+registration.
 
 ## Scope
 
@@ -58,8 +58,7 @@ Out of scope:
 - Self-service approval.
 - Email, Slack, or external notification delivery.
 - Fine-grained OAuth client roles beyond developer access.
-- Full permission taxonomy redesign, except where required to support
-  developer access.
+- Permission categories beyond `root`, `admin`, `developer`, and `support`.
 - Client management actions such as editing clients or rotating secrets.
 
 ## Permission Request States
@@ -140,7 +139,7 @@ Only `pending` requests should appear in the default admin notification count.
 
 ### Persistence
 
-A new permission request persistence model should include:
+The permission request persistence model includes:
 
 - `id`: primary key.
 - `requester_id`: user who requested access.
@@ -153,7 +152,7 @@ A new permission request persistence model should include:
 - `created_at`: request timestamp.
 - `updated_at`: last update timestamp.
 
-Recommended database constraints:
+Database constraints:
 
 - Only one active pending request per `requester_id` and `permission_type`.
 - Indexed lookup by `status`, `permission_type`, `requester_id`, and
@@ -179,8 +178,8 @@ Admin dashboard:
 
 ### Internal Services
 
-Implementation should prefer service/helper functions over route-local
-database logic:
+Implementation uses service/helper functions instead of route-local database
+logic:
 
 - `create_permission_request(...)`
 - `list_permission_requests(...)`

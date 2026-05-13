@@ -2,11 +2,12 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select
 
-from satoidc.enums import PermissionsEnum
+from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
 from satoidc.models import (
     LnurlAuthChallenge,
     OAuth2Client,
     Permission,
+    PermissionRequest,
     User,
 )
 
@@ -55,6 +56,29 @@ async def test_user_permission_and_challenge_persist_with_real_database(
     assert stored_challenge.consumed is False
     assert isinstance(stored_challenge.created_at, datetime)
     assert stored_challenge.created_at.tzinfo is not None or timezone.utc
+
+
+async def test_permission_request_persists_with_real_database(
+    db_session, make_user
+):
+    user = await make_user()
+    permission_request = PermissionRequest(
+        requester_id=user.id,
+        permission_type=PermissionsEnum.DEVELOPER,
+        reason="Need client registration.",
+    )
+    db_session.add(permission_request)
+    await db_session.commit()
+
+    stored_request = await db_session.scalar(
+        select(PermissionRequest).where(
+            PermissionRequest.requester_id == user.id
+        )
+    )
+
+    assert stored_request is not None
+    assert stored_request.permission_type == PermissionsEnum.DEVELOPER
+    assert stored_request.status == PermissionRequestStatusEnum.PENDING
 
 
 async def test_oauth_client_metadata_round_trips_in_real_database(

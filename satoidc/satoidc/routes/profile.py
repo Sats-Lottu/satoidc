@@ -9,7 +9,14 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
+from satoidc.auth.permissions import (
+    PermissionRequestNotAllowed,
+    create_permission_request,
+    get_latest_permission_request,
+    has_developer_access,
+)
 from satoidc.auth.security import hash_password, verify_password
+from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
 from satoidc.models import Permission, User
 from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
@@ -59,7 +66,9 @@ def _field_row(
 
 
 @ui.page("/profile")
-async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702  # pragma: no cover
+async def profile(  # noqa: PLR0912, PLR0915, PLR1702
+    session: Session, request: Request
+):  # pragma: no cover
     user_id = request.session.get("user_id")
     user = await session.scalar(
         select(User)
@@ -80,6 +89,9 @@ async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
         .where(User.id == UUID(user_id))
     )
     permissions = {perm.permission_type for perm in user.permissions}
+    latest_developer_request = await get_latest_permission_request(
+        session, user.id, PermissionsEnum.DEVELOPER
+    )
 
     def refresh_profile():
         ui.navigate.to("/profile")
@@ -238,6 +250,47 @@ async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
                 ).classes(SECONDARY_BUTTON_CLASSES)
         dialog.open()
 
+    def developer_request_dialog():
+        with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
+            ui.label("Request developer access").classes(
+                "text-xl font-semibold"
+            )
+            ui.label(
+                "Tell admins what you plan to register or test."
+            ).classes(MUTED_TEXT)
+            reason = ui.textarea("Reason").classes(INPUT_CLASSES)
+
+            async def submit():
+                try:
+                    await create_permission_request(
+                        session,
+                        user.id,
+                        permission_type=PermissionsEnum.DEVELOPER,
+                        reason=reason.value,
+                    )
+                except PermissionRequestNotAllowed:
+                    ui.notify(
+                        "Your account already has developer access.",
+                        type="warning",
+                    )
+                    refresh_profile()
+                    return
+                await session.commit()
+                ui.notify(
+                    "Developer access request submitted.",
+                    type="positive",
+                )
+                refresh_profile()
+
+            with ui.row().classes("justify-end gap-3 w-full"):
+                ui.button("Cancel", on_click=dialog.close).classes(
+                    SECONDARY_BUTTON_CLASSES
+                )
+                ui.button("Submit", icon="send", on_click=submit).classes(
+                    PRIMARY_BUTTON_CLASSES
+                )
+        dialog.open()
+
     with page_shell("max-w-5xl"):
         with card("gap-4"):
             with ui.row().classes(
@@ -318,7 +371,7 @@ async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
                         "text-xl font-semibold"
                     )
                     ui.separator()
-                    if {"developer", "admin", "root"} & permissions:
+                    if has_developer_access(permissions):
                         ui.label(
                             "Your account already has developer permissions."
                         ).classes(SUCCESS_TEXT)
@@ -329,7 +382,10 @@ async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
                                 "/dashboard/developer"
                             ),
                         ).classes(PRIMARY_BUTTON_CLASSES)
-                    if {"admin", "root"} & permissions:
+                    if {
+                        PermissionsEnum.ADMIN,
+                        PermissionsEnum.ROOT,
+                    } & permissions:
                         ui.label(
                             "Your account has admin permissions, which "
                             "include developer access."
@@ -341,18 +397,40 @@ async def profile(session: Session, request: Request):  # noqa: PLR0915, PLR1702
                                 "/dashboard/admin"
                             ),
                         ).classes(PRIMARY_BUTTON_CLASSES)
-                    if not permissions:
+                    if not has_developer_access(permissions):
                         ui.label(
                             "Request access to developer features, APIs and "
                             "application registration."
                         ).classes(MUTED_TEXT)
-                        ui.button(
-                            "Request developer permissions",
-                            icon="code",
-                            on_click=lambda: ui.notify(
-                                "Developer permission request sent for review."
-                            ),
-                        ).classes(SECONDARY_BUTTON_CLASSES)
+                        if latest_developer_request:
+                            status = latest_developer_request.status
+                            if status == PermissionRequestStatusEnum.PENDING:
+                                ui.label(
+                                    "Your developer access request is pending "
+                                    "admin review."
+                                ).classes(MUTED_TEXT)
+                            elif status == PermissionRequestStatusEnum.DENIED:
+                                ui.label(
+                                    "Your last developer access request was "
+                                    "denied. You can submit a new request "
+                                    "with "
+                                    "updated context."
+                                ).classes(ERROR_TEXT)
+                                ui.button(
+                                    "Request again",
+                                    icon="send",
+                                    on_click=developer_request_dialog,
+                                ).classes(SECONDARY_BUTTON_CLASSES)
+                            else:
+                                ui.label(
+                                    f"Latest request status: {status}."
+                                ).classes(MUTED_TEXT)
+                        else:
+                            ui.button(
+                                "Request developer permissions",
+                                icon="code",
+                                on_click=developer_request_dialog,
+                            ).classes(SECONDARY_BUTTON_CLASSES)
 
             with ui.column().classes("gap-6"):
                 with card("gap-4"):

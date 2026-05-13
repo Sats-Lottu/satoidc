@@ -31,3 +31,4 @@ updated: 2026-05-13
 - 2026-05-13: Client registration must validate metadata before persistence and show generated credentials once after creation instead of redirecting immediately.
 - 2026-05-13: LNURL callback attempts should consume their challenge even when signature validation fails. This is a replay-defense behavior; the implementation uses the `consumed` field to avoid implying successful signature verification.
 - 2026-05-13: Implement OIDC signing key rotation MVP with encrypted database-backed RSA private JWKs, stable `kid` values in JWKS, `active`/`validating`/`retired` states, and `admin` or `root` authorization for manual key lifecycle endpoints. Vault Transit remains the preferred future backend.
+- 2026-05-13: Treat `developer` as a first-class `PermissionsEnum` value. Developer access includes `developer`, `admin`, and `root`; `root` remains all-powerful through the centralized authorization helper.

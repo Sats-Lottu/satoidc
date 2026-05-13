@@ -25,6 +25,7 @@ from satoidc.auth.oidc_keys import (
 )
 from satoidc.auth.scopes import scopes
 from satoidc.auth.security import get_active_user_permissions, is_authorized
+from satoidc.enums import PermissionsEnum
 from satoidc.models import User
 from satoidc.models.database import get_session, remove_sync_session
 from satoidc.settings import ENV
@@ -208,7 +209,11 @@ async def _require_key_admin(request: Request) -> str:
             status_code=401, detail="invalid_session"
         ) from exc
     permissions = await get_active_user_permissions(uid)
-    if not is_authorized(permissions, {"admin", "root"}, mode="any"):
+    if not is_authorized(
+        permissions,
+        {PermissionsEnum.ADMIN, PermissionsEnum.ROOT},
+        mode="any",
+    ):
         raise HTTPException(status_code=403, detail="forbidden")
     return str(uid)
 

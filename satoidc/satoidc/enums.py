@@ -4,7 +4,16 @@ from enum import StrEnum, auto
 class PermissionsEnum(StrEnum):
     ROOT = auto()
     ADMIN = auto()
+    DEVELOPER = auto()
     SUPPORT = auto()
+
+
+class PermissionRequestStatusEnum(StrEnum):
+    PENDING = auto()
+    APPROVED = auto()
+    DENIED = auto()
+    CANCELLED = auto()
+    SUPERSEDED = auto()
 
 
 class PKCEMethodEnum(StrEnum):
