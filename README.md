@@ -92,10 +92,10 @@ For a deeper technical map, start from [docs/README.md](docs/README.md), especia
 | Capability                | Status         | Notes                                                                        |
 | ------------------------- | -------------- | ---------------------------------------------------------------------------- |
 | OAuth2 Authorization Code | Implemented    | Main supported flow.                                                         |
-| OpenID Connect ID Token   | Implemented    | Signed with RS256 in current metadata.                                       |
+| OpenID Connect ID Token   | Implemented    | Signed with persisted RS256 OIDC signing keys and stable `kid` headers.      |
 | PKCE                      | Implemented    | Required for the Authorization Code Grant.                                   |
 | Discovery                 | Implemented    | Served at `/.well-known/openid-configuration`.                               |
-| JWKS                      | Implemented    | Current key is generated at process startup.                                 |
+| JWKS                      | Implemented    | Publishes active and validating public signing keys with stable `kid` values. |
 | UserInfo                  | Implemented    | Returns claims based on granted scopes.                                      |
 | Introspection             | Implemented    | Authlib endpoint registered.                                                 |
 | Revocation                | Implemented    | Authlib endpoint registered.                                                 |
@@ -260,7 +260,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 ### Production Hardening
 
 - [ ] Expand full OAuth browser authorization-code e2e coverage, including real client redirects and token exchange.
-- [ ] Replace process-local JWT signing key with persistent key material and a key-rotation plan.
+- [x] Replace process-local JWT signing key with persistent key material and a key-rotation plan.
 - [ ] Normalize the permission model across enum, migration, UI and access checks.
 - [x] Harden login redirect handling and add regression tests for open redirect prevention.
 - [x] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
@@ -289,7 +289,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 
 - Use HTTPS in production.
 - Use strong environment secrets.
-- Persist and rotate signing keys before production use.
+- Persisted signing keys are available; evaluate Vault Transit or another external signing backend before hardened production use.
 - Treat local SQLite files and NiceGUI storage as development state.
 - Review [docs/known-issues.md](docs/known-issues.md) before production deployment.
 

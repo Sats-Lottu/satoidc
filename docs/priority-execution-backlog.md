@@ -10,7 +10,7 @@ implementation dependency.
 
 ### 1. Persist And Rotate OIDC Signing Keys
 
-Status: specified, not implemented.
+Status: implemented.
 
 Related specs:
 
@@ -19,16 +19,16 @@ Related specs:
 
 Problem:
 
-- The current RSA signing key is generated in memory at process startup.
-- Existing ID tokens may become unverifiable after restart.
-- Multiple replicas can publish inconsistent JWKS documents.
+- Previously, the RSA signing key was generated in memory at process startup.
+- Existing ID tokens could become unverifiable after restart.
+- Multiple replicas could publish inconsistent JWKS documents.
 
 Expected outcome:
 
-- Persist signing keys.
-- Publish stable `kid` values in JWKS.
-- Keep old public keys available while issued tokens may still be valid.
-- Add audit events for key lifecycle and token signing.
+- Signing keys are persisted in `oidc_signing_keys`.
+- Stable `kid` values are published in JWKS.
+- Old public keys remain publishable in `validating` state until `retired_after`.
+- Audit events cover key lifecycle and token signing.
 
 ### 2. Harden Login Redirect Safety
 

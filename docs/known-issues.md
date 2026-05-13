@@ -4,9 +4,8 @@ Updated: 2026-05-13
 
 ## High Priority
 
-1. JWT signing key is generated in memory at startup, making JWKS unstable across restarts and replicas.
-2. OIDC signing key rotation is specified but not implemented; production still needs persistent key material, `kid` handling, retention windows, admin authorization and audit events.
-3. Full browser OAuth authorization-code e2e coverage is still partial; current e2e tests are public-page and endpoint smoke/responsive checks.
+1. Full browser OAuth authorization-code e2e coverage is still partial; current e2e tests are public-page and endpoint smoke/responsive checks.
+2. Vault Transit remains a future hardening step for OIDC signing keys; the MVP persists private key material encrypted in the database.
 
 ## Medium Priority
 
@@ -41,3 +40,4 @@ Updated: 2026-05-13
 - Password login and LNURL redirect now sanitize `redirect_to` before navigation.
 - Session cookie HTTPS behavior is environment-driven, and production mode rejects placeholder secrets.
 - `LnurlAuthChallenge.consumed` now represents callback consumption before signature validation.
+- OIDC signing keys are persisted, published with stable `kid` values, retained through validation windows, rotated through admin endpoints, and audited for lifecycle/signature events.

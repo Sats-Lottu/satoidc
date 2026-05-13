@@ -30,3 +30,4 @@ updated: 2026-05-13
 - 2026-05-13: Keep global header utilities on the right side: navigation first, then theme toggle, then account menu. Signed-in home actions should use the account menu and profile/dashboard/logout actions instead of public login/register CTAs.
 - 2026-05-13: Client registration must validate metadata before persistence and show generated credentials once after creation instead of redirecting immediately.
 - 2026-05-13: LNURL callback attempts should consume their challenge even when signature validation fails. This is a replay-defense behavior; the implementation uses the `consumed` field to avoid implying successful signature verification.
+- 2026-05-13: Implement OIDC signing key rotation MVP with encrypted database-backed RSA private JWKs, stable `kid` values in JWKS, `active`/`validating`/`retired` states, and `admin` or `root` authorization for manual key lifecycle endpoints. Vault Transit remains the preferred future backend.

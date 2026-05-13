@@ -5,7 +5,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-08
+updated: 2026-05-13
 ---
 
 # Project State
@@ -44,7 +44,7 @@ Current test structure:
 - `poetry run task test` runs unit/integration tests with browser e2e tests deselected by default.
 - `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
-- As of 2026-05-08, `poetry run task test` passes with `81 passed, 10 deselected` and 100% measured line coverage.
+- As of 2026-05-13, `poetry run task test` passes with `97 passed, 10 deselected`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to NiceGUI visual rendering helpers/pages, QR UI classes, the LNURL schema compatibility shim, and a defensive parse branch. Browser e2e smoke tests cover the visual page rendering surface.
 
 Recent implementation state:
@@ -54,6 +54,7 @@ Recent implementation state:
 - `auth/lnurl_schemas.py` is now compatibility-only; new imports should use `satoidc.schemas.lnurl`.
 - `fastapi_oauth2/authorization_server.py` uses `json.load()` for metadata files.
 - `page_security` now delegates to testable helpers for permission loading and page authorization; invalid session UUIDs redirect to `/login`, and protected page return values are preserved.
+- OIDC signing keys are persisted in `oidc_signing_keys`, private JWKs are encrypted with a key derived from `OAUTH2_JWT_SECRET_KEY`, JWKS publishes only `active` and `validating` public keys, and ID Tokens include the active `kid`.
 
 UI design support:
 

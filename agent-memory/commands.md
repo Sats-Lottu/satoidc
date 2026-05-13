@@ -40,3 +40,7 @@ updated: 2026-05-13
 - `cd satoidc; poetry run ruff check satoidc tests`: ran on 2026-05-13 after implementing the UI backlog items for home/header/profile/create-client; passed.
 - `cd satoidc; poetry run task test`: ran on 2026-05-13 after implementing the UI backlog items for home/header/profile/create-client; passed with `84 passed, 10 deselected`.
 - `cd satoidc; poetry run task test_e2e`: ran on 2026-05-13 after implementing the UI backlog items for home/header/profile/create-client; passed with `10 passed`.
+- `cd satoidc; poetry run pytest tests/test_oidc_key_rotation.py tests/test_oauth_metadata.py tests/test_oauth_grants.py`: ran on 2026-05-13 after OIDC key rotation implementation; passed with `15 passed`.
+- `cd satoidc; poetry run ruff check`: ran on 2026-05-13 after OIDC key rotation implementation; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-13 after OIDC key rotation implementation; passed with `97 passed, 10 deselected`.
+- `cd satoidc; poetry run alembic upgrade head`: ran on 2026-05-13 after adding `oidc_signing_keys` migration; applied `6c2f4c9d1a7e`.
