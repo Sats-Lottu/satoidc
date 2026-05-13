@@ -73,7 +73,7 @@ Startup dependency:
 
 - Session secret default is unsafe for production.
 - Database password defaults are unsafe for production.
-- Session cookies are not currently `https_only`.
+- Production mode requires HTTPS-only session cookies.
 - OIDC signing keys are process-local and not persisted.
 - No external secret manager integration exists.
 

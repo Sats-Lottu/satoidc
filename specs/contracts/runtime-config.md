@@ -22,6 +22,7 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | --- | --- | --- |
 | `SERVICE_NAME` | `SatOIDC` | Human-readable service name. |
 | `DOMAIN` | empty string | Used when building OAuth error URI hostnames. |
+| `APP_ENV` | `development` | Runtime environment; `production` and `prod` enable production checks. |
 | `DATABASE_URL` | `sqlite+aiosqlite:///satoidc.db` | Async SQLAlchemy URL. |
 | `SYNC_DATABASE_URL` | `sqlite:///satoidc.db` | Sync SQLAlchemy URL for Authlib. |
 | `LNURL_K1_TTL_SECONDS` | `60` | LNURL challenge lifetime and QR refresh cadence. |
@@ -31,6 +32,7 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | `OAUTH2_JWT_ALG` | `RS256` | ID token signing algorithm advertised and used. |
 | `OAUTH2_TOKEN_EXPIRES_IN` | `300` | Authorization-code token expiration value. |
 | `SESSION_MIDDLEWARE_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Starlette session signing secret. |
+| `SESSION_COOKIE_HTTPS_ONLY` | unset | Optional explicit secure-cookie override; defaults to enabled in production and disabled in development. |
 
 ## FastAPI App Configuration
 
@@ -45,13 +47,13 @@ Middleware order:
 Session middleware settings:
 
 - `same_site="lax"`
-- `https_only=False`
+- `https_only=ENV.session_cookie_https_only`
 - `session_cookie="client_session"`
 
-Current production caveat:
+Production behavior:
 
-- `https_only=False` is development-oriented and should become
-  production-aware before deployment behind HTTPS.
+- Production mode rejects placeholder session/JWT secrets.
+- Production mode requires HTTPS-only session cookies.
 
 ## OAuth App Configuration
 
