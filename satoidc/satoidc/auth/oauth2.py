@@ -1,6 +1,7 @@
 """OIDC server example"""
 
 import time
+from contextvars import ContextVar
 from secrets import token_urlsafe
 
 from authlib.integrations.sqla_oauth2 import (
@@ -16,8 +17,8 @@ from authlib.oauth2.rfc7662 import (
 )
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
-from joserfc import jwk
 
+from satoidc.auth.oidc_keys import audit_token_signed, get_active_jwt_config
 from satoidc.fastapi_oauth2 import (
     AuthorizationServer,
     ResourceProtector,
@@ -31,14 +32,14 @@ from satoidc.models import (
 from satoidc.models.database import db
 from satoidc.settings import ENV
 
-KEY = jwk.generate_key("RSA", 2048, private=True, auto_kid=True)
+_oidc_jwt_config = ContextVar("oidc_jwt_config", default=None)
 
-JWT_CONFIG = {
-    "key": KEY,
-    "alg": ENV.OAUTH2_JWT_ALG,
-    "iss": ENV.OAUTH2_JWT_ISS,
-    "exp": ENV.OAUTH2_TOKEN_EXPIRES_IN,
-}
+
+def _current_oidc_jwt_config():
+    jwt_config = _oidc_jwt_config.get()
+    if jwt_config is None:
+        return get_active_jwt_config()
+    return jwt_config
 
 
 def exists_nonce(nonce, req):
@@ -193,7 +194,7 @@ class IntrospectionEndpoint(_IntrospectionEndpoint):
             "scope": token.get_scope(),
             "sub": str(token.user_id),
             "aud": token.client_id,
-            "iss": JWT_CONFIG.get("iss"),
+            "iss": ENV.OAUTH2_JWT_ISS,
             "exp": expires_at,
             "iat": token.issued_at,
         }
@@ -205,11 +206,43 @@ class OpenIDCode(_OpenIDCode):
     def exists_nonce(self, nonce, request):  # noqa: PLR6301
         return exists_nonce(nonce, request)
 
-    def get_jwt_config(self, grant):  # noqa: PLR6301
-        return JWT_CONFIG
+    def resolve_client_private_key(self, client):  # noqa: PLR6301
+        return _current_oidc_jwt_config()["key"]
+
+    def get_client_algorithm(self, client):  # noqa: PLR6301
+        return _current_oidc_jwt_config()["alg"]
+
+    def get_client_claims(self, client):  # noqa: PLR6301
+        jwt_config = _current_oidc_jwt_config()
+        now = int(time.time())
+        return {
+            "iss": jwt_config["iss"],
+            "aud": [client.get_client_id()],
+            "iat": now,
+            "exp": now + jwt_config["exp"],
+            "auth_time": now,
+        }
+
+    def get_encode_header(self, client):  # noqa: PLR6301
+        jwt_config = _current_oidc_jwt_config()
+        return {
+            "alg": jwt_config["alg"],
+            "typ": "JWT",
+            "kid": jwt_config["kid"],
+        }
 
     def generate_user_info(self, user, scope):  # noqa: PLR6301
         return generate_user_info(user, scope)
+
+    def encode_id_token(self, token, request):
+        jwt_config = get_active_jwt_config()
+        context_token = _oidc_jwt_config.set(jwt_config)
+        try:
+            id_token = super().encode_id_token(token, request)
+            audit_token_signed(jwt_config["kid"])
+            return id_token
+        finally:
+            _oidc_jwt_config.reset(context_token)
 
 
 authorization = AuthorizationServer()

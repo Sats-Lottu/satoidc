@@ -32,6 +32,8 @@ def test_jwks_endpoint_exposes_only_public_key_material(app_client):
     key = jwks["keys"][0]
     assert key["kty"] == "RSA"
     assert "kid" in key
+    assert key["use"] == "sig"
+    assert key["alg"] == "RS256"
     assert "n" in key
     assert "e" in key
     for private_member in ("d", "p", "q", "dp", "dq", "qi"):

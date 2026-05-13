@@ -188,7 +188,9 @@ async def test_refresh_grant_and_introspection_cover_refresh_hint(
     assert endpoint.query_token("refresh-4", None).id == token.id
 
 
-def test_openid_code_delegates_config_nonce_and_userinfo():
+def test_openid_code_delegates_public_key_claim_header_and_userinfo(
+    db_session,
+):
     request = SimpleNamespace(payload=SimpleNamespace(client_id="client-x"))
     openid = OpenIDCode(require_nonce=True)
     user = SimpleNamespace(
@@ -199,7 +201,15 @@ def test_openid_code_delegates_config_nonce_and_userinfo():
     )
 
     assert openid.exists_nonce("nonce-x", request) is False
-    assert openid.get_jwt_config(None)["alg"] == "RS256"
+    assert openid.get_client_algorithm(Client("client-x")) == "RS256"
+    assert openid.get_client_claims(Client("client-x"))["iss"] == (
+        "http://localhost:8000"
+    )
+    header = openid.get_encode_header(Client("client-x"))
+    assert header["alg"] == "RS256"
+    assert header["typ"] == "JWT"
+    assert "kid" in header
+    assert openid.resolve_client_private_key(Client("client-x")) is not None
     assert openid.generate_user_info(user, "email profile")["email"] == (
         "satoshi@example.com"
     )

@@ -9,7 +9,7 @@ Use this index to track active and historical specs.
 | [Runtime Configuration Contract](contracts/runtime-config.md) | draft | Runtime/Configuration | 2026-05-13 |
 | [Security And Session Contract](contracts/security-session.md) | draft | Auth/Security | 2026-05-13 |
 | [Permission Requests](features/permission-requests/spec.md) | draft | Auth/UI/Admin | 2026-05-13 |
-| [OIDC Key Rotation](features/oidc-key-rotation/spec.md) | draft | OAuth/OIDC Security | 2026-05-06 |
+| [OIDC Key Rotation](features/oidc-key-rotation/spec.md) | implemented | OAuth/OIDC Security | 2026-05-13 |
 | [OIDC Contract](contracts/oidc.md) | draft | OAuth/OIDC | 2026-05-06 |
 | [Authorization Code Flow](flows/authorization-code.md) | draft | OAuth/OIDC | 2026-05-06 |
 | [OAuth Client Registration Flow](flows/client-registration.md) | draft | OAuth/UI | 2026-05-13 |

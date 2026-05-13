@@ -9,7 +9,7 @@ from authlib.integrations.sqla_oauth2 import (
     OAuth2ClientMixin,
     OAuth2TokenMixin,
 )
-from sqlalchemy import DateTime, ForeignKey, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, Text, UniqueConstraint, func
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -130,6 +130,51 @@ class LnurlAuthChallenge:
     )
 
     user: Mapped[Optional["User"]] = relationship("User", init=False)
+
+
+@table_registry.mapped_as_dataclass
+class OidcSigningKey:
+    __tablename__ = "oidc_signing_keys"
+
+    kid: Mapped[str] = mapped_column(unique=True, index=True)
+    public_jwk: Mapped[str] = mapped_column(Text)
+    private_jwk_encrypted: Mapped[str] = mapped_column(Text)
+    alg: Mapped[str] = mapped_column(default="RS256")
+    kty: Mapped[str] = mapped_column(default="RSA")
+    use: Mapped[str] = mapped_column(default="sig")
+    status: Mapped[str] = mapped_column(default="validating", index=True)
+    backend_reference: Mapped[Optional[str]] = mapped_column(
+        nullable=True, default="database"
+    )
+    activated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    validating_since: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    retired_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    retired_after: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), init=False, server_default=func.now()
+    )
+
+
+@table_registry.mapped_as_dataclass
+class OidcSigningKeyAuditEvent:
+    __tablename__ = "oidc_signing_key_audit_events"
+
+    event: Mapped[str] = mapped_column(index=True)
+    kid: Mapped[str] = mapped_column(index=True)
+    actor: Mapped[str] = mapped_column(default="system")
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), init=False, server_default=func.now()
+    )
 
 
 @table_registry.mapped

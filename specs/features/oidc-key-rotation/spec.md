@@ -2,10 +2,10 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: TBD
 - Created: 2026-05-06
-- Updated: 2026-05-06
+- Updated: 2026-05-13
 - Related code:
   - `satoidc/satoidc/auth/oauth2.py`
   - `satoidc/satoidc/routes/oauth2.py`
@@ -53,7 +53,7 @@ Out of scope:
 
 A solucao preferencial deve usar Vault Transit como backend criptografico.
 
-Para o MVP, e aceitavel armazenar a chave privada no banco somente se ela estiver criptografada e nunca for exposta por endpoints, logs, documentos de descoberta ou eventos de auditoria.
+O MVP implementado armazena a chave privada no banco criptografada com uma chave derivada de `OAUTH2_JWT_SECRET_KEY`; ela nunca e exposta por endpoints, logs, documentos de descoberta ou eventos de auditoria.
 
 A aplicacao SatOIDC nao deve expor a chave privada. Ela deve apenas solicitar assinatura ao backend criptografico ou carregar a chave privada criptografada em ambiente controlado no MVP.
 
@@ -357,7 +357,14 @@ Discovery and JWKS should use the root well-known endpoints above. OAuth protoco
 
 ## Traceability
 
-- Code: TBD during implementation.
-- Tests: `satoidc/tests/` to be added or expanded.
+- Code:
+  - `satoidc/satoidc/auth/oidc_keys.py`
+  - `satoidc/satoidc/auth/oauth2.py`
+  - `satoidc/satoidc/routes/oauth2.py`
+  - `satoidc/satoidc/models/__init__.py`
+  - `satoidc/migrations/versions/6c2f4c9d1a7e_add_oidc_signing_keys.py`
+- Tests:
+  - `satoidc/tests/test_oidc_key_rotation.py`
+  - `satoidc/tests/test_oauth_metadata.py`
 - Docs: this feature folder.
 - Decisions: `agent-memory/decisions.md`.

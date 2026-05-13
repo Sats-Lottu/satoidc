@@ -5,8 +5,8 @@ from .forbidden import router as forbidden_router
 from .home import router as home_router
 from .lnurl_auth import router as lnurl_auth_router
 from .login import router as login_router
+from .oauth2 import admin_oidc_keys_router, well_known_router
 from .oauth2 import router as oauth_router
-from .oauth2 import well_known_router
 from .profile import router as profile_router
 from .register import router as register_router
 
@@ -18,6 +18,7 @@ __all__ = [
     "dashboard_router",
     "forbidden_router",
     "oauth_router",
+    "admin_oidc_keys_router",
     "well_known_router",
     "authorize_router",
     "create_client_router",
@@ -31,6 +32,7 @@ routers = [
     dashboard_router,
     forbidden_router,
     well_known_router,
+    admin_oidc_keys_router,
     oauth_router,
     authorize_router,
     create_client_router,

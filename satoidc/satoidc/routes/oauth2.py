@@ -4,25 +4,36 @@ from uuid import UUID
 
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.errors import UnsupportedResponseTypeError
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from satoidc.auth.oauth2 import (
-    KEY,
     authorization,
     generate_user_info,
     require_oauth,
 )
+from satoidc.auth.oidc_keys import (
+    activate_signing_key,
+    create_signing_key,
+    get_jwks,
+    list_signing_keys,
+    retire_expired_signing_keys,
+    rotate_signing_key,
+)
 from satoidc.auth.scopes import scopes
+from satoidc.auth.security import get_active_user_permissions, is_authorized
 from satoidc.models import User
 from satoidc.models.database import get_session, remove_sync_session
 from satoidc.settings import ENV
 
 router = APIRouter(prefix="/oauth", tags=["OAuth2"])
 well_known_router = APIRouter(tags=["OAuth2"])
+admin_oidc_keys_router = APIRouter(
+    prefix="/admin/oidc/keys", tags=["OIDC Keys"]
+)
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
@@ -183,10 +194,49 @@ def well_known():
 
 
 def jwks():
-    # Return only the public key material.
-    public_key = KEY.as_dict(private=False)
+    return get_jwks()
 
-    return {"keys": [public_key]}
+
+async def _require_key_admin(request: Request) -> str:
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="login_required")
+    try:
+        uid = UUID(user_id)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=401, detail="invalid_session"
+        ) from exc
+    permissions = await get_active_user_permissions(uid)
+    if not is_authorized(permissions, {"admin", "root"}, mode="any"):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return str(uid)
+
+
+def _key_response(key):
+    return {
+        "kid": key.kid,
+        "alg": key.alg,
+        "kty": key.kty,
+        "use": key.use,
+        "status": key.status,
+        "backend_reference": key.backend_reference,
+        "created_at": key.created_at.isoformat(),
+        "activated_at": (
+            key.activated_at.isoformat() if key.activated_at else None
+        ),
+        "validating_since": (
+            key.validating_since.isoformat()
+            if key.validating_since
+            else None
+        ),
+        "retired_at": key.retired_at.isoformat()
+        if key.retired_at
+        else None,
+        "retired_after": key.retired_after.isoformat()
+        if key.retired_after
+        else None,
+    }
 
 
 @well_known_router.get("/.well-known/openid-configuration")
@@ -196,4 +246,53 @@ def well_known_root():
 
 @well_known_router.get("/.well-known/jwks.json")
 def jwks_root():
-    return jwks()
+    return JSONResponse(
+        jwks(),
+        headers={
+            "Cache-Control": (
+                f"public, max-age={ENV.OIDC_JWKS_CACHE_TTL_SECONDS}"
+            )
+        },
+    )
+
+
+@admin_oidc_keys_router.get("")
+async def admin_list_oidc_keys(request: Request):
+    await _require_key_admin(request)
+    keys = await run_in_threadpool(list_signing_keys)
+    return {"keys": [_key_response(key) for key in keys]}
+
+
+@admin_oidc_keys_router.post("")
+async def admin_create_oidc_key(request: Request):
+    actor = await _require_key_admin(request)
+    key = await run_in_threadpool(create_signing_key, actor=actor)
+    return _key_response(key)
+
+
+@admin_oidc_keys_router.post("/rotate")
+async def admin_rotate_oidc_key(request: Request):
+    actor = await _require_key_admin(request)
+    key = await run_in_threadpool(rotate_signing_key, actor=actor)
+    return _key_response(key)
+
+
+@admin_oidc_keys_router.post("/retire-expired")
+async def admin_retire_expired_oidc_keys(request: Request):
+    actor = await _require_key_admin(request)
+    retired_count = await run_in_threadpool(
+        retire_expired_signing_keys, actor=actor
+    )
+    return {"retired": retired_count}
+
+
+@admin_oidc_keys_router.post("/{kid}/activate")
+async def admin_activate_oidc_key(kid: str, request: Request):
+    actor = await _require_key_admin(request)
+    try:
+        key = await run_in_threadpool(
+            activate_signing_key, kid, actor=actor
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _key_response(key)
