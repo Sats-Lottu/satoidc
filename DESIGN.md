@@ -47,6 +47,25 @@ Avoid these qualities:
 - CSS scattered through individual routes.
 - Inline `.style(...)` unless there is no NiceGUI/Tailwind/Quasar alternative.
 
+## Reference Patterns
+
+Use these references when changing account, profile, settings, and developer
+console screens:
+
+- [UX Patterns: Account Settings](https://uxpatterns.dev/patterns/authentication/account-settings):
+  group related settings into clear sections, use per-section actions, require
+  re-authentication for sensitive operations, and avoid duplicated global action
+  lists that compete with contextual controls.
+- [SAP Fiori Profile and Settings for iOS](https://www.sap.com/design-system/fiori-design-ios/page-types/profile-settings):
+  use a profile header, grouped settings, app/account information, and a
+  separate sign-out action.
+- [SAP Fiori Profile and Settings for Android](https://www.sap.com/design-system/fiori-design-android/v26-1/patterns/profile-and-settings/usage):
+  keep fewer than roughly 15 settings directly accessible, group sections by
+  relevance, and preserve adaptive single-column/mobile behavior.
+- [Citrix OAuth Client Management](https://developer-docs.citrix.com/en-us/workspace-platform/workspace-api/oauth-client-management.html):
+  show client credentials with copy affordances, confirm secret rotation, and
+  expose client edit/disable/delete actions from the client management surface.
+
 ## Implementation Strategy
 
 Prefer global UI configuration first, then shared components, then route-level Tailwind classes.
