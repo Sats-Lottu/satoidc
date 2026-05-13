@@ -164,8 +164,9 @@ def _github_link(target: str):  # pragma: no cover
 
 
 def _github_menu_item(label: str, target: str):  # pragma: no cover
-    item = ui.item().classes("items-center gap-2")
-    item.on("click", lambda: ui.navigate.to(target, new_tab=True))
+    item = ui.item(
+        on_click=lambda: ui.navigate.to(target, new_tab=True)
+    ).classes("items-center gap-2 cursor-pointer")
     with item:
         with ui.item_section().props("avatar"):
             ui.html(GITHUB_MARK_SVG).classes(
@@ -210,6 +211,24 @@ def _mobile_nav(nav_items: list[tuple[str, str, str]]):  # pragma: no cover
         menu_button.on("click", menu.open)
 
 
+def _account_menu(
+    user_label: str,
+    account_items: list[tuple[str, str, str]],
+):  # pragma: no cover
+    with ui.dropdown_button(
+        user_label, icon="account_circle", auto_close=True
+    ).props("flat").classes(SECONDARY_BUTTON_CLASSES):
+        for label, target, icon in account_items:
+            item = ui.item(
+                on_click=lambda target=target: ui.navigate.to(target)
+            ).classes("items-center gap-2 cursor-pointer")
+            with item:
+                with ui.item_section().props("avatar"):
+                    ui.icon(icon)
+                with ui.item_section():
+                    ui.item_label(label)
+
+
 def _theme_toggle():  # pragma: no cover
     dark_mode = ui.dark_mode(value=False)
 
@@ -239,6 +258,7 @@ def app_header(  # noqa: PLR1702
     title: str | None = None,
     user_label: str | None = None,
     nav: Iterable[tuple[str, str, str]] = (),
+    account_items: Iterable[tuple[str, str, str]] | None = None,
     show_brand: bool = True,
 ):  # pragma: no cover
     _configure_page_content()
@@ -253,21 +273,20 @@ def app_header(  # noqa: PLR1702
             ui.label(title).classes("text-xl font-bold")
 
         nav_items = list(nav)
+        account_menu_items = list(
+            account_items
+            or [
+                ("Profile", "/profile", "person"),
+                ("Logout", "/logout", "logout"),
+            ]
+        )
         with ui.row().classes("items-center gap-2"):
-            if user_label:
-                with ui.dropdown_button(
-                    user_label, icon="person", auto_close=True
-                ).props("flat").classes(SECONDARY_BUTTON_CLASSES):
-                    ui.item(
-                        "Profile", on_click=lambda: ui.navigate.to("/profile")
-                    )
-                    ui.item(
-                        "Logout", on_click=lambda: ui.navigate.to("/logout")
-                    )
-            elif nav_items:
+            if nav_items:
                 _desktop_nav(nav_items)
                 _mobile_nav(nav_items)
             _theme_toggle()
+            if user_label:
+                _account_menu(user_label, account_menu_items)
 
 
 def page_shell(max_width: str = "max-w-5xl"):  # pragma: no cover

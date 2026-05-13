@@ -301,7 +301,7 @@ poetry run task run
 
 ## Current Design Debt
 
-- Profile actions such as nickname/email/password/wallet changes still use placeholder notifications.
+- Profile wallet link/relink and developer permission request actions still use placeholder notifications.
 - Admin dashboard permission requests are static placeholder content.
-- Client creation needs stronger validation and post-create credential display.
+- Client creation has metadata validation and one-time post-create credential display, but still needs inline field-level validation and broader authenticated e2e coverage.
 - Auth and dashboard screens need authenticated visual screenshots in future e2e coverage.

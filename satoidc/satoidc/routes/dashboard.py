@@ -76,7 +76,7 @@ async def dashboard_admin():  # noqa: PLR1702  # pragma: no cover
 
 
 @router.page("/developer")
-@page_security(permissions=["developer"])
+@page_security(permissions=["developer", "admin"])
 async def dashboard_developer(  # noqa: PLR1702
     session: Session, request: Request
 ):  # pragma: no cover

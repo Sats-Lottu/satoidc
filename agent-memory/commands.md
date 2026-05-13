@@ -5,7 +5,7 @@ tags:
 type: command
 project: satoidc
 status: active
-updated: 2026-05-08
+updated: 2026-05-13
 ---
 
 # Validated Commands
@@ -37,3 +37,6 @@ updated: 2026-05-08
 - `cd satoidc; poetry run ruff check satoidc tests`: ran on 2026-05-08 after SatOIDC light/dark UI harmonization using NiceGUI `ui.colors` plus Tailwind classes; passed.
 - `cd satoidc; poetry run task test`: ran on 2026-05-08 after SatOIDC light/dark UI harmonization using NiceGUI `ui.colors` plus Tailwind classes; passed with `81 passed, 10 deselected` and 100% measured line coverage.
 - `cd satoidc; poetry run task test_e2e`: ran on 2026-05-08 after SatOIDC light/dark UI harmonization using NiceGUI `ui.colors` plus Tailwind classes; passed with `10 passed`.
+- `cd satoidc; poetry run ruff check satoidc tests`: ran on 2026-05-13 after implementing the UI backlog items for home/header/profile/create-client; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-13 after implementing the UI backlog items for home/header/profile/create-client; passed with `84 passed, 10 deselected`.
+- `cd satoidc; poetry run task test_e2e`: ran on 2026-05-13 after implementing the UI backlog items for home/header/profile/create-client; passed with `10 passed`.
