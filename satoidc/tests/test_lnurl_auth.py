@@ -198,6 +198,70 @@ async def test_lnurl_link_callback_updates_existing_user(
     assert user.lnurl_pubkey == key
 
 
+async def test_lnurl_link_callback_rejects_wallet_owned_by_another_user(
+    db_session, make_user
+):
+    k1 = "b" * 64
+    key, signature = _wallet_signature(k1)
+    owner = await make_user(
+        login="owner",
+        email="owner@example.com",
+        lnurl_pubkey=key,
+    )
+    requester = await make_user(
+        login="requester",
+        email="requester@example.com",
+        lnurl_pubkey=None,
+    )
+    challenge = LnurlAuthChallenge(
+        k1=k1, action="link", user_id=requester.id
+    )
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig=signature,
+            action="link",
+        ),
+        db_session,
+    )
+
+    await db_session.refresh(owner)
+    await db_session.refresh(requester)
+    assert response == {
+        "status": "ERROR",
+        "reason": "Wallet already linked to another account",
+    }
+    assert owner.lnurl_pubkey == key
+    assert requester.lnurl_pubkey is None
+
+
+async def test_lnurl_link_callback_requires_challenge_user(db_session):
+    k1 = "c" * 64
+    key, signature = _wallet_signature(k1)
+    challenge = LnurlAuthChallenge(k1=k1, action="link")
+    db_session.add(challenge)
+    await db_session.commit()
+
+    response = await lnurl_auth_callback(
+        LnurlAuthCallbackIn(
+            k1=k1,
+            key=key,
+            sig=signature,
+            action="link",
+        ),
+        db_session,
+    )
+
+    assert response == {
+        "status": "ERROR",
+        "reason": "Missing linked account",
+    }
+
+
 async def test_lnurl_auth_callback_accepts_stateless_auth(db_session):
     k1 = "9" * 64
     key, signature = _wallet_signature(k1)

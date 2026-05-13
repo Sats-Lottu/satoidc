@@ -51,9 +51,9 @@ Source: `satoidc/satoidc/routes/profile.py`.
 - [x] Implement nickname editing. Current `Change nickname` and `Edit nickname` controls only show a notification.
 - [x] Implement email editing. Current `Change email` and `Edit email` controls only show a notification.
 - [x] Implement password change. Current `Change password` controls only show a notification and need validation, password hashing, and session/security expectations.
-- [ ] Implement LNURL wallet linking. Current `Link wallet` control only shows a notification.
+- [x] Implement LNURL wallet linking. Current `Link wallet` control only shows a notification.
 - [x] Implement LNURL wallet unlinking. Current `Unlink wallet` control only shows a notification and needs a policy for removing `lnurl_pubkey`.
-- [ ] Implement LNURL wallet relinking. Current `Relink wallet` control only shows a notification and needs replay-safe LNURL challenge handling.
+- [x] Implement LNURL wallet relinking. Current `Relink wallet` control only shows a notification and needs replay-safe LNURL challenge handling.
 - [ ] Implement developer permission request creation. Current `Request developer permissions` control only shows a success notification and does not persist a request.
 - [ ] Decide whether profile mutations should use POST endpoints, NiceGUI events, or a mixed approach. Keep behavior testable and avoid custom JavaScript.
 
@@ -74,8 +74,8 @@ Source: `satoidc/satoidc/routes/dashboard.py`.
 
 Source: `satoidc/satoidc/routes/dashboard.py`.
 
-- [ ] Add client management actions beyond viewing: edit metadata, rotate secret, disable/delete client, and copy identifiers.
-- [ ] Add secure client secret reveal/copy behavior after creation and rotation. Secrets should not be casually displayed after the creation window.
+- [x] Add client management actions beyond viewing: edit metadata, rotate secret, disable/delete client, and copy identifiers.
+- [x] Add secure client secret reveal/copy behavior after creation and rotation. Secrets should not be casually displayed after the creation window.
 - [ ] Add validation and feedback for redirect URI and client URI issues surfaced from client creation.
 - [ ] Add authenticated e2e coverage for developer dashboard rendering with zero clients and with existing clients.
 - [ ] Confirm that the `developer` permission exists in the final permission taxonomy. The dashboard currently requires `page_security(permissions=["developer"])`, while the taxonomy is still open.

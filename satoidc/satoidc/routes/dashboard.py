@@ -9,6 +9,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from satoidc.auth.client_management import (
+    ClientMetadataValidationError,
+    is_client_disabled,
+    rotate_client_secret,
+    set_client_disabled,
+)
 from satoidc.auth.permissions import (
     approve_permission_request,
     deny_permission_request,
@@ -19,8 +25,10 @@ from satoidc.auth.security import page_security
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
 from satoidc.models import OAuth2Client, Permission, User
 from satoidc.models.database import get_session
+from satoidc.routes.create_client import update_client_metadata
 from satoidc.routes.ui_components import (
     CONTENT,
+    DIALOG_CLASSES,
     INPUT_CLASSES,
     MUTED_TEXT,
     PAGE,
@@ -345,7 +353,7 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
 
 @router.page("/developer")
 @page_security(permissions=[PermissionsEnum.DEVELOPER, PermissionsEnum.ADMIN])
-async def dashboard_developer(  # noqa: PLR1702
+async def dashboard_developer(  # noqa: PLR0915, PLR1702
     session: Session, request: Request
 ):  # pragma: no cover
     user_id = request.session.get("user_id")
@@ -358,6 +366,168 @@ async def dashboard_developer(  # noqa: PLR1702
             )
         ).all()
     )
+
+    def copy_button(label: str, value: str):
+        ui.button(
+            label,
+            icon="content_copy",
+            on_click=lambda value=value: (
+                ui.clipboard.write(value),
+                ui.notify("Copied to clipboard.", type="positive"),
+            ),
+        ).classes(SECONDARY_BUTTON_CLASSES)
+
+    def secret_dialog(secret: str):
+        with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
+            ui.label("Client secret").classes("text-xl font-semibold")
+            ui.label(
+                "Copy this secret now. It is only shown in this dialog."
+            ).classes(MUTED_TEXT)
+            ui.label(secret).classes(TECH_TEXT)
+            with ui.row().classes("justify-end gap-3 w-full"):
+                copy_button("Copy secret", secret)
+                ui.button(
+                    "Close", icon="close", on_click=dialog.close
+                ).classes(PRIMARY_BUTTON_CLASSES)
+        dialog.open()
+
+    def edit_client_dialog(client: OAuth2Client):
+        metadata = client.client_metadata or {}
+        with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
+            ui.label("Edit OAuth2 client").classes("text-xl font-semibold")
+            client_name = ui.input(
+                "Client Name", value=metadata.get("client_name") or ""
+            ).classes(INPUT_CLASSES)
+            client_uri = ui.input(
+                "Client URI", value=metadata.get("client_uri") or ""
+            ).props("type=url").classes(INPUT_CLASSES)
+            scope = ui.input(
+                "Allowed Scope", value=metadata.get("scope") or ""
+            ).classes(INPUT_CLASSES)
+            redirect_uri = ui.textarea(
+                "Redirect URIs",
+                value="\n".join(metadata.get("redirect_uris") or []),
+            ).props("rows=4").classes(INPUT_CLASSES)
+            grant_type = ui.textarea(
+                "Allowed Grant Types",
+                value="\n".join(metadata.get("grant_types") or []),
+            ).props("rows=3").classes(INPUT_CLASSES)
+            response_type = ui.textarea(
+                "Allowed Response Types",
+                value="\n".join(metadata.get("response_types") or []),
+            ).props("rows=3").classes(INPUT_CLASSES)
+            token_endpoint_auth_method = ui.select(
+                options=[
+                    "client_secret_basic",
+                    "client_secret_post",
+                    "none",
+                ],
+                value=metadata.get("token_endpoint_auth_method")
+                or "client_secret_basic",
+                label="Token Endpoint Auth Method",
+            ).classes(INPUT_CLASSES)
+
+            async def save():
+                generated_secret = None
+                try:
+                    next_metadata = update_client_metadata(
+                        client,
+                        client_name=client_name.value,
+                        client_uri=client_uri.value,
+                        scope=scope.value,
+                        redirect_uri=redirect_uri.value,
+                        grant_type=grant_type.value,
+                        response_type=response_type.value,
+                        token_endpoint_auth_method=(
+                            token_endpoint_auth_method.value
+                        ),
+                    )
+                    if (
+                        next_metadata.get("token_endpoint_auth_method")
+                        == "none"
+                    ):
+                        client.client_secret = ""
+                    elif not client.client_secret:
+                        generated_secret = rotate_client_secret(client)
+                except ClientMetadataValidationError as error:
+                    for message in error.messages[:3]:
+                        ui.notify(message, type="negative")
+                    return
+                session.add(client)
+                await session.commit()
+                ui.notify("Client updated.", type="positive")
+                if generated_secret:
+                    secret_dialog(generated_secret)
+                else:
+                    ui.navigate.to("/dashboard/developer")
+
+            with ui.row().classes("justify-end gap-3 w-full"):
+                ui.button("Cancel", on_click=dialog.close).classes(
+                    SECONDARY_BUTTON_CLASSES
+                )
+                ui.button("Save", icon="save", on_click=save).classes(
+                    PRIMARY_BUTTON_CLASSES
+                )
+        dialog.open()
+
+    def rotate_secret_dialog(client: OAuth2Client):
+        with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
+            ui.label("Rotate client secret").classes("text-xl font-semibold")
+            ui.label(
+                "Existing deployments using the old secret will fail until "
+                "they are updated."
+            ).classes(MUTED_TEXT)
+
+            async def rotate():
+                try:
+                    secret = rotate_client_secret(client)
+                except ClientMetadataValidationError as error:
+                    ui.notify(error.messages[0], type="negative")
+                    return
+                session.add(client)
+                await session.commit()
+                dialog.close()
+                secret_dialog(secret)
+
+            with ui.row().classes("justify-end gap-3 w-full"):
+                ui.button("Cancel", on_click=dialog.close).classes(
+                    SECONDARY_BUTTON_CLASSES
+                )
+                ui.button("Rotate", icon="sync", on_click=rotate).classes(
+                    PRIMARY_BUTTON_CLASSES
+                )
+        dialog.open()
+
+    async def toggle_client(client: OAuth2Client):
+        set_client_disabled(client, disabled=not is_client_disabled(client))
+        session.add(client)
+        await session.commit()
+        ui.notify("Client status updated.", type="positive")
+        ui.navigate.to("/dashboard/developer")
+
+    def delete_client_dialog(client: OAuth2Client):
+        metadata = client.client_metadata or {}
+        client_name = metadata.get("client_name") or client.client_id
+        with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
+            ui.label("Delete OAuth2 client").classes("text-xl font-semibold")
+            ui.label(
+                f"Delete {client_name}? This removes the registration."
+            ).classes(MUTED_TEXT)
+
+            async def delete():
+                await session.delete(client)
+                await session.commit()
+                ui.notify("Client deleted.", type="positive")
+                ui.navigate.to("/dashboard/developer")
+
+            with ui.row().classes("justify-end gap-3 w-full"):
+                ui.button("Cancel", on_click=dialog.close).classes(
+                    SECONDARY_BUTTON_CLASSES
+                )
+                ui.button("Delete", icon="delete", on_click=delete).props(
+                    "color=negative"
+                ).classes(SECONDARY_BUTTON_CLASSES)
+        dialog.open()
 
     app_header(
         title="Developer Dashboard",
@@ -384,6 +554,12 @@ async def dashboard_developer(  # noqa: PLR1702
             columns = [
                 {"name": "name", "label": "Name", "field": "name"},
                 {
+                    "name": "client_id",
+                    "label": "Client ID",
+                    "field": "client_id",
+                },
+                {"name": "status", "label": "Status", "field": "status"},
+                {
                     "name": "auth_method",
                     "label": "Auth Method",
                     "field": "auth_method",
@@ -402,6 +578,12 @@ async def dashboard_developer(  # noqa: PLR1702
                     {
                         "name": (
                             metadata.get("client_name") or client.client_id
+                        ),
+                        "client_id": client.client_id,
+                        "status": (
+                            "disabled"
+                            if is_client_disabled(client)
+                            else "active"
                         ),
                         "auth_method": metadata.get(
                             "token_endpoint_auth_method", "-"
@@ -443,9 +625,58 @@ async def dashboard_developer(  # noqa: PLR1702
                 metadata = client.client_metadata or {}
                 info = client.client_info or {}
                 with card("gap-4"):
-                    ui.label(
-                        metadata.get("client_name") or client.client_id
-                    ).classes("text-lg font-semibold")
+                    disabled = is_client_disabled(client)
+                    with ui.row().classes(
+                        "w-full items-center justify-between gap-3 "
+                        "max-sm:flex-col max-sm:items-stretch"
+                    ):
+                        with ui.column().classes("gap-1"):
+                            ui.label(
+                                metadata.get("client_name") or client.client_id
+                            ).classes("text-lg font-semibold")
+                            status_text = (
+                                "Client disabled"
+                                if disabled
+                                else "Client active"
+                            )
+                            status_classes = (
+                                MUTED_TEXT if disabled else SUCCESS_TEXT
+                            )
+                            ui.label(status_text).classes(
+                                f"text-sm {status_classes}"
+                            )
+                        with ui.row().classes("gap-2 flex-wrap justify-end"):
+                            copy_button("Copy ID", client.client_id)
+                            ui.button(
+                                "Edit",
+                                icon="edit",
+                                on_click=lambda client=client: (
+                                    edit_client_dialog(client)
+                                ),
+                            ).classes(SECONDARY_BUTTON_CLASSES)
+                            ui.button(
+                                "Rotate secret",
+                                icon="sync",
+                                on_click=lambda client=client: (
+                                    rotate_secret_dialog(client)
+                                ),
+                            ).classes(SECONDARY_BUTTON_CLASSES)
+                            ui.button(
+                                "Enable" if disabled else "Disable",
+                                icon="toggle_on" if disabled else "block",
+                                on_click=lambda client=client: toggle_client(
+                                    client
+                                ),
+                            ).classes(SECONDARY_BUTTON_CLASSES)
+                            ui.button(
+                                "Delete",
+                                icon="delete",
+                                on_click=lambda client=client: (
+                                    delete_client_dialog(client)
+                                ),
+                            ).props("color=negative").classes(
+                                SECONDARY_BUTTON_CLASSES
+                            )
                     with responsive_grid(2, "gap-3"):
                         for key, value in {
                             "Client ID": info.get(
@@ -456,6 +687,11 @@ async def dashboard_developer(  # noqa: PLR1702
                             ),
                             "Scope": metadata.get("scope", "-"),
                             "Client URI": metadata.get("client_uri", "-"),
+                            "Secret": (
+                                "Configured"
+                                if client.client_secret
+                                else "Public client"
+                            ),
                         }.items():
                             with ui.column().classes(f"{PANEL} p-3 gap-1"):
                                 ui.label(key).classes(f"text-sm {MUTED_TEXT}")
@@ -476,6 +712,3 @@ async def dashboard_developer(  # noqa: PLR1702
                             ui.label("No redirect URIs configured").classes(
                                 f"text-sm {MUTED_TEXT}"
                             )
-                    ui.label("Client active").classes(
-                        f"text-sm {SUCCESS_TEXT}"
-                    )

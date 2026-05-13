@@ -3,12 +3,14 @@
 from typing import Annotated
 from uuid import UUID
 
+import segno
 from fastapi import Depends, Request
 from nicegui import APIRouter, ui
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
+from satoidc.auth.lnurl import lnurl_auth_events, url_encode
 from satoidc.auth.permissions import (
     PermissionRequestNotAllowed,
     create_permission_request,
@@ -17,7 +19,7 @@ from satoidc.auth.permissions import (
 )
 from satoidc.auth.security import hash_password, verify_password
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
-from satoidc.models import Permission, User
+from satoidc.models import LnurlAuthChallenge, Permission, User
 from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
     DIALOG_CLASSES,
@@ -33,6 +35,7 @@ from satoidc.routes.ui_components import (
     page_shell,
     responsive_grid,
 )
+from satoidc.settings import ENV
 from satoidc.validators import (
     is_valid_email,
     is_valid_nickname,
@@ -65,6 +68,12 @@ def _field_row(
         ).classes(SECONDARY_BUTTON_CLASSES)
 
 
+def _detail_row(label: str, value: str):
+    with ui.column().classes("gap-1"):
+        ui.label(label).classes(f"text-sm {MUTED_TEXT}")
+        ui.label(value).classes(TECH_TEXT)
+
+
 @ui.page("/profile")
 async def profile(  # noqa: PLR0912, PLR0915, PLR1702
     session: Session, request: Request
@@ -91,6 +100,16 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
     permissions = {perm.permission_type for perm in user.permissions}
     latest_developer_request = await get_latest_permission_request(
         session, user.id, PermissionsEnum.DEVELOPER
+    )
+    wallet_state = "Linked" if user.lnurl_pubkey else "Not linked"
+    password_state = "Configured" if user.password_hash else "Not configured"
+    developer_state = (
+        "Enabled" if has_developer_access(permissions) else "Not enabled"
+    )
+    created_at = (
+        user.created_at.strftime("%Y-%m-%d %H:%M UTC")
+        if user.created_at
+        else "-"
     )
 
     def refresh_profile():
@@ -250,6 +269,77 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                 ).classes(SECONDARY_BUTTON_CLASSES)
         dialog.open()
 
+    class LNURLWalletLinkDialog:
+        def __init__(self, action_label: str):
+            self.action_label = action_label
+            self.k1 = None
+
+        async def refresh_qrcode(self):
+            challenge = LnurlAuthChallenge(action="link", user_id=user.id)
+            session.add(challenge)
+            await session.commit()
+            await session.refresh(challenge)
+            self.k1 = challenge.k1
+            self.qrcode.refresh()
+
+        @ui.refreshable_method
+        def qrcode(self):
+            if not self.k1:
+                ui.label("Preparing wallet link...").classes(MUTED_TEXT)
+                return
+            lnurl_auth = url_encode(
+                f"{request.base_url}auth/lnurl/callback?"
+                f"tag=login&k1={self.k1}&action=link"
+            )
+            qrcode = segno.make_qr(lnurl_auth, error="l")
+            ui.label(self.action_label).classes("text-lg font-semibold")
+            with ui.link(target=f"lightning:{lnurl_auth}").tooltip(
+                "Open in Lightning Wallet"
+            ):
+                ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
+                    "w-64 h-64"
+                ).tooltip("Scan with your Lightning Wallet")
+            ui.label(lnurl_auth).classes(
+                "mt-2 w-full break-all text-xs text-center "
+                "text-slate-600 dark:text-slate-400"
+            ).on("click", lambda e: ui.clipboard.write(lnurl_auth)).on(
+                "click",
+                lambda e: ui.notify(
+                    "LNURL copied to clipboard.", type="positive"
+                ),
+            ).tooltip("Click to copy")
+
+    def wallet_link_dialog():
+        action_label = "Relink Lightning wallet" if user.lnurl_pubkey else (
+            "Link Lightning wallet"
+        )
+        wallet_link = LNURLWalletLinkDialog(action_label)
+        ui.timer(
+            ENV.LNURL_K1_TTL_SECONDS,
+            wallet_link.refresh_qrcode,
+        )
+        ui.timer(0.1, wallet_link.refresh_qrcode, once=True)
+
+        @lnurl_auth_events.subscribe
+        async def _event_handler(data: dict):
+            if data.get("k1") == wallet_link.k1:
+                ui.notify("Wallet linked.", type="positive")
+                refresh_profile()
+
+        with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
+            ui.label(action_label).classes("text-xl font-semibold")
+            ui.label(
+                "Scan this QR with the wallet you want to use for LNURL-auth "
+                "on this account."
+            ).classes(MUTED_TEXT)
+            with ui.column().classes("items-center gap-3 w-full"):
+                wallet_link.qrcode()
+            with ui.row().classes("justify-end gap-3 w-full"):
+                ui.button(
+                    "Close", icon="close", on_click=dialog.close
+                ).classes(SECONDARY_BUTTON_CLASSES)
+        dialog.open()
+
     def developer_request_dialog():
         with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
             ui.label("Request developer access").classes(
@@ -336,7 +426,9 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
         with responsive_grid(2, "gap-6"):
             with ui.column().classes("gap-6"):
                 with card("gap-4"):
-                    ui.label("User Info").classes("text-xl font-semibold")
+                    ui.label("Account Information").classes(
+                        "text-xl font-semibold"
+                    )
                     ui.separator()
                     _field_row(
                         "Nickname",
@@ -365,6 +457,52 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                         icon="lock",
                         on_click=password_dialog,
                     )
+
+                with card("gap-4"):
+                    ui.label("Wallet Connection").classes(
+                        "text-xl font-semibold"
+                    )
+                    ui.separator()
+                    with ui.column().classes("gap-2"):
+                        ui.label("LNURL Pubkey").classes(
+                            f"text-sm {MUTED_TEXT}"
+                        )
+                        ui.label(
+                            user.lnurl_pubkey or "No wallet linked"
+                        ).classes(TECH_TEXT)
+
+                    with ui.row().classes("gap-3 flex-wrap"):
+                        if user.lnurl_pubkey:
+                            ui.button(
+                                "Unlink wallet",
+                                icon="link_off",
+                                on_click=unlink_wallet_dialog,
+                            ).classes(SECONDARY_BUTTON_CLASSES)
+                            ui.button(
+                                "Relink wallet",
+                                icon="link",
+                                on_click=wallet_link_dialog,
+                            ).classes(SECONDARY_BUTTON_CLASSES)
+                        else:
+                            ui.button(
+                                "Link wallet",
+                                icon="bolt",
+                                on_click=wallet_link_dialog,
+                            ).classes(PRIMARY_BUTTON_CLASSES)
+
+            with ui.column().classes("gap-6"):
+                with card("gap-4"):
+                    ui.label("Account Details").classes(
+                        "text-xl font-semibold"
+                    )
+                    ui.separator()
+                    with responsive_grid(2, "gap-4"):
+                        _detail_row("Subject ID", str(user.id))
+                        _detail_row("Login", user.login or "-")
+                        _detail_row("Password", password_state)
+                        _detail_row("Wallet", wallet_state)
+                        _detail_row("Developer access", developer_state)
+                        _detail_row("Created", created_at)
 
                 with card("gap-4"):
                     ui.label("Developer Access").classes(
@@ -431,75 +569,4 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                                 icon="code",
                                 on_click=developer_request_dialog,
                             ).classes(SECONDARY_BUTTON_CLASSES)
-
-            with ui.column().classes("gap-6"):
-                with card("gap-4"):
-                    ui.label("Wallet Connection").classes(
-                        "text-xl font-semibold"
-                    )
-                    ui.separator()
-                    with ui.column().classes("gap-2"):
-                        ui.label("LNURL Pubkey").classes(
-                            f"text-sm {MUTED_TEXT}"
-                        )
-                        ui.label(
-                            user.lnurl_pubkey or "No wallet linked"
-                        ).classes(TECH_TEXT)
-
-                    with ui.row().classes("gap-3 flex-wrap"):
-                        if user.lnurl_pubkey:
-                            ui.button(
-                                "Unlink wallet",
-                                icon="link_off",
-                                on_click=unlink_wallet_dialog,
-                            ).classes(SECONDARY_BUTTON_CLASSES)
-                            ui.button(
-                                "Relink wallet",
-                                icon="link",
-                                on_click=lambda: ui.notify(
-                                    "Wallet relink is not available yet."
-                                ),
-                            ).classes(SECONDARY_BUTTON_CLASSES)
-                        else:
-                            ui.button(
-                                "Link wallet",
-                                icon="bolt",
-                                on_click=lambda: ui.notify(
-                                    "Wallet link is not available yet."
-                                ),
-                            ).classes(PRIMARY_BUTTON_CLASSES)
-
-                with card("gap-4"):
-                    ui.label("Quick Actions").classes("text-xl font-semibold")
-                    ui.separator()
-                    for label, icon in [
-                        ("Edit nickname", "person"),
-                        ("Edit email", "alternate_email"),
-                        ("Change password", "password"),
-                    ]:
-                        actions = {
-                            "Edit nickname": nickname_dialog,
-                            "Edit email": email_dialog,
-                            "Change password": password_dialog,
-                        }
-                        ui.button(
-                            label,
-                            icon=icon,
-                            on_click=actions[label],
-                        ).classes(f"w-full {SECONDARY_BUTTON_CLASSES}")
-                    wallet_label = (
-                        "Unlink wallet" if user.lnurl_pubkey else "Link wallet"
-                    )
-                    wallet_icon = "link_off" if user.lnurl_pubkey else "link"
-                    ui.button(
-                        wallet_label,
-                        icon=wallet_icon,
-                        on_click=(
-                            unlink_wallet_dialog
-                            if user.lnurl_pubkey
-                            else lambda: ui.notify(
-                                "Wallet link is not available yet."
-                            )
-                        ),
-                    ).classes(f"w-full {SECONDARY_BUTTON_CLASSES}")
     footer()

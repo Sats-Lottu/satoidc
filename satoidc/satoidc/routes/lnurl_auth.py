@@ -18,7 +18,7 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.get("/lnurl/callback", status_code=HTTPStatus.OK)
-async def lnurl_auth_callback(
+async def lnurl_auth_callback(  # noqa: PLR0911, PLR0912
     query: Annotated[LnurlAuthCallbackIn, Depends()], session: Session
 ):
     response = {"status": "ERROR", "reason": "Unknown error"}
@@ -79,9 +79,24 @@ async def lnurl_auth_callback(
             response = {"status": "OK"}
         case "link":
             # Link this linkingKey to an already authenticated account.
+            if not challenge.user_id:
+                return {
+                    "status": "ERROR",
+                    "reason": "Missing linked account",
+                }
+            if db_user and db_user.id != challenge.user_id:
+                return {
+                    "status": "ERROR",
+                    "reason": "Wallet already linked to another account",
+                }
             user = await session.scalar(
                 select(User).where(User.id == challenge.user_id)
             )
+            if not user:
+                return {
+                    "status": "ERROR",
+                    "reason": "Linked account not found",
+                }
             user.lnurl_pubkey = query.key
             session.add(user)
             await session.commit()

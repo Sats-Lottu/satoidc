@@ -96,12 +96,16 @@ The developer dashboard:
 - Shows count of registered clients.
 - Shows an empty state when the user has no clients.
 - Shows compact per-client details and redirect URIs.
+- Lets the owner edit client metadata using the same validation contract as
+  client creation.
+- Lets the owner rotate a confidential client secret and shows the new secret
+  once.
+- Lets the owner disable or re-enable a client registration.
+- Lets the owner delete a client registration after confirmation.
+- Provides copy affordances for client identifiers and one-time secrets.
 
 Current limitations:
 
-- No client edit flow.
-- No client delete/disable flow.
-- No secret rotation flow.
 - No post-creation secret reveal beyond initial creation dialog.
 
 ## Acceptance Criteria
@@ -118,3 +122,14 @@ Current limitations:
   once after creation.
 - Given a developer user with clients, when opening `/dashboard/developer`, then
   the table and details reflect only that user's clients.
+- Given a developer edits valid client metadata, when saved, then the stored
+  metadata is normalized and updated.
+- Given invalid edited metadata, when saved, then no update is persisted and
+  validation errors are shown.
+- Given a confidential client, when rotating the secret, then the stored secret
+  changes and the new value is shown once with copy affordances.
+- Given a public client, when rotating the secret, then rotation is rejected.
+- Given a disabled client, when OAuth/Authlib queries it, then the provider
+  treats it as unavailable.
+- Given a client owner deletes a client, when confirmed, then that registration
+  is removed from the dashboard.

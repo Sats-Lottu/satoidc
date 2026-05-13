@@ -18,6 +18,7 @@ from authlib.oauth2.rfc7662 import (
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
 
+from satoidc.auth.client_management import is_client_disabled
 from satoidc.auth.oidc_keys import audit_token_signed, get_active_jwt_config
 from satoidc.fastapi_oauth2 import (
     AuthorizationServer,
@@ -251,7 +252,14 @@ require_oauth = ResourceProtector()
 
 def config_oauth(app):
     """Setup the application configuration"""
-    query_client = create_query_client_func(db, OAuth2Client)
+    base_query_client = create_query_client_func(db, OAuth2Client)
+
+    def query_client(client_id):
+        client = base_query_client(client_id)
+        if client and is_client_disabled(client):
+            return None
+        return client
+
     save_token = create_save_token_func(db, OAuth2Token)
     authorization.init_app(
         app, query_client=query_client, save_token=save_token

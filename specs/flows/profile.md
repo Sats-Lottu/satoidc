@@ -26,11 +26,12 @@ Describe the current authenticated profile page behavior.
 ## Displayed Sections
 
 - Account summary with nickname, email, wallet state, permissions, and logout.
-- User Info card.
+- Account Information card.
 - Security card.
-- Developer Access card.
 - Wallet Connection card.
-- Quick Actions card.
+- Account Details card with subject ID, login, sign-in method state,
+  developer access state, and creation timestamp.
+- Developer Access card.
 
 ## Implemented Mutations
 
@@ -62,12 +63,18 @@ Wallet unlink:
 - Requires a password hash to exist before removing the wallet key.
 - Sets `lnurl_pubkey` to null.
 
+Wallet link and relink:
+
+- Opens a dialog with a fresh LNURL-auth QR challenge using `action=link`.
+- Stores the current signed-in user on the challenge before rendering the QR.
+- Lets the wallet callback attach the wallet public key to that user.
+- Rejects a wallet public key that is already linked to another user.
+- Refreshes the profile after a successful callback event.
+
 ## Placeholder Behavior
 
 Still not implemented:
 
-- Wallet link.
-- Wallet relink.
 - Developer permission request persistence.
 
 The developer request button currently shows a success notification without
@@ -95,3 +102,9 @@ intended workflow.
   is rejected.
 - Given a wallet-linked user with a password, when unlinking, then
   `lnurl_pubkey` becomes null.
+- Given a signed-in user with no wallet, when scanning a valid wallet link QR,
+  then `lnurl_pubkey` is set to the wallet linking key.
+- Given a signed-in user with an existing wallet, when scanning a valid wallet
+  relink QR with a new wallet, then `lnurl_pubkey` is replaced.
+- Given a signed-in user scans a wallet key already linked to another account,
+  then the callback is rejected and no account is changed.

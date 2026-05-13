@@ -1,3 +1,5 @@
+# ruff: noqa: PLR1702
+
 import time
 from secrets import token_urlsafe
 from typing import Annotated
@@ -8,6 +10,12 @@ from fastapi import Depends, Request
 from nicegui import APIRouter, ui
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from satoidc.auth.client_management import (
+    CLIENT_DISABLED_AT,
+    CLIENT_SECRET_ROTATED_AT,
+    CLIENT_UPDATED_AT,
+    ClientMetadataValidationError,
+)
 from satoidc.auth.security import page_security
 from satoidc.enums import (
     GrantTypeEnum,
@@ -40,12 +48,6 @@ SUPPORTED_SCOPES = {"openid", "profile", "email"}
 SUPPORTED_AUTH_METHODS = {
     method.value for method in TokenEndpointAuthMethodEnum
 }
-
-
-class ClientMetadataValidationError(ValueError):
-    def __init__(self, messages: list[str]):
-        self.messages = messages
-        super().__init__("; ".join(messages))
 
 
 def parse_multiline_values(value: str | None) -> list[str]:
@@ -144,9 +146,39 @@ def build_client_metadata(  # noqa: PLR0912, PLR0913
     }
 
 
+def update_client_metadata(  # noqa: PLR0913
+    client: OAuth2Client,
+    *,
+    client_name: str | None,
+    client_uri: str | None,
+    scope: str | None,
+    redirect_uri: str | None,
+    grant_type: str | None,
+    response_type: str | None,
+    token_endpoint_auth_method: str | None,
+    now: int | None = None,
+) -> dict:
+    current_metadata = client.client_metadata or {}
+    next_metadata = build_client_metadata(
+        client_name=client_name,
+        client_uri=client_uri,
+        scope=scope,
+        redirect_uri=redirect_uri,
+        grant_type=grant_type,
+        response_type=response_type,
+        token_endpoint_auth_method=token_endpoint_auth_method,
+    )
+    for key in (CLIENT_DISABLED_AT, CLIENT_SECRET_ROTATED_AT):
+        if current_metadata.get(key):
+            next_metadata[key] = current_metadata[key]
+    next_metadata[CLIENT_UPDATED_AT] = now or int(time.time())
+    client.set_client_metadata(next_metadata)
+    return next_metadata
+
+
 @router.page("/create_client")
 @page_security(permissions=[PermissionsEnum.DEVELOPER, PermissionsEnum.ADMIN])
-async def create_client_page(
+async def create_client_page(  # noqa: PLR1702
     session: Session,
     request: Request,
 ):  # pragma: no cover
@@ -237,7 +269,22 @@ async def create_client_page(
                     }.items():
                         with ui.column().classes("gap-1 w-full"):
                             ui.label(label).classes(f"text-sm {MUTED_TEXT}")
-                            ui.label(value).classes(TECH_TEXT)
+                            with ui.row().classes(
+                                "w-full items-center gap-2 "
+                                "max-sm:flex-col max-sm:items-stretch"
+                            ):
+                                ui.label(value).classes(TECH_TEXT)
+                                ui.button(
+                                    "Copy",
+                                    icon="content_copy",
+                                    on_click=lambda value=value: (
+                                        ui.clipboard.write(value),
+                                        ui.notify(
+                                            "Copied to clipboard.",
+                                            type="positive",
+                                        ),
+                                    ),
+                                ).classes(SECONDARY_BUTTON_CLASSES)
                     with ui.row().classes("justify-end gap-3 w-full"):
                         ui.button(
                             "Back to dashboard",
