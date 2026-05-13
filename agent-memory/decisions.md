@@ -29,4 +29,4 @@ updated: 2026-05-13
 - 2026-05-08: Use the shared `responsive_grid()` helper for route grids instead of `ui.grid(columns=...)` when mobile collapse is required. The helper emits Tailwind grid classes on a plain element.
 - 2026-05-13: Keep global header utilities on the right side: navigation first, then theme toggle, then account menu. Signed-in home actions should use the account menu and profile/dashboard/logout actions instead of public login/register CTAs.
 - 2026-05-13: Client registration must validate metadata before persistence and show generated credentials once after creation instead of redirecting immediately.
-- 2026-05-13: LNURL callback attempts should consume their challenge even when signature validation fails. This is a replay-defense behavior; the implementation should rename the `verified` field to `consumed` to avoid implying successful signature verification.
+- 2026-05-13: LNURL callback attempts should consume their challenge even when signature validation fails. This is a replay-defense behavior; the implementation uses the `consumed` field to avoid implying successful signature verification.

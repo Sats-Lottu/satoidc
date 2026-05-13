@@ -262,10 +262,10 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [ ] Expand full OAuth browser authorization-code e2e coverage, including real client redirects and token exchange.
 - [ ] Replace process-local JWT signing key with persistent key material and a key-rotation plan.
 - [ ] Normalize the permission model across enum, migration, UI and access checks.
-- [ ] Harden login redirect handling and add regression tests for open redirect prevention.
-- [ ] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
+- [x] Harden login redirect handling and add regression tests for open redirect prevention.
+- [x] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
 - [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
-- [ ] Make session/cookie settings production-aware, including HTTPS-only cookies.
+- [x] Make session/cookie settings production-aware, including HTTPS-only cookies.
 
 ### Product And Developer Experience
 

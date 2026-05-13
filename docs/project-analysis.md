@@ -58,7 +58,7 @@ The current implementation is an early application prototype with real protocol 
 Important behavior:
 
 - Session cookie name is `client_session`.
-- Session middleware uses `same_site="lax"` and `https_only=False`.
+- Session middleware uses `same_site="lax"` and environment-driven HTTPS-only cookies.
 - OAuth config uses environment settings for issuer, algorithm, and token expiry.
 - The app generates an RSA JWK in memory at import time in `auth/oauth2.py`.
 
@@ -124,7 +124,7 @@ Fields:
 - `k1`: primary key, 32-byte hex challenge.
 - `user_id`: optional user tied to challenge.
 - `action`: `register`, `login`, `link`, or `auth` by convention.
-- `verified`: replay guard.
+- `consumed`: replay guard.
 - timestamps.
 
 ### OAuth2 Tables
@@ -194,7 +194,7 @@ Callback route:
 
 Callback behavior:
 
-- Marks an unverified, non-expired challenge as verified.
+- Marks an unconsumed, non-expired challenge as consumed.
 - Checks action matches.
 - Verifies signature.
 - For `register`, creates a user when no user exists for the key.
@@ -289,7 +289,7 @@ Run on 2026-05-08 after schema, registration, and coverage changes:
 ### Medium Priority
 
 - Permission names are inconsistent. `PermissionsEnum` has `root`, `admin`, and `support`; the initial migration contains `DRAW_OPERATOR`; UI checks use `"developer"`, `"admin"`, and `"root"` strings.
-- `LnurlAuthChallenge.verified` is a misleading field name. The callback intentionally consumes the challenge before signature validation as a replay-defense measure, so the field should be renamed to something like `consumed`.
+- `LnurlAuthChallenge.consumed` intentionally records callback consumption before signature validation as a replay-defense measure.
 - `User.nickname` is non-null in the model, but LNURL registration creates a user with `nickname=None`.
 - Refresh Token Grant has focused unit/integration coverage, but still needs broader end-to-end client-flow coverage.
 - README and examples render mojibake in this shell session, likely due to encoding mismatch in stored files or terminal decoding.
@@ -300,7 +300,7 @@ Run on 2026-05-08 after schema, registration, and coverage changes:
 - `profile.py` still has placeholder wallet link/relink and developer permission request actions.
 - `create_client.py` now validates metadata and uses page-level permission checks, but still needs inline field-level validation and broader permission/persistence coverage.
 - `AuthMiddleware` makes all `/oauth` paths public, including consent POST. The POST has session and CSRF checks, so this is acceptable, but it should remain explicitly documented.
-- `SessionMiddleware` uses `https_only=False`; production should set secure cookies behind HTTPS.
+- Production mode rejects placeholder secrets and requires secure session cookies.
 
 ## Suggested Documentation Next Steps
 

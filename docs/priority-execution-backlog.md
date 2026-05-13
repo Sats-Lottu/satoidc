@@ -32,7 +32,7 @@ Expected outcome:
 
 ### 2. Harden Login Redirect Safety
 
-Status: known gap.
+Status: implemented.
 
 Related specs:
 
@@ -42,18 +42,18 @@ Related specs:
 Problem:
 
 - Password registration sanitizes `redirect_to` with `safe_redirect`.
-- Password login still redirects to submitted `redirect_to` after successful
-  authentication.
+- Password login previously redirected to submitted `redirect_to` after
+  successful authentication.
 
 Expected outcome:
 
-- Apply `safe_redirect` to password login.
-- Add regression tests for external URLs, host-relative URLs, empty values, and
+- `safe_redirect` is applied to password login and LNURL redirect navigation.
+- Regression tests cover external URLs, host-relative URLs, empty values, and
   ordinary relative paths.
 
 ### 3. Make Session And Secrets Production-Aware
 
-Status: known gap.
+Status: implemented.
 
 Related specs:
 
@@ -62,7 +62,7 @@ Related specs:
 
 Problem:
 
-- Session cookies currently use `https_only=False`.
+- Session cookies previously used a fixed `https_only=False`.
 - Compose defaults include placeholder secrets and database credentials.
 - There is no production secret manager integration.
 
@@ -146,7 +146,7 @@ Expected outcome:
 
 ### 7. Rename LNURL Challenge State From Verified To Consumed
 
-Status: behavior is intentional, naming is misleading.
+Status: implemented.
 
 Related specs:
 
@@ -156,14 +156,14 @@ Problem:
 
 - The callback consumes the challenge before signature validation.
 - This is intentional to prevent repeated attempts against the same challenge.
-- The field name `verified` suggests successful signature validation, which is
-  not what the field means.
+- The old field name `verified` suggested successful signature validation,
+  which was not what the field meant.
 
 Expected outcome:
 
-- Rename `LnurlAuthChallenge.verified` to a clearer name such as `consumed`.
-- Update migration, model, callback queries, tests, and docs.
-- Preserve the current security behavior: a callback attempt consumes the
+- `LnurlAuthChallenge.consumed` is used in the model and callback queries.
+- Migration, tests, and docs were updated.
+- The current security behavior is preserved: a callback attempt consumes the
   challenge even if the signature is invalid.
 
 ### 8. Finish LNURL Wallet Link And Relink From Profile
