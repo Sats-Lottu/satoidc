@@ -5,7 +5,7 @@ tags:
 type: decision
 project: satoidc
 status: active
-updated: 2026-05-08
+updated: 2026-05-13
 ---
 
 # Decisions
@@ -27,3 +27,6 @@ updated: 2026-05-08
 - 2026-05-08: Treat `page_security` as authorization logic rather than UI glue. Keep it covered by focused tests and delegate database permission loading plus request authorization to testable helpers.
 - 2026-05-08: SatOIDC theme changes should prefer NiceGUI `ui.colors(...)`, `default_props`, `default_classes`, and shared Tailwind class helpers. Do not use broad CSS injection through `ui.add_head_html` for normal visual theming.
 - 2026-05-08: Use the shared `responsive_grid()` helper for route grids instead of `ui.grid(columns=...)` when mobile collapse is required. The helper emits Tailwind grid classes on a plain element.
+- 2026-05-13: Keep global header utilities on the right side: navigation first, then theme toggle, then account menu. Signed-in home actions should use the account menu and profile/dashboard/logout actions instead of public login/register CTAs.
+- 2026-05-13: Client registration must validate metadata before persistence and show generated credentials once after creation instead of redirecting immediately.
+- 2026-05-13: LNURL callback attempts should consume their challenge even when signature validation fails. This is a replay-defense behavior; the implementation should rename the `verified` field to `consumed` to avoid implying successful signature verification.

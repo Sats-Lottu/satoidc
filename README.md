@@ -89,19 +89,19 @@ For a deeper technical map, start from [docs/README.md](docs/README.md), especia
 
 ## Protocol Support
 
-| Capability | Status | Notes |
-| --- | --- | --- |
-| OAuth2 Authorization Code | Implemented | Main supported flow. |
-| OpenID Connect ID Token | Implemented | Signed with RS256 in current metadata. |
-| PKCE | Implemented | Required for the Authorization Code Grant. |
-| Discovery | Implemented | Served at `/.well-known/openid-configuration`. |
-| JWKS | Implemented | Current key is generated at process startup. |
-| UserInfo | Implemented | Returns claims based on granted scopes. |
-| Introspection | Implemented | Authlib endpoint registered. |
-| Revocation | Implemented | Authlib endpoint registered. |
-| Refresh Token Grant | Implemented | Registered with refresh token issuance enabled and covered by focused tests. |
-| LNURL-auth | Implemented | Login, register, link and auth actions exist. |
-| Implicit/Hybrid | Not advertised | Not registered for the current provider contract. |
+| Capability                | Status         | Notes                                                                        |
+| ------------------------- | -------------- | ---------------------------------------------------------------------------- |
+| OAuth2 Authorization Code | Implemented    | Main supported flow.                                                         |
+| OpenID Connect ID Token   | Implemented    | Signed with RS256 in current metadata.                                       |
+| PKCE                      | Implemented    | Required for the Authorization Code Grant.                                   |
+| Discovery                 | Implemented    | Served at `/.well-known/openid-configuration`.                               |
+| JWKS                      | Implemented    | Current key is generated at process startup.                                 |
+| UserInfo                  | Implemented    | Returns claims based on granted scopes.                                      |
+| Introspection             | Implemented    | Authlib endpoint registered.                                                 |
+| Revocation                | Implemented    | Authlib endpoint registered.                                                 |
+| Refresh Token Grant       | Implemented    | Registered with refresh token issuance enabled and covered by focused tests. |
+| LNURL-auth                | Implemented    | Login, register, link and auth actions exist.                                |
+| Implicit/Hybrid           | Not advertised | Not registered for the current provider contract.                            |
 
 ---
 
@@ -263,7 +263,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [ ] Replace process-local JWT signing key with persistent key material and a key-rotation plan.
 - [ ] Normalize the permission model across enum, migration, UI and access checks.
 - [ ] Harden login redirect handling and add regression tests for open redirect prevention.
-- [ ] Revisit LNURL challenge lifecycle so invalid signatures do not consume valid challenges.
+- [ ] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
 - [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
 - [ ] Make session/cookie settings production-aware, including HTTPS-only cookies.
 

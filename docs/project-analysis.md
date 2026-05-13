@@ -289,7 +289,7 @@ Run on 2026-05-08 after schema, registration, and coverage changes:
 ### Medium Priority
 
 - Permission names are inconsistent. `PermissionsEnum` has `root`, `admin`, and `support`; the initial migration contains `DRAW_OPERATOR`; UI checks use `"developer"`, `"admin"`, and `"root"` strings.
-- `LnurlAuthChallenge` is marked verified before signature validation; a bad signature consumes the challenge.
+- `LnurlAuthChallenge.verified` is a misleading field name. The callback intentionally consumes the challenge before signature validation as a replay-defense measure, so the field should be renamed to something like `consumed`.
 - `User.nickname` is non-null in the model, but LNURL registration creates a user with `nickname=None`.
 - Refresh Token Grant has focused unit/integration coverage, but still needs broader end-to-end client-flow coverage.
 - README and examples render mojibake in this shell session, likely due to encoding mismatch in stored files or terminal decoding.
@@ -297,15 +297,15 @@ Run on 2026-05-08 after schema, registration, and coverage changes:
 ### Lower Priority
 
 - `dashboard.py` has placeholder menu text `asdf`.
-- `profile.py` contains placeholder button actions implemented as notifications.
-- `create_client.py` has little validation and does not use `page_security(permissions=["developer"])`, so any logged-in user can reach it through middleware.
+- `profile.py` still has placeholder wallet link/relink and developer permission request actions.
+- `create_client.py` now validates metadata and uses page-level permission checks, but still needs inline field-level validation and broader permission/persistence coverage.
 - `AuthMiddleware` makes all `/oauth` paths public, including consent POST. The POST has session and CSRF checks, so this is acceptable, but it should remain explicitly documented.
 - `SessionMiddleware` uses `https_only=False`; production should set secure cookies behind HTTPS.
 
 ## Suggested Documentation Next Steps
 
 - Normalize README encoding and protocol claims.
-- Add or update SDD specs for login redirect safety, permissions model, and LNURL-auth challenge lifecycle.
+- Add or update SDD specs for login redirect safety, permissions model, and LNURL challenge state naming.
 - Implement the drafted OIDC key rotation spec.
 - Expand tests for full browser authorization-code flow, client registration validation, and signed JWT `exp` behavior.
 

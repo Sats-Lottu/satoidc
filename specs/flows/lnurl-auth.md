@@ -45,6 +45,6 @@ Current validation:
 
 ## Risks To Resolve
 
-- Bad signatures currently consume the challenge because `verified=True` happens before signature verification.
+- Callback attempts intentionally consume the challenge before signature verification as a replay-defense measure, even when the signature is invalid. The current `verified` field name is misleading and should be renamed to `consumed` or equivalent.
 - `register` can create a user without email, login, password, and possibly without nickname.
 - `auth` action needs a documented meaning before production use.
