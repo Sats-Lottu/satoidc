@@ -72,7 +72,7 @@ Fields:
 - `k1`: primary key, generated from 32 random bytes encoded as hex.
 - `user_id`: optional user linked to the challenge.
 - `action`: conventionally `login`, `register`, `link`, or `auth`.
-- `verified`: replay guard.
+- `consumed`: replay guard.
 - `created_at`: database timestamp.
 - `updated_at`: database timestamp updated on mutation.
 

@@ -120,4 +120,4 @@ async def test_expired_lnurl_challenge_is_rejected(db_session, make_user):
         "status": "ERROR",
         "reason": "Invalid or expired k1",
     }
-    assert stored_challenge.verified is False
+    assert stored_challenge.consumed is False

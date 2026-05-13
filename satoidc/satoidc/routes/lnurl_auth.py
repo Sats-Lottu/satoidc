@@ -30,10 +30,10 @@ async def lnurl_auth_callback(
         update(LnurlAuthChallenge)
         .where(
             LnurlAuthChallenge.k1 == query.k1,
-            LnurlAuthChallenge.verified.is_(False),
+            LnurlAuthChallenge.consumed.is_(False),
             LnurlAuthChallenge.created_at >= cutoff,
         )
-        .values(verified=True)
+        .values(consumed=True)
         .returning(LnurlAuthChallenge)
         .execution_options(synchronize_session=False)
     )

@@ -118,7 +118,7 @@ class LnurlAuthChallenge:
         primary_key=True, default_factory=lambda: token_hex(32)
     )
     action: Mapped[str] = mapped_column(default="login")
-    verified: Mapped[bool] = mapped_column(default=False, index=True)
+    consumed: Mapped[bool] = mapped_column(default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
     )

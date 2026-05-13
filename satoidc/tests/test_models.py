@@ -52,7 +52,7 @@ async def test_user_permission_and_challenge_persist_with_real_database(
     assert stored_user.get_user_id() == stored_user.id
     assert stored_permission.permission_type == PermissionsEnum.ROOT
     assert stored_challenge.action == "login"
-    assert stored_challenge.verified is False
+    assert stored_challenge.consumed is False
     assert isinstance(stored_challenge.created_at, datetime)
     assert stored_challenge.created_at.tzinfo is not None or timezone.utc
 

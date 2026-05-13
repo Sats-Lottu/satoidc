@@ -57,7 +57,7 @@ async def test_lnurl_login_callback_links_existing_user(
         select(LnurlAuthChallenge).where(LnurlAuthChallenge.k1 == k1)
     )
     assert response == {"status": "OK"}
-    assert stored_challenge.verified is True
+    assert stored_challenge.consumed is True
     assert stored_challenge.user_id == user.id
 
 
@@ -118,6 +118,11 @@ async def test_lnurl_callback_rejects_bad_signature(db_session):
     )
 
     assert response == {"status": "ERROR", "reason": "Bad Signature Error"}
+
+    stored_challenge = await db_session.scalar(
+        select(LnurlAuthChallenge).where(LnurlAuthChallenge.k1 == k1)
+    )
+    assert stored_challenge.consumed is True
 
 
 async def test_lnurl_register_callback_creates_wallet_user(db_session):

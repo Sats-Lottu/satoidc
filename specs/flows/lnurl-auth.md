@@ -28,9 +28,9 @@ GET /auth/lnurl/callback?k1=<hex>&sig=<hex>&key=<hex>&action=<action>
 
 Current validation:
 
-1. Find a matching unverified challenge.
+1. Find a matching unconsumed challenge.
 2. Require challenge timestamp within `LNURL_K1_TTL_SECONDS`.
-3. Mark challenge as verified.
+3. Mark challenge as consumed.
 4. Require callback action to equal stored challenge action.
 5. Verify secp256k1 signature over `k1`.
 6. Execute action-specific behavior.
@@ -45,6 +45,6 @@ Current validation:
 
 ## Risks To Resolve
 
-- Callback attempts intentionally consume the challenge before signature verification as a replay-defense measure, even when the signature is invalid. The current `verified` field name is misleading and should be renamed to `consumed` or equivalent.
+- Callback attempts intentionally consume the challenge before signature verification as a replay-defense measure, even when the signature is invalid.
 - `register` can create a user without email, login, password, and possibly without nickname.
 - `auth` action needs a documented meaning before production use.
