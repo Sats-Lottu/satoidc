@@ -41,6 +41,7 @@
 - Keep protocol behavior aligned with OpenID Connect, OAuth2, Authlib, and LNURL-auth semantics.
 - Authlib server helpers are synchronous in the current 1.7.x line used here. Keep Authlib database operations behind the sync session boundary and call them from async routes through threadpool helpers instead of mixing async SQLAlchemy sessions into Authlib callbacks.
 - Prefer existing helpers in `satoidc/satoidc/auth/`, `satoidc/satoidc/models/`, and `satoidc/satoidc/validators.py` before adding new abstractions.
+- For schema changes, generate Alembic migrations with `cd satoidc; poetry run alembic revision --autogenerate -m "<message>"` against a database at the current head, then edit only the minimum necessary for dialect-specific fixes, data backfills, enum handling, or constraint details. Do not hand-write a new migration from scratch unless the user explicitly asks for that exception.
 - Keep route-level UI changes consistent with the existing NiceGUI component and class patterns.
 - Add focused tests for protocol, auth, validation, persistence, and time-sensitive behavior. Use `freezegun` for expiration windows and clock-dependent token/challenge behavior.
 - Keep browser e2e tests marked with `e2e`; the default `task test` command intentionally excludes them.
