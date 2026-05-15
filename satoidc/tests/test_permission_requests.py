@@ -321,6 +321,44 @@ async def test_decided_permission_request_is_idempotent(
     assert permission_count is not None
 
 
+async def test_approve_permission_request_ignores_denied_request(
+    db_session, make_user
+):
+    requester = await make_user()
+    admin = await make_user(
+        login="admin1",
+        email="admin@example.com",
+        nickname="Admin",
+    )
+    permission_request = await create_permission_request(
+        db_session, requester.id
+    )
+    await deny_permission_request(
+        db_session,
+        permission_request.id,
+        actor_id=admin.id,
+        decision_reason="not yet",
+    )
+    await db_session.commit()
+
+    unchanged_request = await approve_permission_request(
+        db_session,
+        permission_request.id,
+        actor_id=admin.id,
+        decision_reason="late approval",
+    )
+    permission = await db_session.scalar(
+        select(Permission).where(
+            Permission.user_id == requester.id,
+            Permission.permission_type == PermissionsEnum.DEVELOPER,
+        )
+    )
+
+    assert unchanged_request.status == PermissionRequestStatusEnum.DENIED
+    assert unchanged_request.decision_reason == "not yet"
+    assert permission is None
+
+
 async def test_cancel_permission_request_only_cancels_requester_pending(
     db_session, make_user
 ):

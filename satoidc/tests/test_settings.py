@@ -31,6 +31,14 @@ def test_production_rejects_placeholder_secrets():
             OAUTH2_JWT_SECRET_KEY="jwt-secret",
         )
 
+    with pytest.raises(ValueError, match="OAUTH2_JWT_SECRET_KEY"):
+        Settings(
+            _env_file=None,
+            APP_ENV="production",
+            SESSION_MIDDLEWARE_SECRET_KEY="session-secret",
+            OAUTH2_JWT_SECRET_KEY=PLACEHOLDER_SECRET,
+        )
+
 
 def test_production_rejects_insecure_session_cookie_override():
     with pytest.raises(ValueError, match="SESSION_COOKIE_HTTPS_ONLY"):

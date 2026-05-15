@@ -168,3 +168,9 @@ def test_encode_query_value_handles_empty_values():
     assert encode_query_value("/profile?tab=wallet") == (
         "%2Fprofile%3Ftab%3Dwallet"
     )
+
+
+def test_hidden_value_escapes_single_quotes_without_url_encoding():
+    assert login_module._hidden_value("/authorize?prompt='login'") == (  # noqa: PLC2701
+        "/authorize?prompt=&#x27;login&#x27;"
+    )
