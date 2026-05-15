@@ -171,6 +171,36 @@ async def test_approve_permission_request_grants_developer_permission(
     assert granted_permission.disabled is False
 
 
+async def test_approve_permission_request_uses_default_reason(
+    db_session, make_user
+):
+    requester = await make_user()
+    admin = await make_user(
+        login="admin1",
+        email="admin@example.com",
+        nickname="Admin",
+    )
+    permission_request = await create_permission_request(
+        db_session, requester.id
+    )
+    await db_session.commit()
+
+    await approve_permission_request(
+        db_session,
+        permission_request.id,
+        actor_id=admin.id,
+    )
+    await db_session.commit()
+    permission = await db_session.scalar(
+        select(Permission).where(
+            Permission.user_id == requester.id,
+            Permission.permission_type == PermissionsEnum.DEVELOPER,
+        )
+    )
+
+    assert permission.reason == "Approved permission request"
+
+
 async def test_approve_permission_request_reenables_existing_permission(
     db_session, make_user
 ):

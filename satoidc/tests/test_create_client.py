@@ -80,6 +80,43 @@ def test_build_client_metadata_rejects_invalid_values():
     )
 
 
+def test_build_client_metadata_rejects_missing_required_lists():
+    with pytest.raises(ClientMetadataValidationError) as exc_info:
+        build_client_metadata(
+            client_name="Client",
+            client_uri="",
+            scope="",
+            redirect_uri="",
+            grant_type="",
+            response_type="",
+            token_endpoint_auth_method=None,
+        )
+
+    assert exc_info.value.messages == [
+        "At least one redirect URI is required.",
+        "At least one grant type is required.",
+        "At least one response type is required.",
+        "At least one scope is required.",
+    ]
+
+
+def test_build_client_metadata_requires_code_grant_for_code_response():
+    with pytest.raises(ClientMetadataValidationError) as exc_info:
+        build_client_metadata(
+            client_name="Client",
+            client_uri="",
+            scope="openid",
+            redirect_uri="https://client.example/callback",
+            grant_type="refresh_token",
+            response_type="code",
+            token_endpoint_auth_method="client_secret_basic",
+        )
+
+    assert exc_info.value.messages == [
+        "The code response type requires the authorization_code grant."
+    ]
+
+
 def test_update_client_metadata_preserves_management_state():
     client = OAuth2Client(
         user_id=USER_ID,
@@ -111,6 +148,37 @@ def test_update_client_metadata_preserves_management_state():
     assert metadata[CLIENT_DISABLED_AT] == DISABLED_AT
     assert metadata[CLIENT_SECRET_ROTATED_AT] == ROTATED_AT
     assert metadata["updated_at"] == UPDATED_AT
+
+
+def test_update_client_metadata_skips_falsey_management_state():
+    client = OAuth2Client(
+        user_id=USER_ID,
+        client_id="client-id",
+        client_id_issued_at=1,
+        client_secret="secret",
+    )
+    client.set_client_metadata(
+        {
+            "client_name": "Old",
+            CLIENT_DISABLED_AT: 0,
+            CLIENT_SECRET_ROTATED_AT: None,
+        }
+    )
+
+    metadata = update_client_metadata(
+        client,
+        client_name="New",
+        client_uri="",
+        scope="openid",
+        redirect_uri="https://client.example/callback",
+        grant_type="authorization_code",
+        response_type="code",
+        token_endpoint_auth_method="client_secret_basic",
+        now=UPDATED_AT,
+    )
+
+    assert CLIENT_DISABLED_AT not in metadata
+    assert CLIENT_SECRET_ROTATED_AT not in metadata
 
 
 def test_set_client_disabled_toggles_metadata_state():

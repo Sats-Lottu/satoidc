@@ -84,6 +84,20 @@ async def test_activate_signing_key_allows_only_one_active_key(db_session):
     assert first_key.status == "validating"
 
 
+async def test_activate_current_active_key_keeps_it_active(db_session):
+    active_kid = get_jwks()["keys"][0]["kid"]
+
+    activated = activate_signing_key(active_kid)
+    active_keys = (
+        await db_session.scalars(
+            select(OidcSigningKey).where(OidcSigningKey.status == "active")
+        )
+    ).all()
+
+    assert activated.kid == active_kid
+    assert [key.kid for key in active_keys] == [active_kid]
+
+
 async def test_activate_signing_key_rejects_unknown_or_retired_key(
     db_session,
 ):

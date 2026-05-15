@@ -1,8 +1,11 @@
+from datetime import UTC, datetime
 from http import HTTPStatus
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
 from authlib.oauth2 import OAuth2Error
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
@@ -10,6 +13,7 @@ import satoidc.routes.oauth2 as oauth2_routes
 from satoidc.routes.oauth2 import (
     authorize,
     introspect_token,
+    jwks_root,
     revoke_token,
     token,
     userinfo,
@@ -235,3 +239,127 @@ def test_oauth_userinfo_uses_resource_protector(monkeypatch):
 
     assert claims["email"] == "satoshi@example.com"
     assert userinfo("request")["lnurl_pubkey"] == "wallet"
+
+
+def test_jwks_root_sets_cache_control_header(monkeypatch):
+    monkeypatch.setattr(
+        oauth2_routes,
+        "jwks",
+        lambda: {"keys": [{"kid": "key-1"}]},
+    )
+
+    response = jwks_root()
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.headers["cache-control"].startswith("public, max-age=")
+    assert response.body == b'{"keys":[{"kid":"key-1"}]}'
+
+
+async def test_require_key_admin_rejects_missing_invalid_and_forbidden(
+    monkeypatch,
+):
+    missing_request = make_request()
+    missing_request.scope["session"] = {}
+
+    with pytest.raises(HTTPException) as missing_exc:
+        await oauth2_routes._require_key_admin(  # noqa: PLC2701
+            missing_request
+        )
+    assert missing_exc.value.status_code == HTTPStatus.UNAUTHORIZED
+    assert missing_exc.value.detail == "login_required"
+
+    invalid_request = make_request()
+    invalid_request.scope["session"] = {"user_id": "not-a-uuid"}
+
+    with pytest.raises(HTTPException) as invalid_exc:
+        await oauth2_routes._require_key_admin(  # noqa: PLC2701
+            invalid_request
+        )
+    assert invalid_exc.value.status_code == HTTPStatus.UNAUTHORIZED
+    assert invalid_exc.value.detail == "invalid_session"
+
+    forbidden_request = make_request()
+    forbidden_request.scope["session"] = {"user_id": uuid4().hex}
+
+    async def fake_permissions(user_id):
+        return set()
+
+    monkeypatch.setattr(
+        oauth2_routes, "get_active_user_permissions", fake_permissions
+    )
+
+    with pytest.raises(HTTPException) as forbidden_exc:
+        await oauth2_routes._require_key_admin(  # noqa: PLC2701
+            forbidden_request
+        )
+    assert forbidden_exc.value.status_code == HTTPStatus.FORBIDDEN
+    assert forbidden_exc.value.detail == "forbidden"
+
+
+async def test_admin_oidc_key_routes_require_admin_and_call_services(
+    monkeypatch,
+):
+    request = make_request()
+    request.scope["session"] = {"user_id": uuid4().hex}
+    key = SimpleNamespace(
+        kid="key-1",
+        alg="RS256",
+        kty="RSA",
+        use="sig",
+        status="active",
+        backend_reference=None,
+        created_at=datetime(2026, 5, 15, tzinfo=UTC),
+        activated_at=datetime(2026, 5, 15, tzinfo=UTC),
+        validating_since=None,
+        retired_at=None,
+        retired_after=None,
+    )
+
+    async def fake_permissions(user_id):
+        return {oauth2_routes.PermissionsEnum.ADMIN}
+
+    async def fake_threadpool(func, *args, **kwargs):
+        if func is oauth2_routes.list_signing_keys:
+            return [key]
+        if func is oauth2_routes.retire_expired_signing_keys:
+            return 2
+        return key
+
+    monkeypatch.setattr(
+        oauth2_routes, "get_active_user_permissions", fake_permissions
+    )
+    monkeypatch.setattr(oauth2_routes, "run_in_threadpool", fake_threadpool)
+
+    listed = await oauth2_routes.admin_list_oidc_keys(request)
+    created = await oauth2_routes.admin_create_oidc_key(request)
+    rotated = await oauth2_routes.admin_rotate_oidc_key(request)
+    retired = await oauth2_routes.admin_retire_expired_oidc_keys(request)
+    activated = await oauth2_routes.admin_activate_oidc_key("key-1", request)
+
+    assert listed["keys"][0]["kid"] == "key-1"
+    assert created["kid"] == "key-1"
+    assert rotated["status"] == "active"
+    assert retired == {"retired": 2}
+    assert activated["activated_at"] == "2026-05-15T00:00:00+00:00"
+
+
+async def test_admin_activate_oidc_key_translates_value_error(monkeypatch):
+    request = make_request()
+    request.scope["session"] = {"user_id": uuid4().hex}
+
+    async def fake_permissions(user_id):
+        return {oauth2_routes.PermissionsEnum.ROOT}
+
+    async def fake_threadpool(func, *args, **kwargs):
+        raise ValueError("Unknown OIDC signing key: missing")
+
+    monkeypatch.setattr(
+        oauth2_routes, "get_active_user_permissions", fake_permissions
+    )
+    monkeypatch.setattr(oauth2_routes, "run_in_threadpool", fake_threadpool)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await oauth2_routes.admin_activate_oidc_key("missing", request)
+
+    assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
+    assert exc_info.value.detail == "Unknown OIDC signing key: missing"
