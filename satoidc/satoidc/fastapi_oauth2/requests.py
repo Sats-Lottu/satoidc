@@ -119,10 +119,13 @@ class FastAPIOAuth2Request(OAuth2Request):
     """Equivalente ao FlaskOAuth2Request, 100% sync."""
 
     def __init__(self, request: Request):
+        headers = dict(request.headers)
+        if "authorization" in headers and "Authorization" not in headers:
+            headers["Authorization"] = headers["authorization"]
         super().__init__(
             method=request.method,
             uri=str(request.url),
-            headers=dict(request.headers),
+            headers=headers,
         )
         self._request = request
         self.payload = FastAPIOAuth2Payload(request)

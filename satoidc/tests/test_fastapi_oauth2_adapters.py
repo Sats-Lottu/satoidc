@@ -86,6 +86,26 @@ def test_oauth2_request_reads_cached_json_body():
     assert oauth_request.datalist["token"] == ["abc"]
 
 
+def test_oauth2_request_preserves_authorization_header_case():
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/oauth/userinfo",
+            "query_string": b"",
+            "headers": [(b"authorization", b"Bearer token-1")],
+            "server": ("testserver", 80),
+            "scheme": "https",
+            "client": ("testclient", 50000),
+            "state": {},
+        }
+    )
+
+    oauth_request = FastAPIOAuth2Request(request)
+
+    assert oauth_request.headers["Authorization"] == "Bearer token-1"
+
+
 def test_json_request_ignores_invalid_or_non_object_json():
     invalid_request = FastAPIJsonRequest(
         _request(

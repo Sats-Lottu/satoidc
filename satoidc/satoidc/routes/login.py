@@ -1,5 +1,4 @@
 import uuid
-from html import escape
 from typing import Annotated, Optional
 from urllib.parse import quote
 
@@ -47,6 +46,10 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 def encode_query_value(value: str) -> str:
     """Safely URL-encode querystring values."""
     return quote(value or "", safe="")
+
+
+def _hidden_value(value: str) -> str:
+    return (value or "").replace("'", "&#x27;")
 
 
 # ==========================================================
@@ -238,7 +241,7 @@ async def login_page(
 
                     ui.element("input").props(
                         "type='hidden' name='redirect_to' "
-                        f"value='{escape(redirect_to, quote=True)}'"
+                        f"value='{_hidden_value(redirect_to)}'"
                     )
                     ui.element("input").props(
                         "type='hidden' name='login_nonce' "

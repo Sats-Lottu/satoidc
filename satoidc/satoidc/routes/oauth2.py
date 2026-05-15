@@ -78,7 +78,7 @@ def _create_endpoint_response_sync(endpoint_name: str, request: Request):
 
 def _userinfo_sync(request: Request):
     try:
-        with require_oauth.acquire(request, "profile") as token:
+        with require_oauth.acquire(request, ["profile"]) as token:
             return generate_user_info(token.user, token.scope)
     finally:
         remove_sync_session()
