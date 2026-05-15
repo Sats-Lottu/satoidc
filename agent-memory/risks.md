@@ -6,7 +6,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-13
+updated: 2026-05-15
 ---
 
 # Risks And Pitfalls
@@ -33,3 +33,12 @@ Resolved/reduced on 2026-05-13:
 - Password login and LNURL redirect now sanitize `redirect_to`.
 - OIDC signing key rotation is implemented with persistent encrypted key material, stable JWKS `kid`, key retention windows, admin endpoints, and audit events.
 - Permission names are normalized around `root`, `admin`, `developer`, and `support`; developer access requests persist, admin approval grants `developer`, and admin dashboard operational counts are database-backed.
+
+Resolved/reduced on 2026-05-15:
+
+- Priority execution backlog items 1-12 are implemented and documented.
+- OAuth browser e2e now covers public PKCE and confidential `client_secret_post` paths with real redirects, token exchange, ID Token, refresh token issuance, and UserInfo.
+- Authenticated UI e2e now covers home/profile, wallet-link QR rendering, developer dashboard empty/populated states, create-client validation/success, and admin approval of a pending developer request.
+- OAuth adapter preserves the `Authorization` header case expected by Authlib's bearer token validator.
+- UserInfo scope acquisition now passes a scope list to Authlib, matching the validator API.
+- Password login preserves OAuth redirect query strings without HTML entity corruption in hidden form values.

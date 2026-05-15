@@ -1,0 +1,44 @@
+filters:
+  and:
+    - 'file.inFolder("agent-memory")'
+    - 'file.ext == "md"'
+
+properties:
+  file.name:
+    displayName: "Note"
+  type:
+    displayName: "Type"
+  status:
+    displayName: "Status"
+  updated:
+    displayName: "Updated"
+  file.tags:
+    displayName: "Tags"
+
+views:
+  - type: table
+    name: "Memory Notes"
+    order:
+      - file.name
+      - type
+      - status
+      - updated
+      - file.tags
+  - type: table
+    name: "Open Questions"
+    filters:
+      and:
+        - 'type == "question"'
+    order:
+      - file.name
+      - status
+      - updated
+  - type: table
+    name: "Commands"
+    filters:
+      and:
+        - 'type == "command"'
+    order:
+      - file.name
+      - status
+      - updated

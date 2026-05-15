@@ -5,7 +5,7 @@
 - Status: implemented
 - Owner: project maintainers
 - Created: 2026-05-13
-- Updated: 2026-05-13
+- Updated: 2026-05-15
 - Related code:
   - `satoidc/satoidc/routes/profile.py`
   - `satoidc/satoidc/routes/dashboard.py`
@@ -23,16 +23,15 @@ OIDC clients and use the developer dashboard. Admins must see those requests
 as actionable notifications in the admin dashboard, then approve or deny them
 with an auditable result.
 
-The feature replaces the current placeholder profile action and static admin
-dashboard row with a real permission request workflow.
+The feature provides the persisted permission request workflow used by the
+profile page and admin dashboard.
 
 ## Context
 
-SatOIDC currently protects `/dashboard/developer` and `/create_client` with
-developer-like permissions. Users without those permissions see profile UI that
-offers a "Request developer permissions" action, but the action only shows a
-notification and persists nothing. The admin dashboard currently renders a
-static permission request row.
+SatOIDC protects `/dashboard/developer` and `/create_client` with
+developer-like permissions. Users without those permissions can request
+developer access from the profile page. Root/admin users review those requests
+from the admin dashboard.
 
 The permission taxonomy treats `developer` as a first-class application
 permission. `root` remains all-powerful, `admin` includes operational admin
@@ -59,7 +58,8 @@ Out of scope:
 - Email, Slack, or external notification delivery.
 - Fine-grained OAuth client roles beyond developer access.
 - Permission categories beyond `root`, `admin`, `developer`, and `support`.
-- Client management actions such as editing clients or rotating secrets.
+- Client management actions such as editing clients or rotating secrets, which
+  are covered by the developer dashboard flow.
 
 ## Permission Request States
 
@@ -264,15 +264,15 @@ Useful empty/error states:
 
 ## Implementation Notes
 
-- Add a SQLAlchemy model and Alembic migration for permission requests.
-- Consider adding a `developer` permission value to the canonical permission
-  enum or document how custom string permissions are supported.
-- Route-level UI callbacks should delegate mutation logic to helper functions
-  so behavior can be unit tested outside NiceGUI rendering.
-- Admin notifications can start as an in-app count/badge in the admin dashboard;
-  external delivery can be added later.
-- If the app later supports multiple admins, approval/denial should update by
-  `id` and `status == pending` to avoid double decisions.
+- `PermissionRequest` is implemented as a SQLAlchemy model with an Alembic
+  migration.
+- `developer` is part of the canonical `PermissionsEnum` taxonomy.
+- Route-level UI callbacks delegate mutation logic to helper functions so
+  behavior can be unit tested outside NiceGUI rendering.
+- Admin notifications are implemented as in-app counts and request rows in the
+  admin dashboard; external delivery remains out of scope.
+- Approval/denial helpers are written around pending-state transitions to avoid
+  double decisions.
 
 ## Traceability
 
@@ -289,4 +289,4 @@ Useful empty/error states:
   - `agent-memory/ui-backlog.md`
   - `agent-memory/ui-index.md`
 - Decisions:
-  - permission taxonomy decision still needed for `developer`.
+  - `developer` is the canonical permission for OAuth client management access.

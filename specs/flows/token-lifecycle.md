@@ -2,7 +2,7 @@
 
 Status: draft
 Area: OAuth/OIDC
-Last Updated: 2026-05-13
+Last Updated: 2026-05-15
 
 ## Intent
 
@@ -77,7 +77,7 @@ Endpoint:
 
 Current behavior:
 
-- Protected by bearer token resource protection requiring `profile`.
+- Protected by bearer token resource protection requiring `["profile"]`.
 - Always returns `sub`.
 - Includes `email` when token scope contains `email`.
 - Includes `name` and `lnurl_pubkey` when token scope contains `profile`.
@@ -86,12 +86,17 @@ Current behavior:
 
 Current ID token/JWKS key material:
 
-- Generated in memory at process import.
-- RSA 2048 private key with automatic `kid`.
-- Public key exposed at `/.well-known/jwks.json`.
+- Stored in the `oidc_signing_keys` table with encrypted private JWK material.
+- RSA 2048 private key with persisted `kid`.
+- Active keys sign new ID tokens.
+- Validating and retired keys remain available through JWKS while needed for
+  token verification.
+- Key lifecycle actions are recorded in `oidc_signing_key_audit_events`.
+- Public keys are exposed at `/.well-known/jwks.json`.
 
-Persistent key storage and rotation are not implemented; see
-`specs/features/oidc-key-rotation/spec.md`.
+The production hardening question that remains is whether signing should move
+from database-encrypted private JWK storage to Vault Transit or another
+external signing backend.
 
 ## Acceptance Criteria
 
@@ -106,3 +111,6 @@ Persistent key storage and rotation are not implemented; see
   protection rejects the call.
 - Given UserInfo is called with `email profile`, then `sub`, `email`, `name`,
   and `lnurl_pubkey` are derived from the token user.
+- Given a public PKCE or confidential `client_secret_post` browser flow
+  completes, then the authorization code is exchanged for tokens and UserInfo
+  succeeds with the issued access token.

@@ -5,7 +5,7 @@ tags:
 type: decision
 project: satoidc
 status: active
-updated: 2026-05-13
+updated: 2026-05-15
 ---
 
 # Decisions
@@ -32,3 +32,6 @@ updated: 2026-05-13
 - 2026-05-13: LNURL callback attempts should consume their challenge even when signature validation fails. This is a replay-defense behavior; the implementation uses the `consumed` field to avoid implying successful signature verification.
 - 2026-05-13: Implement OIDC signing key rotation MVP with encrypted database-backed RSA private JWKs, stable `kid` values in JWKS, `active`/`validating`/`retired` states, and `admin` or `root` authorization for manual key lifecycle endpoints. Vault Transit remains the preferred future backend.
 - 2026-05-13: Treat `developer` as a first-class `PermissionsEnum` value. Developer access includes `developer`, `admin`, and `root`; `root` remains all-powerful through the centralized authorization helper.
+- 2026-05-15: Treat full browser authorization-code e2e as a priority release gate. The suite must cover a real browser redirect through consent, code exchange, ID Token, refresh token issuance, and UserInfo for both public PKCE and confidential `client_secret_post` clients.
+- 2026-05-15: Preserve OAuth redirect query strings through login hidden fields without HTML entity corruption. Continue using `safe_redirect` for redirect safety, but do not encode `&` into `&amp;` inside form values that must round-trip as URLs.
+- 2026-05-15: Keep Authlib bearer-token integration compatible with its current header/scope expectations: preserve an `Authorization` key in the FastAPI request adapter and pass UserInfo required scopes as a list.

@@ -5,7 +5,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-13
+updated: 2026-05-15
 ---
 
 # Project State
@@ -44,7 +44,8 @@ Current test structure:
 - `poetry run task test` runs unit/integration tests with browser e2e tests deselected by default.
 - `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
-- As of 2026-05-13, `poetry run task test` passes with `97 passed, 10 deselected`.
+- As of 2026-05-15, `poetry run task test` passes with `113 passed, 17 deselected`.
+- As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to NiceGUI visual rendering helpers/pages, QR UI classes, the LNURL schema compatibility shim, and a defensive parse branch. Browser e2e smoke tests cover the visual page rendering surface.
 
 Recent implementation state:
@@ -59,6 +60,7 @@ Recent implementation state:
 - Authenticated Playwright e2e coverage now covers signed-in home/profile rendering, profile wallet-link QR dialog smoke behavior, developer dashboard empty/populated states, create-client validation/success, and admin approval of permission requests.
 - Full OAuth authorization-code browser e2e coverage now exercises login, consent, redirect, token exchange, ID Token, refresh token issuance, and UserInfo for public PKCE and confidential `client_secret_post` clients.
 - OAuth client management is integrated in the developer dashboard with edit, delete, disable/enable, identifier copy, and secret rotation actions.
+- The priority execution backlog in `docs/priority-execution-backlog.md` is complete as of 2026-05-15. Remaining work has moved from priority execution to hardening/future protocol questions, especially external signing backends and broader refresh-token revocation e2e coverage.
 
 UI design support:
 

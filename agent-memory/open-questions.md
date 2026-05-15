@@ -5,16 +5,21 @@ tags:
 type: question
 project: satoidc
 status: active
-updated: 2026-05-06
+updated: 2026-05-15
 ---
 
 # Open Questions
 
 - Should local database files be replaced by migrations plus seed/setup workflows for repeatable development?
-- Should protocol compliance be covered by focused OIDC/OAuth2 tests beyond the current placeholder test package?
-- Should README encoding be normalized? The root README currently renders mojibake in this shell session.
-- Should JWKS and token signing use persistent key material with rotation instead of an in-memory generated RSA key?
-- What is the intended permission taxonomy: root/admin/support only, or should developer/client-management permissions exist?
-- Should `create_client` require developer permission rather than only authenticated session?
 - Should LNURL `auth` action be removed until an explicit stateless authorization contract exists?
 - Should time-sensitive OIDC token tests cover signed JWT `exp` validation end-to-end once persistent key rotation is implemented?
+- Should OIDC signing move from encrypted database-backed private JWKs to Vault Transit or another external signing backend before production hardening?
+- Should refresh-token revocation be covered by a full browser/client e2e flow, beyond the current focused unit/integration coverage and authorization-code e2e refresh issuance check?
+
+## Resolved
+
+- 2026-05-15: Protocol compliance is now covered by focused OAuth/OIDC tests plus browser authorization-code e2e for public PKCE and confidential `client_secret_post` clients.
+- 2026-05-15: README/examples/legal/docs encoding was checked for mojibake patterns and no matches remain.
+- 2026-05-13: JWKS and token signing use persisted signing keys with rotation instead of a process-local generated RSA key.
+- 2026-05-13: Permission taxonomy includes `root`, `admin`, `developer`, and `support`; `developer` is first-class.
+- 2026-05-13: `/create_client` requires developer-like access through `page_security`.

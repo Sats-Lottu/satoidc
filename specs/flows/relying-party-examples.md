@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Examples/OIDC
-Last Updated: 2026-05-13
+Last Updated: 2026-05-15
 
 ## Intent
 
@@ -56,7 +56,9 @@ For the confidential example:
 
 - Examples are not covered by the default unit test suite.
 - README/example text may contain encoding issues in some shell sessions.
-- Full browser e2e flow using these examples is not implemented.
+- Browser e2e coverage now exercises equivalent authorization-code flows with
+  in-test relying-party clients for public PKCE and confidential
+  `client_secret_post`; it does not launch the standalone example scripts.
 
 ## Acceptance Criteria
 

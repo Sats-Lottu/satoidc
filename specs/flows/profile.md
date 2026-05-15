@@ -73,15 +73,18 @@ Wallet link and relink:
 - Relink uses the same link challenge behavior and replaces the account's
   LNURL public key after a successful callback.
 
-## Placeholder Behavior
+## Developer Permission Requests
 
-Still not implemented:
+Users without active elevated permissions can request developer access from the
+profile page.
 
-- Developer permission request persistence.
+Current behavior:
 
-The developer request button currently shows a success notification without
-creating a request; `specs/features/permission-requests/spec.md` defines the
-intended workflow.
+- Creates a `PermissionRequest` for `developer` access.
+- Shows pending and denied states on the profile page.
+- Prevents duplicate pending requests.
+- Lets root/admin users approve or deny the request from the admin dashboard.
+- Grants the `developer` permission when the request is approved.
 
 ## Permission-Based Links
 
@@ -110,3 +113,8 @@ intended workflow.
   relink QR with a new wallet, then `lnurl_pubkey` is replaced.
 - Given a signed-in user scans a wallet key already linked to another account,
   then the callback is rejected and no account is changed.
+- Given a signed-in user without elevated permissions requests developer
+  access, then a pending permission request is persisted.
+- Given a signed-in user already has a pending developer request, when they
+  open `/profile`, then the pending state is shown instead of creating another
+  request.

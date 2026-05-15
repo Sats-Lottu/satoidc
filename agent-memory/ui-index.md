@@ -6,7 +6,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-13
+updated: 2026-05-15
 ---
 
 # UI Screen Index
@@ -23,7 +23,7 @@ Before implementing NiceGUI UI behavior, check the official docs at `https://nic
 
 ## Public And Auth Screens
 
-- `/` in `satoidc/satoidc/routes/home.py`: public home. Uses `app_header`, official GitHub mark in nav, product hero, primary register/login actions, and value cards for OIDC, LNURL-auth, and developer console. Needs a signed-in variant that replaces login/register actions with account actions.
+- `/` in `satoidc/satoidc/routes/home.py`: public and signed-in home. Uses `app_header`, official GitHub mark in nav, product hero, public register/login actions, signed-in profile/dashboard/logout actions, and value cards for OIDC, LNURL-auth, and developer console.
 - `/login` in `satoidc/satoidc/routes/login.py`: sign-in form plus floating LNURL QR action. Uses `auth_shell`, `auth_context_panel`, QR dialog, nonce-protected POST flow, password login, LNURL event redirect, and responsive two-column desktop/single-column mobile composition.
 - `/register` in `satoidc/satoidc/routes/register.py`: registration form plus floating LNURL QR action and terms dialog. Uses `auth_shell`, `auth_context_panel`, client-side validators, terms acceptance, LNURL event redirect, and responsive two-column desktop/single-column mobile composition. Password account creation now happens in `POST /register`, not inside the page render callback.
 - `/auth/lnurl/redirect` in `satoidc/satoidc/routes/login.py`: transient LNURL redirect page after wallet auth.
@@ -36,19 +36,16 @@ Before implementing NiceGUI UI behavior, check the official docs at `https://nic
 
 ## Authenticated Console Screens
 
-- `/profile` in `satoidc/satoidc/routes/profile.py`: account console. Shows profile summary, permission chips, user info, security placeholders, developer/admin dashboard links, wallet state, and quick actions.
-- `/dashboard/developer` in `satoidc/satoidc/routes/dashboard.py`: developer dashboard. Shows OAuth2 clients table, search, empty state, and client details.
-- `/dashboard/admin` in `satoidc/satoidc/routes/dashboard.py`: admin permission request dashboard. Current request row is placeholder content and should be replaced by [[../specs/features/permission-requests/spec|Permission Requests]].
-- `/create_client` in `satoidc/satoidc/routes/create_client.py`: OAuth2 client creation form. Needs future validation and secure post-create credential display.
+- `/profile` in `satoidc/satoidc/routes/profile.py`: account console. Shows profile summary, permission chips, user info, editable nickname/email/password, developer/admin dashboard links, wallet state, LNURL wallet link/relink/unlink actions, and developer access request state.
+- `/dashboard/developer` in `satoidc/satoidc/routes/dashboard.py`: developer dashboard. Shows OAuth2 clients table, search, empty state, client details, edit metadata, copy ID, rotate secret, disable/enable, and delete actions.
+- `/dashboard/admin` in `satoidc/satoidc/routes/dashboard.py`: admin permission request dashboard. Shows operational metrics, database-backed pending permission requests, approve/deny actions, recent developer grants, users, clients, and inactive permissions.
+- `/create_client` in `satoidc/satoidc/routes/create_client.py`: OAuth2 client creation form with developer/admin access control, metadata validation, and one-time credential display.
 
 ## Current UI Debt
 
 See [[ui-backlog]] for the detailed implementation backlog covering `/`, `/profile`, `/dashboard/admin`, `/dashboard/developer`, and `/create_client`.
 
-- Home page should hide login/register actions for signed-in users and show account actions such as profile, dashboards, and logout.
-- Theme toggle should move into a clearer right-side header utility position, near account actions and away from primary navigation/onboarding actions.
-- Profile nickname, email, password, and wallet unlink actions are implemented; wallet link/relink and developer permission request still use placeholder notifications.
-- Admin dashboard still has static permission request content.
-- Developer dashboard can list clients, but client management actions are not implemented.
-- Create-client flow now has developer permission enforcement, metadata validation, and one-time credential display; it still needs inline validation messages and broader permission/persistence tests.
-- E2E coverage currently focuses public pages and mobile redirect; authenticated dashboard/profile screenshots should be added later.
+- Priority UI backlog is complete as of 2026-05-15.
+- Create-client still uses notifications rather than inline field-level validation messages.
+- Longer-term maintenance question remains: whether profile mutations should stay as NiceGUI events or move to POST endpoints for clearer backend/API boundaries.
+- Browser e2e now covers public pages, authenticated home/profile/dashboard/create-client flows, admin permission approval, and OAuth authorization-code flows.

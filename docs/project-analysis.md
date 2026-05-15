@@ -1,12 +1,12 @@
 # SatOIDC Project Analysis
 
-Updated: 2026-05-08
+Updated: 2026-05-15
 
 ## Summary
 
 SatOIDC is a Python OpenID Connect Provider built with FastAPI, NiceGUI, Authlib, SQLAlchemy, Alembic, and Poetry. It aims to provide OAuth2/OIDC authentication while adding Bitcoin/Lightning login through LNURL-auth.
 
-The current implementation is an early application prototype with real protocol integration pieces, a UI surface, database models, migrations, Docker deployment, OIDC client examples, unit/integration tests, and a browser e2e smoke baseline. The main technical debt is around permission consistency, persistent signing keys, security hardening, and deeper protocol contract validation.
+The current implementation is a beta-stage identity provider with real protocol integration pieces, a UI surface, database models, migrations, Docker deployment, OIDC client examples, unit/integration tests, and browser e2e coverage for the priority OAuth and UI flows. The priority execution backlog is complete as of 2026-05-15; remaining work is mostly production hardening, broader lifecycle coverage, and UX refinement.
 
 ## Repository Layout
 
@@ -60,7 +60,7 @@ Important behavior:
 - Session cookie name is `client_session`.
 - Session middleware uses `same_site="lax"` and environment-driven HTTPS-only cookies.
 - OAuth config uses environment settings for issuer, algorithm, and token expiry.
-- The app generates an RSA JWK in memory at import time in `auth/oauth2.py`.
+- OIDC signing keys are persisted in the database, loaded at startup, and exposed through JWKS with active/validating/retired key states.
 
 ## Configuration
 
@@ -73,7 +73,7 @@ Important settings:
 - `LNURL_K1_TTL_SECONDS`: challenge lifetime. Defaults to `60`.
 - `OAUTH2_JWT_ISS`: issuer. Defaults to `http://localhost:8000`.
 - `OAUTH2_JWT_AUDIENCE`: defaults to `SatOIDC-clients`.
-- `OAUTH2_JWT_SECRET_KEY`: configured but current ID token signing uses generated RSA `KEY`.
+- `OAUTH2_JWT_SECRET_KEY`: encrypts persisted OIDC private JWK material.
 - `OAUTH2_JWT_ALG`: defaults to `RS256`.
 - `OAUTH2_TOKEN_EXPIRES_IN`: defaults to `300`.
 - `SESSION_MIDDLEWARE_SECRET_KEY`: session signing secret.
@@ -135,6 +135,12 @@ Authlib mixins back:
 - `OAuth2AuthorizationCode`
 - `OAuth2Token`
 
+Additional operational tables include:
+
+- `PermissionRequest`: stores user requests for elevated permissions such as developer access.
+- `OidcSigningKey`: stores encrypted signing JWKs and key lifecycle state.
+- `OidcSigningKeyAuditEvent`: records signing-key lifecycle operations.
+
 Authorization code expiry is hard-coded as `auth_time + 300 < time.time()`.
 
 ## OAuth2 And OIDC
@@ -176,6 +182,8 @@ UserInfo behavior:
 - Always includes `sub`.
 - Adds `email` if `email` scope is present.
 - Adds `name` and `lnurl_pubkey` if `profile` scope is present.
+- Passes scope values to Authlib as a list for bearer-resource compatibility.
+- Full browser authorization-code e2e coverage exists for public PKCE and confidential `client_secret_post` clients.
 
 ## LNURL-auth
 
@@ -217,10 +225,10 @@ Public:
 
 Authenticated by middleware:
 
-- `/profile`: profile, wallet status, permissions, and placeholder account actions.
-- `/create_client`: OAuth2 client registration UI.
-- `/dashboard/admin`: root-only by default through `page_security()`.
-- `/dashboard/developer`: requires `developer` string permission, but current enum does not define developer.
+- `/profile`: profile, editable nickname/email/password, wallet link/relink/unlink, permission state, and developer permission request workflow.
+- `/create_client`: OAuth2 client registration UI with access control, metadata validation, and one-time credential display.
+- `/dashboard/admin`: root/admin dashboard for permission requests, user/client metrics, and approve/deny actions.
+- `/dashboard/developer`: client management dashboard with edit, copy, rotate secret, disable, and delete flows.
 - `/authorize`: OIDC consent UI.
 
 ## Setup Wizard
@@ -277,37 +285,34 @@ Run on 2026-05-08 after schema, registration, and coverage changes:
 - `poetry run task test`: passed with `81 passed, 10 deselected` and 100% measured line coverage.
 - `poetry run task test_e2e`: passed with `10 passed`.
 
+Run on 2026-05-15 after priority backlog completion:
+
+- `poetry run ruff check`: passed.
+- `poetry run task test`: passed with `113 passed, 17 deselected`.
+- `poetry run task test_e2e`: passed with `17 passed`.
+
 ## Current Gaps And Risks
 
-### High Priority
+### Production Hardening
 
-- `auth/oauth2.py` generates the RSA signing key in memory on process start. Existing ID tokens can become unverifiable after restart, and multi-instance deployment will have inconsistent JWKS.
-- The OIDC key-rotation spec exists in `specs/features/oidc-key-rotation/`, but implementation still needs persistent storage, `kid` headers, JWKS retention, admin controls, and audit events.
-- Browser e2e coverage still needs a full OAuth authorization-code client flow, not only public pages and well-known endpoints.
-- `login_post` redirects to submitted `redirect_to` without applying `safe_redirect`; registration now sanitizes redirects, but login still needs the same hardening.
-
-### Medium Priority
-
-- Permission names are inconsistent. `PermissionsEnum` has `root`, `admin`, and `support`; the initial migration contains `DRAW_OPERATOR`; UI checks use `"developer"`, `"admin"`, and `"root"` strings.
+- OIDC signing key persistence and rotation are implemented in the database. A future production deployment may still move private-key operations to Vault Transit or another external signing backend.
 - `LnurlAuthChallenge.consumed` intentionally records callback consumption before signature validation as a replay-defense measure.
 - `User.nickname` is non-null in the model, but LNURL registration creates a user with `nickname=None`.
-- Refresh Token Grant has focused unit/integration coverage, but still needs broader end-to-end client-flow coverage.
-- README and examples render mojibake in this shell session, likely due to encoding mismatch in stored files or terminal decoding.
+- Refresh Token Grant has focused unit/integration coverage and browser coverage for refresh issuance, but still needs broader end-to-end revocation and reuse coverage.
 
-### Lower Priority
+### UX And Maintenance
 
-- `dashboard.py` has placeholder menu text `asdf`.
-- `profile.py` still has placeholder wallet link/relink and developer permission request actions.
-- `create_client.py` now validates metadata and uses page-level permission checks, but still needs inline field-level validation and broader permission/persistence coverage.
+- `create_client.py` validates metadata and uses page-level permission checks, but still uses notifications instead of inline field-level validation.
+- Profile mutations currently use page-local NiceGUI interactions and supporting POST endpoints; future maintenance should decide whether to consolidate these flows.
 - `AuthMiddleware` makes all `/oauth` paths public, including consent POST. The POST has session and CSRF checks, so this is acceptable, but it should remain explicitly documented.
 - Production mode rejects placeholder secrets and requires secure session cookies.
 
 ## Suggested Documentation Next Steps
 
-- Normalize README encoding and protocol claims.
-- Add or update SDD specs for login redirect safety, permissions model, and LNURL challenge state naming.
-- Implement the drafted OIDC key rotation spec.
-- Expand tests for full browser authorization-code flow, client registration validation, and signed JWT `exp` behavior.
+- Expand refresh-token revocation/reuse e2e coverage.
+- Decide whether OIDC signing should move to an external signing backend for production.
+- Add inline validation UX to the create-client form.
+- Review LNURL `auth` action semantics before presenting it as a production authorization contract.
 
 ## Related Files
 

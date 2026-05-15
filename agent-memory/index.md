@@ -5,7 +5,7 @@ tags:
 type: index
 project: satoidc
 status: active
-updated: 2026-05-13
+updated: 2026-05-15
 ---
 
 # Agent Memory Index
@@ -22,3 +22,5 @@ Search before reading. Record only stable facts, decisions, validated commands, 
 - [[open-questions]]
 
 Related execution backlog: [[../docs/priority-execution-backlog|Priority Execution Backlog]]
+
+Structured memory view: [[memory.base|Agent Memory Base]]
