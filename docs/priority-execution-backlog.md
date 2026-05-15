@@ -167,7 +167,7 @@ Expected outcome:
 
 ### 8. Finish LNURL Wallet Link And Relink From Profile
 
-Status: not implemented.
+Status: implemented.
 
 Related specs:
 
@@ -177,17 +177,17 @@ Related specs:
 Problem:
 
 - Profile can unlink wallet when password login exists.
-- Link and relink still show placeholder notifications.
+- Link and relink previously showed placeholder notifications.
 
 Expected outcome:
 
-- Add a QR/dialog flow for wallet link and relink.
-- Reuse LNURL challenge TTL and event behavior.
-- Ensure replay-safe challenge consumption.
+- Native NiceGUI QR/dialog flow for wallet link and relink is complete.
+- Reuses LNURL challenge TTL and event behavior.
+- Ensures replay-safe challenge consumption.
 
 ### 9. Complete OAuth Client Management
 
-Status: partially implemented.
+Status: implemented.
 
 Related specs:
 
@@ -197,21 +197,21 @@ Related specs:
 Problem:
 
 - Client creation has validation and one-time credential display.
-- Developer dashboard still lacks edit, delete/disable, and secret rotation.
+- Developer dashboard previously lacked edit, delete/disable, and secret rotation.
 
 Expected outcome:
 
-- Edit client metadata.
-- Disable or delete clients.
-- Rotate client secrets.
-- Add safe copy affordances for identifiers.
-- Add integration and authenticated e2e coverage.
+- Can edit client metadata safely.
+- Can disable or delete clients.
+- Can rotate client secrets (shown only once).
+- Includes safe copy affordances for identifiers.
+- Integration and authenticated e2e coverage added.
 
 ## P3 - Test Coverage And Documentation Quality
 
 ### 10. Add Full OAuth Browser E2E
 
-Status: not implemented.
+Status: implemented.
 
 Related specs:
 
@@ -221,17 +221,20 @@ Related specs:
 
 Problem:
 
-- Current e2e coverage focuses public pages and metadata endpoints.
-- Full browser authorization-code flow with a real client is not covered.
+- Previous e2e coverage included public pages, metadata endpoints,
+  authenticated UI screens, developer dashboard states, and create-client
+  validation/success.
+- Full browser authorization-code flow with a real client was not covered.
 
 Expected outcome:
 
-- Exercise login, consent, redirect, code exchange, ID token, and UserInfo.
-- Cover public client PKCE and confidential client paths.
+- Exercises login, consent, redirect, code exchange, ID token, refresh token
+  issuance, and UserInfo.
+- Covers public client PKCE and confidential `client_secret_post` paths.
 
 ### 11. Add Authenticated UI E2E
 
-Status: not implemented.
+Status: implemented.
 
 Related specs:
 
@@ -241,27 +244,28 @@ Related specs:
 
 Problem:
 
-- Profile, dashboard, and create-client authenticated workflows do not yet have
-  browser e2e coverage.
+- Profile, dashboard, and create-client authenticated workflows lacked e2e coverage.
 
 Expected outcome:
 
-- Profile rendering and mutation smoke checks.
-- Developer dashboard empty and populated states.
-- Create-client validation and successful creation.
-- Admin permission request states after implementation.
+- Profile rendering and wallet-link QR dialog smoke checks implemented.
+- Developer dashboard empty and populated states covered.
+- Create-client validation and successful creation checked.
+- Admin permission request approval state covered.
 
 ### 12. Normalize Encoding And Documentation Drift
 
-Status: ongoing.
+Status: implemented.
 
 Problem:
 
-- Some shell sessions show mojibake in README/examples/legal docs.
-- Several docs describe older placeholder state and must be kept aligned as
-  implementation evolves.
+- Some shell sessions previously showed mojibake in README/examples/legal docs.
+- Several docs described older placeholder state and needed alignment as
+  implementation evolved.
 
 Expected outcome:
 
-- Normalize affected file encoding.
-- Keep `README.md`, `docs/`, `specs/`, and `agent-memory/` synchronized.
+- No mojibake patterns remain in README, examples, legal docs, docs, specs,
+  or agent memory.
+- `README.md`, `docs/`, `specs/`, and `agent-memory/` are synchronized with
+  the completed priority backlog.

@@ -1,8 +1,8 @@
 # OAuth Client Registration Flow
 
-Status: draft
+Status: implemented
 Area: OAuth/UI
-Last Updated: 2026-05-13
+Last Updated: 2026-05-15
 
 ## Intent
 
@@ -103,10 +103,6 @@ The developer dashboard:
 - Lets the owner disable or re-enable a client registration.
 - Lets the owner delete a client registration after confirmation.
 - Provides copy affordances for client identifiers and one-time secrets.
-
-Current limitations:
-
-- No post-creation secret reveal beyond initial creation dialog.
 
 ## Acceptance Criteria
 

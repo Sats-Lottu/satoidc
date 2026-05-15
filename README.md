@@ -259,9 +259,9 @@ poetry run python -m compileall satoidc setup_wizard tests
 
 ### Production Hardening
 
-- [ ] Expand full OAuth browser authorization-code e2e coverage, including real client redirects and token exchange.
+- [x] Expand full OAuth browser authorization-code e2e coverage, including real client redirects and token exchange.
 - [x] Replace process-local JWT signing key with persistent key material and a key-rotation plan.
-- [ ] Normalize the permission model across enum, migration, UI and access checks.
+- [x] Normalize the permission model across enum, migration, UI and access checks.
 - [x] Harden login redirect handling and add regression tests for open redirect prevention.
 - [x] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
 - [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
@@ -269,11 +269,11 @@ poetry run python -m compileall satoidc setup_wizard tests
 
 ### Product And Developer Experience
 
-- [ ] Finish profile account actions: nickname, email, password and wallet link/unlink.
-- [ ] Finish developer dashboard and OAuth2 client management.
-- [ ] Add client metadata validation for redirect URIs, scopes, grant types and auth methods.
+- [x] Finish profile account actions: nickname, email, password, and wallet link/relink/unlink.
+- [x] Finish developer dashboard and OAuth2 client management.
+- [x] Add client metadata validation for redirect URIs, scopes, grant types and auth methods.
 - [ ] Add screenshots to this README once the UI stabilizes.
-- [ ] Normalize text encoding in README/examples/legal docs where mojibake appears.
+- [x] Normalize text encoding in README/examples/legal docs where mojibake appears.
 
 ### Future Protocol Work
 

@@ -4,22 +4,17 @@ Updated: 2026-05-13
 
 ## High Priority
 
-1. Full browser OAuth authorization-code e2e coverage is still partial; current e2e tests are public-page and endpoint smoke/responsive checks.
-2. Vault Transit remains a future hardening step for OIDC signing keys; the MVP persists private key material encrypted in the database.
+1. Vault Transit remains a future hardening step for OIDC signing keys; the MVP persists private key material encrypted in the database.
 
 ## Medium Priority
 
-1. Permission taxonomy is inconsistent between enum, migration, dashboard, profile checks, and intended developer access.
-2. LNURL registration can create `User(nickname=None)` even though `nickname` is non-nullable.
-3. Refresh token support has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
-4. README and examples may show mojibake in some shell sessions.
+1. LNURL registration can create `User(nickname=None)` even though `nickname` is non-nullable.
+2. Refresh token revocation has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
+3. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
 
 ## Lower Priority
 
-1. Admin dashboard still contains static permission request content.
-2. Wallet link/relink and developer permission requests from profile are placeholders.
-3. Client management lacks edit, delete/disable, and secret rotation actions.
-4. Keep new Markdown discoverable from `README.md`, `docs/README.md`, `specs/index.md`, or `agent-memory/index.md` to avoid orphan docs.
+1. Keep new Markdown discoverable from `README.md`, `docs/README.md`, `specs/index.md`, or `agent-memory/index.md` to avoid orphan docs.
 
 ## Suggested First Specs
 
@@ -41,3 +36,7 @@ Updated: 2026-05-13
 - Session cookie HTTPS behavior is environment-driven, and production mode rejects placeholder secrets.
 - `LnurlAuthChallenge.consumed` now represents callback consumption before signature validation.
 - OIDC signing keys are persisted, published with stable `kid` values, retained through validation windows, rotated through admin endpoints, and audited for lifecycle/signature events.
+- Authenticated UI e2e coverage added via Playwright for home/profile, developer dashboard states, and create-client validation/success.
+- Wallet link/relink functionality on the profile page is fully implemented using Native NiceGUI APIs.
+- Developer OAuth client management (edit metadata, delete, rotate secret) is complete.
+- Full browser OAuth authorization-code e2e coverage now exercises public PKCE and confidential client paths through login, consent, redirect, token exchange, ID Token, refresh token issuance, and UserInfo.

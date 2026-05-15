@@ -24,7 +24,7 @@ Source: `satoidc/satoidc/routes/home.py`.
 - [x] Replace anonymous auth actions with useful authenticated actions, such as `Profile`, `Developer Dashboard`, `Admin Dashboard` when permitted, and `Logout`.
 - [x] Use a familiar account-entry pattern similar to Google and other identity platforms: show the signed-in user's identity or avatar/menu affordance in the header, with account actions grouped in a compact menu instead of duplicating public onboarding buttons.
 - [x] Keep unauthenticated visitors on the current public onboarding path with registration and login actions.
-- [ ] Add e2e coverage for both anonymous and authenticated home page rendering.
+- [x] Add e2e coverage for both anonymous and authenticated home page rendering.
 
 ## Header And Theme Toggle
 
@@ -51,34 +51,34 @@ Source: `satoidc/satoidc/routes/profile.py`.
 - [x] Implement nickname editing. Current `Change nickname` and `Edit nickname` controls only show a notification.
 - [x] Implement email editing. Current `Change email` and `Edit email` controls only show a notification.
 - [x] Implement password change. Current `Change password` controls only show a notification and need validation, password hashing, and session/security expectations.
-- [x] Implement LNURL wallet linking. Current `Link wallet` control only shows a notification.
+- [x] Implement LNURL wallet linking with native NiceGUI APIs.
 - [x] Implement LNURL wallet unlinking. Current `Unlink wallet` control only shows a notification and needs a policy for removing `lnurl_pubkey`.
-- [x] Implement LNURL wallet relinking. Current `Relink wallet` control only shows a notification and needs replay-safe LNURL challenge handling.
-- [ ] Implement developer permission request creation. Current `Request developer permissions` control only shows a success notification and does not persist a request.
-- [ ] Decide whether profile mutations should use POST endpoints, NiceGUI events, or a mixed approach. Keep behavior testable and avoid custom JavaScript.
+- [x] Implement LNURL wallet relinking with replay-safe challenge handling and strict public key replacement policies.
+- [x] Implement developer permission request creation. Profile requests now persist and are reviewed from the admin dashboard.
+- [ ] Decide whether profile mutations should use POST endpoints, NiceGUI events, or a mixed approach for longer-term maintenance. Current profile mutations use NiceGUI events.
 
 ## Admin Dashboard
 
 Source: `satoidc/satoidc/routes/dashboard.py`.
 
 - Related spec: [[../specs/features/permission-requests/spec|Permission Requests]].
-- [ ] Replace the static `Satoshi` permission request row with database-backed permission request records.
-- [ ] Add a permission request persistence model or reuse an existing model if the permission taxonomy is formalized.
-- [ ] Implement approve and deny actions. Current buttons render but do not mutate state.
-- [ ] Record who approved or denied each request and when.
-- [ ] Add empty, loading, and error states for permission request listing.
-- [ ] Decide whether admin access should remain root-only through `page_security()` or use an explicit `admin` permission once the taxonomy is resolved.
-- [ ] Add useful admin dashboard widgets for pending requests, recent decisions, total users, developer users, registered clients, recent clients, and disabled/expired permissions.
+- [x] Replace the static `Satoshi` permission request row with database-backed permission request records.
+- [x] Add a permission request persistence model.
+- [x] Implement approve and deny actions.
+- [x] Record who approved or denied each request and when.
+- [x] Add empty states for permission request listing.
+- [x] Decide admin dashboard access through explicit admin/root authorization.
+- [x] Add useful admin dashboard widgets for pending requests, recent decisions, total users, developer users, registered clients, recent clients, and disabled/expired permissions.
 
 ## Developer Dashboard
 
 Source: `satoidc/satoidc/routes/dashboard.py`.
 
-- [x] Add client management actions beyond viewing: edit metadata, rotate secret, disable/delete client, and copy identifiers.
-- [x] Add secure client secret reveal/copy behavior after creation and rotation. Secrets should not be casually displayed after the creation window.
-- [ ] Add validation and feedback for redirect URI and client URI issues surfaced from client creation.
-- [ ] Add authenticated e2e coverage for developer dashboard rendering with zero clients and with existing clients.
-- [ ] Confirm that the `developer` permission exists in the final permission taxonomy. The dashboard currently requires `page_security(permissions=["developer"])`, while the taxonomy is still open.
+- [x] Add client management actions beyond viewing: edit metadata, rotate secret, disable/delete client, and copy identifiers. Full implementation done.
+- [x] Add secure client secret reveal/copy behavior after creation and rotation. Secrets are no longer casually displayed after the creation/rotation window.
+- [x] Add validation and feedback for redirect URI and client URI issues surfaced from client creation.
+- [x] Add authenticated e2e coverage for developer dashboard rendering with zero clients and with existing clients.
+- [x] Confirm that the `developer` permission exists in the final permission taxonomy.
 
 ## Create Client Flow
 

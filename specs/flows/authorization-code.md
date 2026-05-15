@@ -1,7 +1,7 @@
 # Authorization Code Flow
 
-Status: draft
-Updated: 2026-05-06
+Status: implemented
+Updated: 2026-05-15
 
 ## Happy Path
 
@@ -25,5 +25,6 @@ Updated: 2026-05-06
 
 ## Risks To Resolve
 
-- Tests should cover public client PKCE and confidential client flows.
+- Browser e2e tests cover public client PKCE and confidential
+  `client_secret_post` flows.
 - Discovery metadata and actual grant registrations should stay aligned.

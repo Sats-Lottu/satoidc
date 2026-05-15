@@ -1,8 +1,8 @@
 # Profile Flow
 
-Status: draft
+Status: implemented
 Area: Auth/UI
-Last Updated: 2026-05-13
+Last Updated: 2026-05-15
 
 ## Intent
 
@@ -70,6 +70,8 @@ Wallet link and relink:
 - Lets the wallet callback attach the wallet public key to that user.
 - Rejects a wallet public key that is already linked to another user.
 - Refreshes the profile after a successful callback event.
+- Relink uses the same link challenge behavior and replaces the account's
+  LNURL public key after a successful callback.
 
 ## Placeholder Behavior
 
