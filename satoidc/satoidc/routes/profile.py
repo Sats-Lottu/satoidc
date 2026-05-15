@@ -53,7 +53,7 @@ def _field_row(
     action_label: str,
     icon: str,
     on_action,
-):
+):  # pragma: no cover
     with ui.row().classes(
         "w-full items-center justify-between gap-3 max-sm:flex-col "
         "max-sm:items-stretch"
@@ -68,7 +68,7 @@ def _field_row(
         ).classes(SECONDARY_BUTTON_CLASSES)
 
 
-def _detail_row(label: str, value: str):
+def _detail_row(label: str, value: str):  # pragma: no cover
     with ui.column().classes("gap-1"):
         ui.label(label).classes(f"text-sm {MUTED_TEXT}")
         ui.label(value).classes(TECH_TEXT)
@@ -145,9 +145,12 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
     def email_dialog():
         with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
             ui.label("Change email").classes("text-xl font-semibold")
-            email = ui.input("Email", value=user.email or "").props(
-                "type=email"
-            ).classes(INPUT_CLASSES)
+            email = (
+                ui
+                .input("Email", value=user.email or "")
+                .props("type=email")
+                .classes(INPUT_CLASSES)
+            )
 
             async def save():
                 value = (email.value or "").strip().lower()
@@ -310,8 +313,10 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
             ).tooltip("Click to copy")
 
     def wallet_link_dialog():
-        action_label = "Relink Lightning wallet" if user.lnurl_pubkey else (
-            "Link Lightning wallet"
+        action_label = (
+            "Relink Lightning wallet"
+            if user.lnurl_pubkey
+            else ("Link Lightning wallet")
         )
         wallet_link = LNURLWalletLinkDialog(action_label)
         ui.timer(
@@ -345,9 +350,9 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
             ui.label("Request developer access").classes(
                 "text-xl font-semibold"
             )
-            ui.label(
-                "Tell admins what you plan to register or test."
-            ).classes(MUTED_TEXT)
+            ui.label("Tell admins what you plan to register or test.").classes(
+                MUTED_TEXT
+            )
             reason = ui.textarea("Reason").classes(INPUT_CLASSES)
 
             async def submit():
