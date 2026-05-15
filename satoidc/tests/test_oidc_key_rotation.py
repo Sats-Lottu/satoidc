@@ -3,13 +3,16 @@ import json
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+import pytest
 from sqlalchemy import select
 
 from satoidc.auth.oauth2 import OpenIDCode
 from satoidc.auth.oidc_keys import (
     activate_signing_key,
     create_signing_key,
+    get_active_jwt_config,
     get_jwks,
+    list_signing_keys,
     retire_expired_signing_keys,
     rotate_signing_key,
 )
@@ -81,6 +84,22 @@ async def test_activate_signing_key_allows_only_one_active_key(db_session):
     assert first_key.status == "validating"
 
 
+async def test_activate_signing_key_rejects_unknown_or_retired_key(
+    db_session,
+):
+    retired_key = create_signing_key(status="retired")
+
+    with pytest.raises(
+        ValueError, match="Unknown OIDC signing key: missing-kid"
+    ):
+        activate_signing_key("missing-kid")
+
+    with pytest.raises(
+        ValueError, match="Retired OIDC signing keys cannot be activated"
+    ):
+        activate_signing_key(retired_key.kid)
+
+
 async def test_retire_expired_keys_removes_them_from_jwks(db_session):
     first_kid = get_jwks()["keys"][0]["kid"]
     rotate_signing_key()
@@ -97,6 +116,31 @@ async def test_retire_expired_keys_removes_them_from_jwks(db_session):
     assert retired_count == 1
     assert first_key.status == "retired"
     assert first_kid not in jwks_kids
+
+
+async def test_retire_expired_signing_keys_ignores_unexpired_keys(db_session):
+    first_kid = get_jwks()["keys"][0]["kid"]
+    rotate_signing_key()
+    first_key = await db_session.scalar(
+        select(OidcSigningKey).where(OidcSigningKey.kid == first_kid)
+    )
+
+    retired_count = retire_expired_signing_keys()
+    await db_session.refresh(first_key)
+
+    assert retired_count == 0
+    assert first_key.status == "validating"
+
+
+async def test_active_jwt_config_and_key_listing_use_persisted_key(db_session):
+    config = get_active_jwt_config()
+    keys = list_signing_keys()
+
+    assert config["kid"] == keys[0].kid
+    assert config["alg"] == "RS256"
+    assert config["iss"]
+    assert config["exp"] > 0
+    assert keys[0].status == "active"
 
 
 async def test_id_token_uses_active_kid_and_audits_signature(

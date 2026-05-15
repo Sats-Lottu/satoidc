@@ -4,6 +4,16 @@ from sqlalchemy import select
 
 from satoidc.auth.security import verify_password
 from satoidc.models import User
+from satoidc.routes.register import register_redirect
+
+
+def test_register_redirect_sanitizes_external_redirect_target():
+    response = register_redirect("invalid", "https://evil.example/callback")
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == (
+        "/register?err=invalid&redirect_to=%2F"
+    )
 
 
 async def test_register_post_creates_user_and_logs_in(app_client, db_session):

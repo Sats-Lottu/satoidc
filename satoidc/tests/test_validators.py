@@ -32,3 +32,21 @@ def test_registration_validators_reject_invalid_input():
     )
 
     assert set(errors) == {"login", "nickname", "password", "email"}
+
+
+def test_individual_validators_reject_boundary_and_format_errors():
+    assert not is_valid_login("Satoshi1")
+    assert not is_valid_login("abc12")
+    assert not is_valid_login("a" * 31)
+
+    assert is_valid_nickname("")
+    assert not is_valid_nickname(".satoshi")
+    assert not is_valid_nickname("satoshi-")
+    assert not is_valid_nickname("a" * 81)
+
+    assert not is_valid_password("NoSpecial123")
+    assert not is_valid_password("nospecial1!")
+    assert not is_valid_password("NOLOWER1!")
+    assert not is_valid_password("NoDigit!!")
+
+    assert not is_valid_email("missing-at.example")
