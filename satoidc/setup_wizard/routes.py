@@ -17,6 +17,11 @@ from satoidc.validators import (
     is_valid_password,
     validate_registration_form,
 )
+from setup_wizard.bootstrap import (
+    BootstrapStatus,
+    validate_bootstrap_environment,
+)
+from setup_wizard.get_root import authenticate_root_user, exists_root_user
 
 router = APIRouter()
 
@@ -27,6 +32,94 @@ def finalizing_setup():
     ui.notify("Root user created!", type="positive")
     ui.notify("Finalizing setup...", type="positive")
     ui.timer(0.8, app.shutdown, once=True)
+
+
+def setup_header():
+    with (
+        ui.header(elevated=True)
+        .style("background-color:#3874c8; color:white")
+        .classes("items-center justify-between px-4")
+    ):
+        with ui.row().classes("items-center gap-2"):
+            ui.icon("verified_user")
+            ui.label("SatOIDC").classes("text-lg font-bold")
+
+        with ui.link(
+            target="https://github.com/Sats-Lottu/satoidc", new_tab=True
+        ).classes("text-white"):
+            ui.icon("eva-github").style("font-size:28px; padding:0")
+
+
+def render_reconfiguration_panel(request: Request):
+    report = validate_bootstrap_environment()
+
+    setup_header()
+    with ui.column().classes("flex justify-center w-full items-center gap-4"):
+        ui.label("Service Setup").classes("text-2xl font-bold mb-2")
+        with ui.card().classes("w-full max-w-2xl mx-auto"):
+            ui.label("Bootstrap checks").classes("text-xl font-semibold")
+            ui.label(
+                "Root authentication is active. Update environment values "
+                "outside the app, then restart services as needed."
+            ).classes("text-sm text-gray-400")
+
+            for check in report.checks:
+                status_color = (
+                    "text-positive"
+                    if check.status == BootstrapStatus.OK
+                    else "text-negative"
+                )
+                with ui.row().classes("items-start gap-3 w-full"):
+                    ui.icon(
+                        "check_circle"
+                        if check.status == BootstrapStatus.OK
+                        else "error"
+                    ).classes(status_color)
+                    with ui.column().classes("gap-1"):
+                        ui.label(check.name).classes("font-semibold")
+                        ui.label(check.message).classes("text-sm")
+
+            with ui.row().classes("gap-3 mt-4"):
+                ui.button("Shut down wizard", on_click=app.shutdown)
+                ui.button(
+                    "Sign out",
+                    on_click=lambda: (
+                        request.session.pop("setup_root_user_id", None),
+                        ui.navigate.reload(),
+                    ),
+                )
+
+
+def render_root_login(session: Session, request: Request):
+    setup_header()
+    with ui.column().classes("flex justify-center w-full items-center gap-4"):
+        ui.label("Root Access Required").classes("text-2xl font-bold mb-2")
+        with ui.card().classes("w-full max-w-lg mx-auto items-center"):
+            ui.label(
+                "Sign in with root credentials to access setup."
+            ).classes("text-sm text-gray-400")
+            identifier_field = ui.input("Login or email").classes("w-full")
+            password_field = ui.input(
+                "Password",
+                password=True,
+                password_toggle_button=True,
+            ).classes("w-full")
+
+            async def submit():
+                user = await authenticate_root_user(
+                    session,
+                    identifier_field.value,
+                    password_field.value,
+                )
+                if user is None:
+                    ui.notify("Invalid root credentials.", type="negative")
+                    return
+
+                request.session["setup_root_user_id"] = user.id.hex
+                ui.notify("Root access granted.", type="positive")
+                ui.navigate.reload()
+
+            ui.button("Continue", on_click=submit).classes("w-full")
 
 
 class LNURLAuthQRRegisterRoot:
@@ -74,6 +167,14 @@ async def set_root(session: Session, request: Request):
         ' rel="stylesheet" />'
     )
 
+    if await exists_root_user():
+        if not request.session.get("setup_root_user_id"):
+            render_root_login(session, request)
+            return
+
+        render_reconfiguration_panel(request)
+        return
+
     lnurl_auth_register_root = LNURLAuthQRRegisterRoot(
         base_url=str(request.base_url), session=session
     )
@@ -102,20 +203,7 @@ async def set_root(session: Session, request: Request):
         ui.button("Close", on_click=dialog.close)
     # Refresh QR code every 60 seconds to prevent reuse of old challenges
 
-    # Header
-    with (
-        ui.header(elevated=True)
-        .style("background-color:#3874c8; color:white")
-        .classes("items-center justify-between px-4")
-    ):
-        with ui.row().classes("items-center gap-2"):
-            ui.icon("verified_user")
-            ui.label("SatOIDC").classes("text-lg font-bold")
-
-        with ui.link(
-            target="https://github.com/Sats-Lottu/satoidc", new_tab=True
-        ).classes("text-white"):
-            ui.icon("eva-github").style("font-size:28px; padding:0")
+    setup_header()
 
     # Content
     with ui.column().classes("flex justify-center w-full items-center"):

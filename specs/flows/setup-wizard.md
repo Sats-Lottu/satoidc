@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Bootstrap/Auth/UI
-Last Updated: 2026-05-13
+Last Updated: 2026-05-16
 
 ## Intent
 
@@ -17,9 +17,12 @@ Startup behavior:
 
 1. `exists_root_user()` checks whether any `Permission` row has
    `permission_type == root`.
-2. If a root permission exists, the wizard exits without starting NiceGUI.
-3. If no root permission exists, the wizard starts a NiceGUI app on port 8000.
-4. The wizard includes the setup route and LNURL callback route.
+2. The wizard starts a NiceGUI app on port 8000.
+3. If no root permission exists, the wizard shows the initial root creation
+   flow.
+4. If a root permission exists, the wizard requires root credentials before
+   showing setup/reconfiguration checks.
+5. The wizard includes the setup route and LNURL callback route.
 
 ## Password Root Creation
 
@@ -58,6 +61,10 @@ Operators and developers can also invoke the same wizard on demand:
 poetry run task setup_wizard
 ```
 
+After the first root user exists, on-demand access to the wizard is protected
+by login/email plus password credentials for an active user with a current root
+permission.
+
 ## Current Gaps
 
 - Setup is limited to root-user creation and does not yet cover all runtime
@@ -76,8 +83,9 @@ Related feature spec: `specs/features/application-setup/spec.md`.
 
 - Given no root permission exists, when `python -m setup_wizard` runs, then the
   setup UI starts.
-- Given a root permission exists, when `python -m setup_wizard` runs, then it
-  exits without starting the UI.
+- Given a root permission exists, when `python -m setup_wizard` runs, then the
+  setup UI starts and requires valid root credentials before exposing setup
+  checks.
 - Given valid password setup input, when submitted, then a root user and root
   permission are persisted.
 - Given LNURL setup succeeds, when the callback event arrives, then a root
