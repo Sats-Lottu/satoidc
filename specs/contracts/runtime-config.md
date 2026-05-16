@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Runtime/Configuration
-Last Updated: 2026-05-13
+Last Updated: 2026-05-16
 
 ## Intent
 
@@ -33,6 +33,41 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | `OAUTH2_TOKEN_EXPIRES_IN` | `300` | Authorization-code token expiration value. |
 | `SESSION_MIDDLEWARE_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Starlette session signing secret. |
 | `SESSION_COOKIE_HTTPS_ONLY` | unset | Optional explicit secure-cookie override; defaults to enabled in production and disabled in development. |
+
+## Database Configuration
+
+SatOIDC must keep first-class support for both SQLite and PostgreSQL.
+
+- SQLite defaults are used when no `.env` is present.
+- PostgreSQL is configured by setting both `DATABASE_URL` and
+  `SYNC_DATABASE_URL` to PostgreSQL URLs for the same database.
+- The app must not mix SQLite for async routes with PostgreSQL for Authlib, or
+  the inverse.
+- Production documentation should present PostgreSQL as the recommended
+  database, while preserving SQLite as a supported local/simple deployment
+  option.
+
+## Signing Backend Configuration
+
+SatOIDC must be usable with or without OpenBao.
+
+- Without OpenBao, SatOIDC uses its internal OIDC key lifecycle and encrypted
+  database-backed private JWK storage.
+- With OpenBao, SatOIDC should use a Vault-compatible Transit backend so private
+  signing keys do not need to be stored by SatOIDC.
+- OpenBao support is a production-hardening capability, not a prerequisite for
+  running the app locally.
+
+Risk warning for internal signing:
+
+- The internal mechanism protects private key material from accidental exposure,
+  but it still depends on the database and runtime secret remaining separated.
+- If an attacker compromises both the database and the runtime secret used to
+  encrypt private JWKs, they can compromise OIDC signing and potentially forge
+  tokens.
+- Hardened production deployments should prefer OpenBao Transit or another
+  external signing backend when the threat model includes database compromise,
+  privileged host access, or multiple operators.
 
 ## FastAPI App Configuration
 
@@ -80,6 +115,11 @@ Authlib is configured through `config_oauth(app)`.
   defaults are used.
 - Given Compose environment variables, when the container starts, then the app
   uses PostgreSQL URLs and the configured issuer/session secret.
+- Given no OpenBao configuration is present, when the app starts in development,
+  then internal database-backed signing remains available.
+- Given hardened production mode uses a Transit backend, when SatOIDC signs an
+  ID Token, then private key material does not leave OpenBao or the compatible
+  Transit backend.
 - Given the app starts, then Authlib is configured before routers handle OAuth
   endpoints.
 - Given the UI starts, then the global NiceGUI theme is applied before page

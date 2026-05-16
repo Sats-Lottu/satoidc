@@ -5,7 +5,7 @@
 - Status: implemented
 - Owner: TBD
 - Created: 2026-05-06
-- Updated: 2026-05-13
+- Updated: 2026-05-16
 - Related code:
   - `satoidc/satoidc/auth/oauth2.py`
   - `satoidc/satoidc/routes/oauth2.py`
@@ -51,11 +51,22 @@ Out of scope:
 
 ## Architectural Decision
 
-A solucao preferencial deve usar Vault Transit como backend criptografico.
+A solucao preferencial para producao endurecida deve usar OpenBao por meio de
+uma interface compativel com Vault Transit como backend criptografico.
 
 O MVP implementado armazena a chave privada no banco criptografada com uma chave derivada de `OAUTH2_JWT_SECRET_KEY`; ela nunca e exposta por endpoints, logs, documentos de descoberta ou eventos de auditoria.
 
-A aplicacao SatOIDC nao deve expor a chave privada. Ela deve apenas solicitar assinatura ao backend criptografico ou carregar a chave privada criptografada em ambiente controlado no MVP.
+A aplicacao SatOIDC deve funcionar com ou sem OpenBao. Sem OpenBao, ela usa seus
+mecanismos internos de ciclo de vida, criptografia e assinatura. Com OpenBao,
+ela deve solicitar a assinatura ao backend Transit e manter a chave privada fora
+do banco e do processo da aplicacao.
+
+O modo interno carrega um risco material: se um atacante obtiver o banco de
+dados e tambem o segredo de runtime usado para criptografar as chaves privadas,
+ele pode comprometer a chave de assinatura OIDC e forjar tokens. Esse modo e
+adequado para desenvolvimento, testes, demos e implantacoes simples que aceitam
+esse risco; producao endurecida deve preferir OpenBao Transit ou backend
+externo equivalente.
 
 ## Key States
 
@@ -239,7 +250,7 @@ oidc_signing_keys
 - retired_after
 ```
 
-Com Vault Transit:
+Com OpenBao/Vault Transit:
 
 ```text
 oidc_signing_keys

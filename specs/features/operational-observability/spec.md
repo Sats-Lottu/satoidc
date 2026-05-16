@@ -1,0 +1,97 @@
+# Spec: Operational Observability Baseline
+
+## Status
+
+- Status: draft
+- Owner: TBD
+- Created: 2026-05-16
+- Updated: 2026-05-16
+- Related code:
+  - `satoidc/satoidc/auth/`
+  - `satoidc/satoidc/routes/`
+  - `satoidc/satoidc/models/`
+- Related specs:
+  - `specs/flows/deployment.md`
+  - `specs/features/oidc-key-rotation/spec.md`
+  - `specs/contracts/security-session.md`
+
+## Intent
+
+Establish a minimal observability baseline for security-relevant and
+operationally relevant behavior without turning the beta app into a heavy
+telemetry platform.
+
+## Context
+
+SatOIDC already audits OIDC key lifecycle events in the database. Some UI and
+business failures are currently surfaced only through `ui.notify`, which is not
+enough for production operations, incident review, or container log ingestion.
+
+## Scope
+
+In scope:
+
+- Standardize Python logging for important authentication, authorization,
+  token, LNURL, and key-management events.
+- Ensure logs are useful from stdout in container deployments.
+- Avoid logging secrets, tokens, private keys, passwords, or full sensitive
+  payloads.
+- Keep database audit events where they are part of product behavior.
+
+Out of scope:
+
+- Mandatory OpenTelemetry tracing in the first pass.
+- External SaaS log vendor integration.
+- Logging every UI notification.
+
+## Rules
+
+- Logs must be structured enough to filter by event name, component, outcome,
+  and correlation fields where available.
+- Security failures should log the reason class without leaking credentials or
+  token contents.
+- User-facing notifications remain concise and do not replace server logs.
+- Audit events and operational logs are complementary, not interchangeable.
+
+## Candidate Events
+
+- Middleware denies or redirects protected route access.
+- Page-level permission denial.
+- OAuth token issuance failure.
+- OIDC signing backend failure.
+- LNURL callback invalid signature, expired challenge, or consumed challenge.
+- Profile and dashboard mutation failures.
+- Admin key rotation and permission approval failures.
+
+## Acceptance Criteria
+
+- Given a protected route is requested without a session, then a debug or info
+  log can identify the redirect without exposing secrets.
+- Given OAuth token issuance fails unexpectedly, then an error log includes the
+  component and sanitized failure class.
+- Given an OIDC signing backend fails, then the failure is logged and token
+  issuance fails closed.
+- Given profile or dashboard mutations fail, then operators can see a sanitized
+  log entry in addition to the UI notification.
+- Given tests capture logs, then sensitive fields such as passwords, tokens,
+  private JWKs, and client secrets are absent.
+
+## Test Plan
+
+- Unit: log-sanitization helpers if introduced.
+- Integration: selected auth/OIDC failure paths with `caplog`.
+- Security/regression: assertions that sensitive values do not appear in logs.
+- Manual/operations: run app in Docker and confirm stdout contains readable
+  records for selected events.
+
+## Implementation Notes
+
+Start with standard-library `logging` and consistent event fields. Introduce
+`structlog` or OpenTelemetry only after there are concrete ingestion needs.
+
+## Traceability
+
+- Code: `satoidc/satoidc/auth/`, `satoidc/satoidc/routes/`
+- Tests: `satoidc/tests/`
+- Docs: `docs/priority-execution-backlog.md`
+- Decisions: `agent-memory/decisions.md`

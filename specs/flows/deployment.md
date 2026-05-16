@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Operations
-Last Updated: 2026-05-13
+Last Updated: 2026-05-16
 
 ## Intent
 
@@ -19,7 +19,9 @@ poetry run alembic upgrade head
 poetry run task run
 ```
 
-The app uses SQLite defaults unless `.env` overrides database URLs.
+The app uses SQLite defaults unless `.env` overrides database URLs. SQLite must
+remain supported for local development, tests, demos, and simple single-node
+deployments.
 
 ## Docker Image
 
@@ -54,6 +56,10 @@ PostgreSQL defaults:
 - database: `app_db`
 - password: `app_password`
 
+PostgreSQL is the recommended production database target. SQLite support is
+intentional, but PostgreSQL should be used when deployments need stronger
+concurrency, operational backups, and multi-user production behavior.
+
 SatOIDC environment:
 
 - `DATABASE_URL`: PostgreSQL async URL.
@@ -74,8 +80,26 @@ Startup dependency:
 - Session secret default is unsafe for production.
 - Database password defaults are unsafe for production.
 - Production mode requires HTTPS-only session cookies.
-- OIDC signing keys are process-local and not persisted.
-- No external secret manager integration exists.
+- OIDC signing keys are persisted internally, but hardened production should
+  prefer OpenBao Transit or another external signing backend.
+- No external secret manager integration is implemented yet.
+
+## OpenBao Deployment Position
+
+SatOIDC must be deployable without OpenBao because it implements the OIDC key
+lifecycle internally with encrypted database-backed private JWK storage.
+
+For production hardening, SatOIDC should support OpenBao through a
+Vault-compatible Transit backend:
+
+- OpenBao is optional for local development and simple deployments.
+- OpenBao is recommended when private signing keys should not be stored by the
+  SatOIDC database at all.
+- The internal mode carries a material risk: compromise of both the database and
+  the runtime encryption secret can compromise OIDC signing and allow forged
+  tokens.
+- Production runbooks should explicitly state whether a deployment is using
+  internal signing or OpenBao-backed signing.
 
 ## Acceptance Criteria
 
@@ -85,3 +109,8 @@ Startup dependency:
   app.
 - Given root setup completes, then the main FastAPI app starts on port 8000.
 - Given the app starts, then the healthcheck can fetch `/`.
+- Given SQLite defaults are used, then local development can run without
+  PostgreSQL.
+- Given production Compose starts, then PostgreSQL is used for persistence.
+- Given OpenBao is not configured, then the app can still run with internal
+  signing and the deployment docs expose the associated risk.

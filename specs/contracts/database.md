@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Persistence
-Last Updated: 2026-05-13
+Last Updated: 2026-05-16
 
 ## Intent
 
@@ -17,6 +17,21 @@ by FastAPI routes and Authlib helpers.
 - `DATABASE_URL` and `SYNC_DATABASE_URL` must point to the same database.
 - OAuth routes that call Authlib from async request handlers run synchronous
   Authlib work in a threadpool and call `remove_sync_session()` afterward.
+
+## Supported Databases
+
+SatOIDC must support both SQLite and PostgreSQL.
+
+- SQLite is the default local-development database and is suitable for tests,
+  demos, single-node development, and low-risk personal deployments.
+- PostgreSQL is the preferred production database because it provides stronger
+  concurrency behavior, operational tooling, backup/restore workflows, and a
+  better fit for multi-user or multi-replica deployments.
+- Async and sync database URLs must always target the same physical database:
+  `sqlite+aiosqlite` with `sqlite`, or PostgreSQL async and sync drivers
+  pointing at the same PostgreSQL database.
+- Migrations must remain compatible with both SQLite and PostgreSQL unless a
+  spec explicitly narrows the support matrix.
 
 ## Tables
 
@@ -60,10 +75,8 @@ Current permission enum values:
 
 - `root`
 - `admin`
+- `developer`
 - `support`
-
-Current UI also checks for the string permission `developer`; this is a known
-taxonomy gap and is covered by `specs/features/permission-requests/spec.md`.
 
 ### `lnurl_auth_challenges`
 
@@ -111,3 +124,7 @@ Future schema changes must add migrations rather than rewriting the baseline.
   removed.
 - Given tests create a real database, then user, permission, LNURL challenge,
   OAuth client, authorization code, and token records can persist.
+- Given SQLite URLs are configured, then migrations and the default test suite
+  run successfully against SQLite.
+- Given PostgreSQL URLs are configured, then migrations and deployment startup
+  run successfully against PostgreSQL.
