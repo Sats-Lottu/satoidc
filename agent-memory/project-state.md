@@ -62,7 +62,7 @@ Recent implementation state:
 - Full OAuth authorization-code browser e2e coverage now exercises login, consent, redirect, token exchange, ID Token, refresh token issuance, and UserInfo for public PKCE and confidential `client_secret_post` clients.
 - OAuth client management is integrated in the developer dashboard with edit, delete, disable/enable, identifier copy, and secret rotation actions.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
-- Open work includes public route boundary hardening, OpenBao/Vault-compatible signing, SQLite/PostgreSQL matrix validation, service extraction, operational observability, token load checks, email verification/account recovery, and test-layer refactoring for the quality-testing specs.
+- Open work includes OpenBao/Vault-compatible signing, SQLite/PostgreSQL matrix validation, service extraction, operational observability, token load checks, email verification/account recovery, and test-layer refactoring for the quality-testing specs.
 
 UI design support:
 

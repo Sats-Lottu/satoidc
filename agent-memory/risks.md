@@ -14,7 +14,6 @@ updated: 2026-05-16
 High priority:
 
 - OIDC signing keys now persist encrypted in the database, but production hardening should still evaluate Vault Transit or another external cryptographic backend.
-- `AuthMiddleware` currently uses broad public-prefix matching. Harden it with segment-boundary-aware matching before adding protected routes that share names with public prefixes.
 
 Medium priority:
 - LNURL callback intentionally consumes a challenge before signature validation as a replay-defense measure, including invalid signatures. The model field is now named `consumed` to avoid implying successful signature verification.
@@ -46,3 +45,9 @@ Resolved/reduced on 2026-05-15:
 - OAuth adapter preserves the `Authorization` header case expected by Authlib's bearer token validator.
 - UserInfo scope acquisition now passes a scope list to Authlib, matching the validator API.
 - Password login preserves OAuth redirect query strings without HTML entity corruption in hidden form values.
+
+Resolved/reduced on 2026-05-16:
+
+- `AuthMiddleware` public path checks now require exact matches or segment
+  boundaries, so lookalike paths such as `/oauth-settings`, `/api-admin`, and
+  `/.well-knownness` remain protected.

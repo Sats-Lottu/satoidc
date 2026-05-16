@@ -7,7 +7,7 @@ import pytest
 from starlette.requests import Request
 
 import satoidc.auth.security as security_module
-from satoidc.auth.middleware import AuthMiddleware
+from satoidc.auth.middleware import AuthMiddleware, is_public_path
 from satoidc.auth.security import (
     authorize_page_request,
     get_active_user_permissions,
@@ -230,6 +230,71 @@ def test_auth_middleware_allows_public_oauth_route(app_client):
     response = app_client.get("/.well-known/jwks.json")
 
     assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/",
+        "/login",
+        "/oauth",
+        "/oauth/token",
+        "/api",
+        "/api/status",
+        "/auth/lnurl",
+        "/auth/lnurl/callback",
+        "/.well-known",
+        "/.well-known/openid-configuration",
+        "/_nicegui",
+        "/_nicegui/static/app.js",
+    ],
+)
+def test_public_path_classification_allows_exact_and_segment_paths(path):
+    assert is_public_path(path)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/oauth-settings",
+        "/api-admin",
+        "/auth/lnurlish",
+        "/.well-knownness",
+        "/_niceguiish",
+    ],
+)
+def test_public_path_classification_rejects_lookalike_paths(path):
+    assert not is_public_path(path)
+
+
+@pytest.mark.parametrize(
+    ("path", "expected_redirect"),
+    [
+        ("/oauth-settings", "/login?redirect_to=%2Foauth-settings"),
+        ("/api-admin", "/login?redirect_to=%2Fapi-admin"),
+        ("/.well-knownness", "/login?redirect_to=%2F.well-knownness"),
+    ],
+)
+def test_auth_middleware_redirects_public_prefix_lookalikes(
+    app_client, path, expected_redirect
+):
+    response = app_client.get(path, follow_redirects=False)
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == expected_redirect
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/oauth/token", "/api/status", "/.well-known/openid-configuration"],
+)
+def test_auth_middleware_does_not_redirect_public_segment_paths(
+    app_client, path
+):
+    response = app_client.get(path, follow_redirects=False)
+
+    assert response.status_code != HTTPStatus.SEE_OTHER
+    assert not response.headers.get("location", "").startswith("/login")
 
 
 async def test_auth_middleware_allows_authenticated_protected_route():

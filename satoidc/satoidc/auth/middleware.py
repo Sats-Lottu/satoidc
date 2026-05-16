@@ -22,16 +22,24 @@ PUBLIC_EXACT = {
 }
 
 
+def is_public_path(path: str) -> bool:
+    if path in PUBLIC_EXACT:
+        return True
+
+    return any(
+        path == prefix or path.startswith(f"{prefix}/")
+        for prefix in PUBLIC_PREFIXES
+    )
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):  # noqa: PLR6301
 
         path = request.url.path
 
-        if path in PUBLIC_EXACT:
+        if is_public_path(path):
             return await call_next(request)
 
-        if path.startswith(PUBLIC_PREFIXES):
-            return await call_next(request)
         user_id = request.session.get("user_id")
         if not user_id:
             full = path + (

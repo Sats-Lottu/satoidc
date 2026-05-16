@@ -7,6 +7,12 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-16
 
+- Harden public route boundary matching.
+  - Spec: `specs/features/public-route-boundary/spec.md`
+  - Outcome: middleware public path checks now require exact paths or path
+    segment boundaries, with regression coverage for lookalike protected paths
+    such as `/oauth-settings`, `/api-admin`, and `/.well-knownness`.
+
 - Persist and rotate OIDC signing keys.
   - Spec: `specs/features/oidc-key-rotation/spec.md`
   - Outcome: signing keys are persisted, JWTs use stable `kid` headers, JWKS

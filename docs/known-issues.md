@@ -5,7 +5,6 @@ Updated: 2026-05-16
 ## High Priority
 
 1. OpenBao/Vault-compatible Transit remains a future hardening step for OIDC signing keys; the MVP persists private key material encrypted in the database and must warn about the combined database plus runtime-secret compromise risk.
-2. `AuthMiddleware` public-prefix matching should be hardened so lookalike paths such as `/oauth-settings` or `/api-admin` are not exposed accidentally.
 
 ## Medium Priority
 
@@ -47,3 +46,6 @@ Updated: 2026-05-16
 - Wallet link/relink functionality on the profile page is fully implemented using Native NiceGUI APIs.
 - Developer OAuth client management (edit metadata, delete, rotate secret) is complete.
 - Full browser OAuth authorization-code e2e coverage now exercises public PKCE and confidential client paths through login, consent, redirect, token exchange, ID Token, refresh token issuance, and UserInfo.
+- `AuthMiddleware` public route matching now requires exact matches or path
+  segment boundaries, preventing lookalike paths such as `/oauth-settings` or
+  `/api-admin` from being exposed by prefix accident.

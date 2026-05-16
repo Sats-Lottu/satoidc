@@ -286,7 +286,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [x] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
 - [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
 - [x] Make session/cookie settings production-aware, including HTTPS-only cookies.
-- [ ] Harden public route boundary matching for lookalike protected paths.
+- [x] Harden public route boundary matching for lookalike protected paths.
 - [ ] Add OpenBao/Vault-compatible external signing backend.
 - [ ] Add sanitized operational logging for auth, OIDC, LNURL and UI mutation failures.
 - [ ] Validate the SQLite/PostgreSQL support matrix.

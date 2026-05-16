@@ -23,20 +23,7 @@ Expected outcome:
   and actionable messages for values that must remain managed by Coolify or the
   process environment.
 
-### 2. Harden Public Route Boundary
-
-Status: draft.
-
-Spec:
-
-- `specs/features/public-route-boundary/spec.md`
-
-Expected outcome:
-
-- Replace broad public route prefix matching with exact or segment-aware checks
-  and add regression tests for lookalike protected paths.
-
-### 3. Add OpenBao-Compatible External Signing Backend
+### 2. Add OpenBao-Compatible External Signing Backend
 
 Status: draft.
 
@@ -49,7 +36,7 @@ Expected outcome:
 - Add a signing backend interface and a Vault-compatible Transit backend so
   production deployments can keep OIDC private signing material outside SatOIDC.
 
-### 4. Validate SQLite And PostgreSQL Support Matrix
+### 3. Validate SQLite And PostgreSQL Support Matrix
 
 Status: backlog.
 
@@ -64,7 +51,7 @@ Expected outcome:
 - Document and verify the SQLite/PostgreSQL support matrix, including migration
   compatibility and async/sync database URL consistency.
 
-### 5. Extract Persistence-Heavy UI Actions Into Services
+### 4. Extract Persistence-Heavy UI Actions Into Services
 
 Status: draft.
 
@@ -77,7 +64,7 @@ Expected outcome:
 - Move account, wallet, client-management, and permission-request mutations out
   of NiceGUI route closures into focused service helpers with unit coverage.
 
-### 6. Add Operational Observability Baseline
+### 5. Add Operational Observability Baseline
 
 Status: draft.
 
@@ -90,7 +77,7 @@ Expected outcome:
 - Add sanitized standard-library logging for important auth, authorization,
   OIDC, LNURL, and mutation failures.
 
-### 7. Add Lightweight Load/Concurrency Checks For Token Issuance
+### 6. Add Lightweight Load/Concurrency Checks For Token Issuance
 
 Status: backlog.
 
@@ -104,7 +91,7 @@ Expected outcome:
 - Add a lightweight smoke benchmark for `/oauth/token` against PostgreSQL to
   establish a local latency/error/threadpool baseline.
 
-### 8. Remove LNURL Schema Compatibility Shim When Safe
+### 7. Remove LNURL Schema Compatibility Shim When Safe
 
 Status: backlog.
 
@@ -117,7 +104,7 @@ Expected outcome:
 - Confirm no imports depend on `satoidc/satoidc/auth/lnurl_schemas.py`, then
   remove the compatibility re-export.
 
-### 9. Normalize Or Archive `relatorio.md`
+### 8. Normalize Or Archive `relatorio.md`
 
 Status: backlog.
 
@@ -126,7 +113,7 @@ Expected outcome:
 - Fix the encoding and link it as an analysis artifact, or archive/remove it
   after actionable tasks are tracked elsewhere.
 
-### 10. Implement Email Verification And Account Recovery
+### 9. Implement Email Verification And Account Recovery
 
 Status: draft.
 
@@ -139,7 +126,7 @@ Expected outcome:
 - Implement verified-email state, single-use verification/recovery tokens,
   verified-email password reset, UI updates, and focused tests.
 
-### 11. Refactor Test Layer For Quality Specs
+### 10. Refactor Test Layer For Quality Specs
 
 Status: draft.
 

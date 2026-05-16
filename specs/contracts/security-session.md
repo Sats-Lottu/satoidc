@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Auth/Security
-Last Updated: 2026-05-13
+Last Updated: 2026-05-16
 
 ## Intent
 
@@ -20,13 +20,18 @@ permission-check behavior.
 - `/health`
 - `/forbidden`
 
-It also allows paths beginning with:
+It also allows paths that exactly match one of these prefixes or sit below the
+prefix on a path segment boundary:
 
 - `/_nicegui`
 - `/oauth`
 - `/api`
 - `/auth/lnurl`
 - `/.well-known`
+
+Lookalike paths that merely share text with a public prefix are protected. For
+example, `/oauth-settings`, `/api-admin`, and `/.well-knownness` must not be
+treated as public.
 
 All other paths require `request.session["user_id"]`.
 
@@ -91,6 +96,8 @@ Current nonce/token protections:
 
 - Given a protected path without a session, when requested, then the user is
   redirected to `/login` with `redirect_to`.
+- Given a public-prefix lookalike path without a session, when requested, then
+  the user is redirected to `/login` with `redirect_to`.
 - Given an invalid session UUID on a page protected by `page_security`, when
   requested, then the user is redirected to `/login`.
 - Given an active root permission, when any protected permission is required,

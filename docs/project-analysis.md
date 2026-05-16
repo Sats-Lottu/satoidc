@@ -304,7 +304,10 @@ Run on 2026-05-15 after priority backlog completion:
 
 - `create_client.py` validates metadata and uses page-level permission checks, but still uses notifications instead of inline field-level validation.
 - Profile mutations currently use page-local NiceGUI interactions and supporting POST endpoints; future maintenance should decide whether to consolidate these flows.
-- `AuthMiddleware` makes all `/oauth` paths public, including consent POST. The POST has session and CSRF checks, so this is acceptable, but it should remain explicitly documented.
+- `AuthMiddleware` makes `/oauth` and paths below it public by exact or
+  segment-boundary matching, including consent POST. The POST has session and
+  CSRF checks, so this is acceptable, but it should remain explicitly
+  documented.
 - Production mode rejects placeholder secrets and requires secure session cookies.
 
 ## Suggested Documentation Next Steps

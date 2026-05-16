@@ -2,7 +2,7 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: TBD
 - Created: 2026-05-16
 - Updated: 2026-05-16
@@ -20,8 +20,9 @@ and resistant to accidental exposure when new protected routes are added.
 
 ## Context
 
-`AuthMiddleware` currently allows exact public paths and broad public prefixes
-such as `/oauth` and `/api` through `path.startswith(PUBLIC_PREFIXES)`.
+`AuthMiddleware` previously allowed exact public paths and broad public
+prefixes such as `/oauth` and `/api` through
+`path.startswith(PUBLIC_PREFIXES)`.
 
 That is convenient, but it can accidentally expose a future protected route
 whose name only shares a prefix, for example `/oauth-settings`.
@@ -103,6 +104,6 @@ existing routing style changes.
 ## Traceability
 
 - Code: `satoidc/satoidc/auth/middleware.py`
-- Tests: `satoidc/tests/`
+- Tests: `satoidc/tests/test_security.py`
 - Docs: `docs/priority-execution-backlog.md`
 - Decisions: `agent-memory/decisions.md`
