@@ -1,3 +1,4 @@
+import logging
 import time
 from secrets import token_urlsafe
 
@@ -7,6 +8,8 @@ from satoidc.models import OAuth2Client
 CLIENT_DISABLED_AT = "disabled_at"
 CLIENT_UPDATED_AT = "updated_at"
 CLIENT_SECRET_ROTATED_AT = "client_secret_rotated_at"
+
+log = logging.getLogger(__name__)
 
 
 class ClientMetadataValidationError(ValueError):
@@ -42,6 +45,15 @@ def rotate_client_secret(
     if metadata.get("token_endpoint_auth_method") == (
         TokenEndpointAuthMethodEnum.NONE.value
     ):
+        log.info(
+            "Client secret rotation rejected",
+            extra={
+                "event_name": "client.secret_rotation_failed",
+                "component": "client_management",
+                "outcome": "rejected",
+                "reason": "public_client",
+            },
+        )
         raise ClientMetadataValidationError(
             ["Public clients do not have a secret to rotate."]
         )

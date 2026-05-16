@@ -112,10 +112,11 @@ Progress:
   signatures.
 - OIDC signing configuration failures and admin signing-key mutation failures
   now emit sanitized reason-class logs without private key material.
+- Permission-request and OAuth client-secret mutation services now emit
+  sanitized logs for rejected operations used by profile and dashboard flows.
 
 Remaining:
 
-- Add logs for profile and dashboard mutation failures.
 - Add broader sensitive-field regression coverage for passwords, tokens,
   private JWKs, and client secrets.
 

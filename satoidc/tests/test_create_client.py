@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 import pytest
@@ -221,7 +222,8 @@ def test_rotate_client_secret_updates_secret_once():
     )
 
 
-def test_rotate_client_secret_rejects_public_client():
+def test_rotate_client_secret_rejects_public_client(caplog):
+    caplog.set_level(logging.INFO, logger="satoidc.auth.client_management")
     client = OAuth2Client(
         user_id=USER_ID,
         client_id="client-id",
@@ -232,3 +234,10 @@ def test_rotate_client_secret_rejects_public_client():
 
     with pytest.raises(ClientMetadataValidationError):
         rotate_client_secret(client)
+    assert any(
+        record.event_name == "client.secret_rotation_failed"
+        and record.component == "client_management"
+        and record.reason == "public_client"
+        for record in caplog.records
+    )
+    assert "old-secret" not in caplog.text

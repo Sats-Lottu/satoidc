@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -116,8 +117,9 @@ async def test_list_and_latest_permission_requests_filter_by_status(
 
 
 async def test_create_permission_request_rejects_existing_developer_access(
-    db_session, make_user
+    db_session, make_user, caplog
 ):
+    caplog.set_level(logging.INFO, logger="satoidc.auth.permissions")
     user = await make_user()
     db_session.add(
         Permission(
@@ -132,6 +134,12 @@ async def test_create_permission_request_rejects_existing_developer_access(
 
     with pytest.raises(PermissionRequestNotAllowed):
         await create_permission_request(db_session, user.id)
+    assert any(
+        record.event_name == "permission.request_failed"
+        and record.component == "permissions"
+        and record.reason == "already_has_developer_access"
+        for record in caplog.records
+    )
 
 
 async def test_approve_permission_request_grants_developer_permission(
@@ -386,13 +394,23 @@ async def test_cancel_permission_request_only_cancels_requester_pending(
     assert cancelled_request.status == PermissionRequestStatusEnum.CANCELLED
 
 
-async def test_permission_request_mutations_reject_unknown_request(db_session):
+async def test_permission_request_mutations_reject_unknown_request(
+    db_session, caplog
+):
+    caplog.set_level(logging.INFO, logger="satoidc.auth.permissions")
+
     with pytest.raises(PermissionRequestNotFound):
         await approve_permission_request(
             db_session,
             999,
             actor_id=uuid4(),
         )
+    assert any(
+        record.event_name == "permission.request_failed"
+        and record.component == "permissions"
+        and record.reason == "not_found"
+        for record in caplog.records
+    )
 
 
 async def test_admin_dashboard_metrics_count_operational_views(

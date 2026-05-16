@@ -93,13 +93,17 @@ Start with standard-library `logging` and consistent event fields. Introduce
 
 - Code:
   - `satoidc/satoidc/auth/middleware.py`
+  - `satoidc/satoidc/auth/client_management.py`
   - `satoidc/satoidc/auth/oidc_keys.py`
+  - `satoidc/satoidc/auth/permissions.py`
   - `satoidc/satoidc/routes/lnurl_auth.py`
   - `satoidc/satoidc/routes/oauth2.py`
 - Tests:
   - `satoidc/tests/test_security.py`
+  - `satoidc/tests/test_create_client.py`
   - `satoidc/tests/test_lnurl_auth.py`
   - `satoidc/tests/test_oauth_routes.py`
   - `satoidc/tests/test_oidc_key_rotation.py`
+  - `satoidc/tests/test_permission_requests.py`
 - Docs: `docs/priority-execution-backlog.md`
 - Decisions: `agent-memory/decisions.md`

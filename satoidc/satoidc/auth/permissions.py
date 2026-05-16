@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
@@ -9,6 +10,8 @@ from sqlalchemy.orm import selectinload
 
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
 from satoidc.models import OAuth2Client, Permission, PermissionRequest, User
+
+log = logging.getLogger(__name__)
 
 DEVELOPER_ACCESS_PERMISSIONS = {
     PermissionsEnum.DEVELOPER,
@@ -98,6 +101,16 @@ async def create_permission_request(
         permission_type == PermissionsEnum.DEVELOPER
         and has_developer_access(active_permissions)
     ):
+        log.info(
+            "Permission request rejected",
+            extra={
+                "event_name": "permission.request_failed",
+                "component": "permissions",
+                "outcome": "rejected",
+                "reason": "already_has_developer_access",
+                "permission_type": str(permission_type),
+            },
+        )
         raise PermissionRequestNotAllowed(
             "Requester already has developer access."
         )
@@ -155,6 +168,15 @@ async def _get_permission_request(
         .where(PermissionRequest.id == permission_request_id)
     )
     if permission_request is None:
+        log.info(
+            "Permission request mutation rejected",
+            extra={
+                "event_name": "permission.request_failed",
+                "component": "permissions",
+                "outcome": "rejected",
+                "reason": "not_found",
+            },
+        )
         raise PermissionRequestNotFound(
             f"Permission request {permission_request_id} was not found."
         )
