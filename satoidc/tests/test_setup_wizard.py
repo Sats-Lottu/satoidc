@@ -2,6 +2,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from starlette.status import HTTP_307_TEMPORARY_REDIRECT
@@ -14,6 +15,7 @@ from setup_wizard.get_root import (
     authenticate_root_user,
     exists_root_user,
     has_active_root_permission,
+    parse_root_user_id,
 )
 
 
@@ -50,6 +52,16 @@ def test_setup_wizard_redirects_unknown_routes():
 
     assert response.status_code == HTTP_307_TEMPORARY_REDIRECT
     assert response.headers["location"] == "/"
+
+
+def test_setup_wizard_parses_root_user_ids():
+    user_id = uuid4()
+
+    assert parse_root_user_id(user_id.hex) == user_id
+    assert parse_root_user_id(str(user_id)) == user_id
+    assert parse_root_user_id(user_id) == user_id
+    assert parse_root_user_id(None) is None
+    assert parse_root_user_id("not-a-uuid") is None
 
 
 async def test_setup_wizard_detects_missing_root_user(db_session):

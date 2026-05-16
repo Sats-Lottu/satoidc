@@ -37,11 +37,13 @@ from setup_wizard.get_root import (
     authenticate_root_user,
     exists_root_user,
     has_active_root_permission,
+    parse_root_user_id,
 )
 
 router = APIRouter()
 
 Session = Annotated[AsyncSession, Depends(get_session)]
+SETUP_ROOT_USER_ID_KEY = "setup_root_user_id"
 
 
 def finalizing_setup():
@@ -56,8 +58,31 @@ def setup_header():
     )
 
 
-def render_reconfiguration_panel(request: Request):
+def setup_root_storage():
+    return app.storage.user
+
+
+async def stored_root_has_access(session: Session) -> bool:
+    storage = setup_root_storage()
+    user_id = parse_root_user_id(storage.get(SETUP_ROOT_USER_ID_KEY))
+    if user_id is None:
+        storage.pop(SETUP_ROOT_USER_ID_KEY, None)
+        return False
+
+    if await has_active_root_permission(session, user_id):
+        return True
+
+    storage.pop(SETUP_ROOT_USER_ID_KEY, None)
+    return False
+
+
+def render_reconfiguration_panel():
     report = validate_bootstrap_environment()
+    storage = setup_root_storage()
+
+    def sign_out():
+        storage.pop(SETUP_ROOT_USER_ID_KEY, None)
+        ui.navigate.reload()
 
     with auth_shell("max-w-2xl"):
         with ui.column().classes("gap-4"):
@@ -100,10 +125,7 @@ def render_reconfiguration_panel(request: Request):
                 ui.button(
                     "Sign out",
                     icon="logout",
-                    on_click=lambda: (
-                        request.session.pop("setup_root_user_id", None),
-                        ui.navigate.reload(),
-                    ),
+                    on_click=sign_out,
                 ).classes(PRIMARY_BUTTON_CLASSES)
 
 
@@ -161,7 +183,7 @@ def render_root_login(session: Session, request: Request):
                         ui.notify("Invalid root credentials.", type="negative")
                         return
 
-                    request.session["setup_root_user_id"] = user.id.hex
+                    setup_root_storage()[SETUP_ROOT_USER_ID_KEY] = user.id.hex
                     ui.notify("Root access granted.", type="positive")
                     ui.navigate.reload()
 
@@ -170,7 +192,8 @@ def render_root_login(session: Session, request: Request):
                 )
 
 
-def render_existing_root_setup(session: Session, request: Request):
+async def render_existing_root_setup(session: Session, request: Request):
+    storage = setup_root_storage()
     lnurl_auth_login_root = LNURLAuthQRLoginRoot(
         base_url=str(request.base_url), session=session
     )
@@ -196,7 +219,7 @@ def render_existing_root_setup(session: Session, request: Request):
             )
             return
 
-        request.session["setup_root_user_id"] = str(user_id)
+        storage[SETUP_ROOT_USER_ID_KEY] = str(user_id)
         ui.notify("Root access granted.", type="positive")
         ui.navigate.reload()
 
@@ -209,7 +232,7 @@ def render_existing_root_setup(session: Session, request: Request):
             "outline"
         ).classes(SECONDARY_BUTTON_CLASSES)
 
-    if not request.session.get("setup_root_user_id"):
+    if not await stored_root_has_access(session):
         render_root_login(session, request)
         with ui.page_sticky(x_offset=18, y_offset=18):
             ui.button(icon="qr_code", on_click=login_dialog.open).props(
@@ -217,7 +240,7 @@ def render_existing_root_setup(session: Session, request: Request):
             )
         return
 
-    render_reconfiguration_panel(request)
+    render_reconfiguration_panel()
 
 
 class LNURLAuthQRRegisterRoot:
@@ -472,7 +495,7 @@ async def set_root(session: Session, request: Request):
     )
 
     if await exists_root_user():
-        render_existing_root_setup(session, request)
+        await render_existing_root_setup(session, request)
         return
 
     render_initial_root_setup(session, request)

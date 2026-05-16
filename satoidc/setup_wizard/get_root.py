@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -5,6 +7,17 @@ from satoidc.auth.security import verify_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission, User
 from satoidc.models.database import get_session
+
+
+def parse_root_user_id(value) -> UUID | None:
+    if isinstance(value, UUID):
+        return value
+    if not value:
+        return None
+    try:
+        return UUID(str(value))
+    except (TypeError, ValueError):
+        return None
 
 
 async def exists_root_user() -> bool:
@@ -59,9 +72,13 @@ async def has_active_root_permission(
     session: AsyncSession,
     user_id,
 ) -> bool:
+    parsed_user_id = parse_root_user_id(user_id)
+    if parsed_user_id is None:
+        return False
+
     root_permission = await session.scalar(
         select(Permission).where(
-            Permission.user_id == user_id,
+            Permission.user_id == parsed_user_id,
             Permission.permission_type == PermissionsEnum.ROOT,
             Permission.disabled.is_(False),
             or_(

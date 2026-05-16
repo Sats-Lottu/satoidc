@@ -32,7 +32,12 @@ def create_app(*, mount_ui: bool = True) -> FastAPI:
     setup_app.include_router(lnurl_auth_router)
     if mount_ui:
         apply_theme()
-        ui.run_with(setup_app, title="SatOIDC - Setup Wizard", dark=True)
+        ui.run_with(
+            setup_app,
+            title="SatOIDC - Setup Wizard",
+            dark=True,
+            storage_secret=ENV.SESSION_MIDDLEWARE_SECRET_KEY,
+        )
     setup_app.add_api_route(
         "/{path:path}",
         redirect_to_setup,
