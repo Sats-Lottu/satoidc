@@ -171,6 +171,15 @@ The compose stack starts:
 
 The stack reads optional overrides from `.env`; use `.env.example` as the baseline for ports, database credentials and secrets. PostgreSQL has a healthcheck, so the application waits for the database before running migrations.
 
+## CI/CD
+
+GitHub Actions workflows live in `.github/workflows/`:
+
+- `ci.yaml` runs Ruff, the default test suite and a Docker image build on pushes and pull requests.
+- `deploy-coolify.yaml` triggers a Coolify deployment after CI succeeds on `main`, or manually from GitHub Actions.
+
+See [docs/deployment/vps.md](docs/deployment/vps.md) for the required GitHub Secrets and VPS setup.
+
 ---
 
 ## OIDC Discovery

@@ -8,6 +8,21 @@ Last Updated: 2026-05-16
 
 Describe the current container and local deployment behavior.
 
+## CI/CD
+
+The repository uses GitHub Actions for CI/CD:
+
+- CI is defined in `.github/workflows/ci.yaml`.
+- CI runs on `push` and `pull_request`.
+- CI installs Python 3.11 and Poetry, installs dependencies from
+  `satoidc/poetry.lock`, runs Ruff, runs the default non-e2e test suite, and
+  builds the Docker Compose application image.
+- CD is defined in `.github/workflows/deploy-coolify.yaml`.
+- CD runs after CI succeeds on `main`, or manually through `workflow_dispatch`.
+- CD calls the configured Coolify deploy webhook using GitHub Secrets.
+
+Production environment variables remain in Coolify and must not be committed.
+
 ## Local Development
 
 Expected commands:
@@ -62,10 +77,15 @@ concurrency, operational backups, and multi-user production behavior.
 
 SatOIDC environment:
 
+- `APP_ENV`: defaults to `development`.
+- `DOMAIN`: optional public domain metadata.
 - `DATABASE_URL`: PostgreSQL async URL.
 - `SYNC_DATABASE_URL`: PostgreSQL sync URL.
 - `OAUTH2_JWT_ISS`: defaults to `http://localhost:8000`.
+- `OAUTH2_JWT_SECRET_KEY`: defaults to a development placeholder.
+- `OAUTH2_TOKEN_EXPIRES_IN`: defaults to `300`.
 - `SESSION_MIDDLEWARE_SECRET_KEY`: defaults to a development placeholder.
+- `SESSION_COOKIE_HTTPS_ONLY`: defaults to `false`.
 
 Ports:
 
@@ -112,5 +132,10 @@ Vault-compatible Transit backend:
 - Given SQLite defaults are used, then local development can run without
   PostgreSQL.
 - Given production Compose starts, then PostgreSQL is used for persistence.
+- Given production Compose starts with `APP_ENV=production`, then placeholder
+  secrets and insecure session cookies are rejected by application settings.
+- Given CI runs, then lint, non-e2e tests, and Docker image build are executed.
+- Given CI succeeds on `main`, then CD can trigger the configured Coolify
+  deployment webhook.
 - Given OpenBao is not configured, then the app can still run with internal
   signing and the deployment docs expose the associated risk.

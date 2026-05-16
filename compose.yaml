@@ -28,10 +28,15 @@ services:
       database:
         condition: service_healthy
     environment:
+      APP_ENV: ${APP_ENV:-development}
+      DOMAIN: ${DOMAIN:-}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-app_password}@database:5432/${POSTGRES_DB:-app_db}
       SYNC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-app_password}@database:5432/${POSTGRES_DB:-app_db}
       OAUTH2_JWT_ISS: ${OAUTH2_JWT_ISS:-http://localhost:8000}
+      OAUTH2_JWT_SECRET_KEY: ${OAUTH2_JWT_SECRET_KEY:-CHANGE_ME_TO_A_LONG_RANDOM_SECRET}
+      OAUTH2_TOKEN_EXPIRES_IN: ${OAUTH2_TOKEN_EXPIRES_IN:-300}
       SESSION_MIDDLEWARE_SECRET_KEY: ${SESSION_MIDDLEWARE_SECRET_KEY:-CHANGE_ME_TO_A_LONG_RANDOM_SECRET}
+      SESSION_COOKIE_HTTPS_ONLY: ${SESSION_COOKIE_HTTPS_ONLY:-false}
 
 volumes:
   pgdata:

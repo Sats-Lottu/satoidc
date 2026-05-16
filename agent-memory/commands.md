@@ -10,6 +10,9 @@ updated: 2026-05-15
 
 # Validated Commands
 
+- `docker compose --env-file .env.example config`: ran on 2026-05-16 after CI/CD and Compose production environment updates; passed and rendered the expected SatOIDC environment. Local Docker emitted an access warning for `C:\Users\luss1\.docker\config.json`.
+- `cd satoidc; poetry run task lint`: ran on 2026-05-16 after CI/CD workflow updates; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-16 after CI/CD workflow updates; passed with `135 passed, 17 deselected` and 100% measured line coverage.
 - `obsidian vault="satoidc" search query="agent-memory" limit=10`: returned `Vault not found` before this repository was initialized as the project vault.
 - `obsidian vault="satoidc" vault`: validated after initialization; resolves to `C:\Users\luss1\Documents\GitHub\satoidc`.
 - `obsidian vault="satoidc" read path="agent-memory/index.md"`: validated after initialization; reads the project memory index.

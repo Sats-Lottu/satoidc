@@ -1,0 +1,33 @@
+name: Deploy Coolify
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Trigger Coolify deployment
+    runs-on: ubuntu-latest
+    environment: production
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Validate required secrets
+        run: |
+          test -n "${{ secrets.COOLIFY_WEBHOOK }}"
+          test -n "${{ secrets.COOLIFY_TOKEN }}"
+
+      - name: Trigger Coolify deploy webhook
+        run: |
+          curl --fail --silent --show-error --request GET \
+            "${{ secrets.COOLIFY_WEBHOOK }}" \
+            --header "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
