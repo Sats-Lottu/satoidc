@@ -13,6 +13,23 @@ from satoidc import app
 from satoidc.models import User, table_registry
 from satoidc.models.database import get_session
 
+SENSITIVE_LOG_VALUES = (
+    "password-secret",
+    "access-token-secret",
+    "refresh-token-secret",
+    "private-jwk-secret",
+    "client-secret-value",
+)
+
+
+@pytest.fixture
+def assert_no_sensitive_log_values(caplog):
+    def _assert_no_sensitive_log_values(*values: str) -> None:
+        for value in (*SENSITIVE_LOG_VALUES, *values):
+            assert value not in caplog.text
+
+    return _assert_no_sensitive_log_values
+
 
 @pytest.fixture
 async def db_session(

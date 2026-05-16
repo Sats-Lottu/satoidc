@@ -89,38 +89,7 @@ Expected outcome:
 - Move account, wallet, client-management, and permission-request mutations out
   of NiceGUI route closures into focused service helpers with unit coverage.
 
-### 5. Add Operational Observability Baseline
-
-Status: in progress.
-
-Spec:
-
-- `specs/features/operational-observability/spec.md`
-
-Expected outcome:
-
-- Add sanitized standard-library logging for important auth, authorization,
-  OIDC, LNURL, and mutation failures.
-
-Progress:
-
-- Middleware redirects for missing sessions now emit sanitized operational
-  logs without query strings.
-- OAuth authorization failures now emit sanitized reason-class logs.
-- LNURL callback failures for invalid/expired challenges, action mismatch, and
-  bad signatures now emit sanitized reason-class logs without wallet
-  signatures.
-- OIDC signing configuration failures and admin signing-key mutation failures
-  now emit sanitized reason-class logs without private key material.
-- Permission-request and OAuth client-secret mutation services now emit
-  sanitized logs for rejected operations used by profile and dashboard flows.
-
-Remaining:
-
-- Add broader sensitive-field regression coverage for passwords, tokens,
-  private JWKs, and client secrets.
-
-### 6. Add Lightweight Load/Concurrency Checks For Token Issuance
+### 5. Add Lightweight Load/Concurrency Checks For Token Issuance
 
 Status: backlog.
 
@@ -134,7 +103,7 @@ Expected outcome:
 - Add a lightweight smoke benchmark for `/oauth/token` against PostgreSQL to
   establish a local latency/error/threadpool baseline.
 
-### 7. Remove LNURL Schema Compatibility Shim When Safe
+### 6. Remove LNURL Schema Compatibility Shim When Safe
 
 Status: backlog.
 
@@ -147,7 +116,7 @@ Expected outcome:
 - Confirm no imports depend on `satoidc/satoidc/auth/lnurl_schemas.py`, then
   remove the compatibility re-export.
 
-### 8. Normalize Or Archive `relatorio.md`
+### 7. Normalize Or Archive `relatorio.md`
 
 Status: backlog.
 
@@ -156,7 +125,7 @@ Expected outcome:
 - Fix the encoding and link it as an analysis artifact, or archive/remove it
   after actionable tasks are tracked elsewhere.
 
-### 9. Implement Email Verification And Account Recovery
+### 8. Implement Email Verification And Account Recovery
 
 Status: draft.
 
@@ -169,7 +138,7 @@ Expected outcome:
 - Implement verified-email state, single-use verification/recovery tokens,
   verified-email password reset, UI updates, and focused tests.
 
-### 10. Refactor Test Layer For Quality Specs
+### 9. Refactor Test Layer For Quality Specs
 
 Status: draft.
 

@@ -117,10 +117,10 @@ async def test_list_and_latest_permission_requests_filter_by_status(
 
 
 async def test_create_permission_request_rejects_existing_developer_access(
-    db_session, make_user, caplog
+    db_session, make_user, caplog, assert_no_sensitive_log_values
 ):
     caplog.set_level(logging.INFO, logger="satoidc.auth.permissions")
-    user = await make_user()
+    user = await make_user(password_hash="password-secret")
     db_session.add(
         Permission(
             user_id=user.id,
@@ -140,6 +140,7 @@ async def test_create_permission_request_rejects_existing_developer_access(
         and record.reason == "already_has_developer_access"
         for record in caplog.records
     )
+    assert_no_sensitive_log_values()
 
 
 async def test_approve_permission_request_grants_developer_permission(
@@ -395,7 +396,7 @@ async def test_cancel_permission_request_only_cancels_requester_pending(
 
 
 async def test_permission_request_mutations_reject_unknown_request(
-    db_session, caplog
+    db_session, caplog, assert_no_sensitive_log_values
 ):
     caplog.set_level(logging.INFO, logger="satoidc.auth.permissions")
 
@@ -411,6 +412,7 @@ async def test_permission_request_mutations_reject_unknown_request(
         and record.reason == "not_found"
         for record in caplog.records
     )
+    assert_no_sensitive_log_values()
 
 
 async def test_admin_dashboard_metrics_count_operational_views(

@@ -54,13 +54,20 @@ async def test_authorize_requires_logged_in_user(db_session):
     assert response.body == b'{"error":"login_required"}'
 
 
-async def test_authorize_rejects_invalid_csrf(db_session, make_user, caplog):
+async def test_authorize_rejects_invalid_csrf(
+    db_session, make_user, caplog, assert_no_sensitive_log_values
+):
     caplog.set_level(logging.INFO, logger="satoidc.routes.oauth2")
     user = await make_user()
     request = make_request(method="POST")
-    request.scope["session"] = {"user_id": user.id.hex, "csrf_token": "good"}
+    request.scope["session"] = {
+        "user_id": user.id.hex,
+        "csrf_token": "access-token-secret",
+    }
 
-    response = await authorize(db_session, request, "approve", "bad")
+    response = await authorize(
+        db_session, request, "approve", "refresh-token-secret"
+    )
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.body == b'{"error":"invalid_csrf"}'
@@ -70,6 +77,7 @@ async def test_authorize_rejects_invalid_csrf(db_session, make_user, caplog):
         and record.reason == "invalid_csrf"
         for record in caplog.records
     )
+    assert_no_sensitive_log_values()
 
 
 async def test_authorize_rejects_invalid_or_unknown_session(
@@ -374,7 +382,7 @@ async def test_admin_activate_oidc_key_translates_value_error(monkeypatch):
 
 
 async def test_admin_rotate_oidc_key_logs_sanitized_failure(
-    monkeypatch, caplog
+    monkeypatch, caplog, assert_no_sensitive_log_values
 ):
     caplog.set_level(logging.ERROR, logger="satoidc.routes.oauth2")
     request = make_request()
@@ -400,7 +408,7 @@ async def test_admin_rotate_oidc_key_logs_sanitized_failure(
         and record.reason == "RuntimeError"
         for record in caplog.records
     )
-    assert "private_jwk=secret" not in caplog.text
+    assert_no_sensitive_log_values("private_jwk=secret")
 
 
 async def _call_admin_oidc_key_route(route_name: str, request: Request):
@@ -429,7 +437,7 @@ async def _call_admin_oidc_key_route(route_name: str, request: Request):
     ],
 )
 async def test_admin_oidc_key_operations_log_sanitized_unexpected_failures(
-    monkeypatch, caplog, route_name, event_name
+    monkeypatch, caplog, assert_no_sensitive_log_values, route_name, event_name
 ):
     caplog.set_level(logging.ERROR, logger="satoidc.routes.oauth2")
     request = make_request()
@@ -455,4 +463,4 @@ async def test_admin_oidc_key_operations_log_sanitized_unexpected_failures(
         and record.reason == "RuntimeError"
         for record in caplog.records
     )
-    assert "client_secret=secret" not in caplog.text
+    assert_no_sensitive_log_values("client_secret=secret")

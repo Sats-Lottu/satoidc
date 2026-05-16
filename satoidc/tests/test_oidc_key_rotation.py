@@ -159,7 +159,7 @@ async def test_active_jwt_config_and_key_listing_use_persisted_key(db_session):
 
 
 def test_active_jwt_config_logs_sanitized_decrypt_failure(
-    monkeypatch, caplog
+    monkeypatch, caplog, assert_no_sensitive_log_values
 ):
     get_jwks()
     caplog.set_level(logging.ERROR, logger="satoidc.auth.oidc_keys")
@@ -180,7 +180,7 @@ def test_active_jwt_config_logs_sanitized_decrypt_failure(
         and record.reason == "RuntimeError"
         for record in caplog.records
     )
-    assert "private-jwk-secret" not in caplog.text
+    assert_no_sensitive_log_values("private-jwk-secret")
 
 
 async def test_id_token_uses_active_kid_and_audits_signature(

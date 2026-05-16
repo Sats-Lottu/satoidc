@@ -103,7 +103,9 @@ async def test_lnurl_callback_rejects_action_mismatch(db_session):
     assert response == {"status": "ERROR", "reason": "Action mismatch"}
 
 
-async def test_lnurl_callback_rejects_bad_signature(db_session, caplog):
+async def test_lnurl_callback_rejects_bad_signature(
+    db_session, caplog, assert_no_sensitive_log_values
+):
     caplog.set_level(logging.INFO, logger="satoidc.routes.lnurl_auth")
     k1 = "5" * 64
     key, _signature = _wallet_signature(k1)
@@ -128,7 +130,7 @@ async def test_lnurl_callback_rejects_bad_signature(db_session, caplog):
         and record.reason == "bad_signature"
         for record in caplog.records
     )
-    assert "0000000000000000" not in caplog.text
+    assert_no_sensitive_log_values("0000000000000000")
 
     stored_challenge = await db_session.scalar(
         select(LnurlAuthChallenge).where(LnurlAuthChallenge.k1 == k1)

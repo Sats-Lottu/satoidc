@@ -222,13 +222,15 @@ def test_rotate_client_secret_updates_secret_once():
     )
 
 
-def test_rotate_client_secret_rejects_public_client(caplog):
+def test_rotate_client_secret_rejects_public_client(
+    caplog, assert_no_sensitive_log_values
+):
     caplog.set_level(logging.INFO, logger="satoidc.auth.client_management")
     client = OAuth2Client(
         user_id=USER_ID,
         client_id="client-id",
         client_id_issued_at=1,
-        client_secret="",
+        client_secret="client-secret-value",
     )
     client.set_client_metadata({"token_endpoint_auth_method": "none"})
 
@@ -240,4 +242,4 @@ def test_rotate_client_secret_rejects_public_client(caplog):
         and record.reason == "public_client"
         for record in caplog.records
     )
-    assert "old-secret" not in caplog.text
+    assert_no_sensitive_log_values("old-secret")

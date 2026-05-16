@@ -7,6 +7,14 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-16
 
+- Add operational observability baseline.
+  - Spec: `specs/features/operational-observability/spec.md`
+  - Outcome: auth middleware redirects, OAuth authorization failures, LNURL
+    callback failures, OIDC signing/key-admin failures, permission-request
+    failures, and client-secret mutation failures emit sanitized operational
+    logs with regression coverage for passwords, tokens, private JWKs, wallet
+    signatures, and client secrets.
+
 - Harden public route boundary matching.
   - Spec: `specs/features/public-route-boundary/spec.md`
   - Outcome: middleware public path checks now require exact paths or path

@@ -99,6 +99,7 @@ Start with standard-library `logging` and consistent event fields. Introduce
   - `satoidc/satoidc/routes/lnurl_auth.py`
   - `satoidc/satoidc/routes/oauth2.py`
 - Tests:
+  - `satoidc/tests/conftest.py`
   - `satoidc/tests/test_security.py`
   - `satoidc/tests/test_create_client.py`
   - `satoidc/tests/test_lnurl_auth.py`
