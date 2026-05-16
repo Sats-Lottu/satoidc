@@ -137,7 +137,12 @@ The development server is available at:
 http://localhost:8000
 ```
 
-The first deployment path should run the setup wizard to create a root user when no root permission exists.
+The first deployment path should run the setup wizard to create a root user
+when no root permission exists. You can also start the setup wizard manually:
+
+```bash
+poetry run task setup_wizard
+```
 
 ---
 

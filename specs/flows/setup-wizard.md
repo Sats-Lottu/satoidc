@@ -52,6 +52,12 @@ Startup behavior:
 If the wizard starts, it blocks until root setup completes and the app shuts
 down.
 
+Operators and developers can also invoke the same wizard on demand:
+
+```bash
+poetry run task setup_wizard
+```
+
 ## Current Gaps
 
 - Setup is limited to root-user creation and does not yet cover all runtime
