@@ -1,20 +1,27 @@
 # Known Issues And Technical Debt
 
-Updated: 2026-05-15
+Updated: 2026-05-16
 
 ## High Priority
 
-1. Vault Transit remains a future hardening step for OIDC signing keys; the MVP persists private key material encrypted in the database.
+1. OpenBao/Vault-compatible Transit remains a future hardening step for OIDC signing keys; the MVP persists private key material encrypted in the database and must warn about the combined database plus runtime-secret compromise risk.
+2. `AuthMiddleware` public-prefix matching should be hardened so lookalike paths such as `/oauth-settings` or `/api-admin` are not exposed accidentally.
 
 ## Medium Priority
 
 1. LNURL registration can create `User(nickname=None)` even though `nickname` is non-nullable.
 2. Refresh token revocation has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
 3. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
+4. Persistence-heavy NiceGUI route actions should be extracted into testable service/use-case helpers.
+5. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
+6. `/oauth/token` needs lightweight load/concurrency checks because Authlib SQLAlchemy operations are synchronous behind threadpool helpers.
+7. SQLite and PostgreSQL support should be validated as an explicit matrix so migrations and sync/async database URLs do not drift.
 
 ## Lower Priority
 
 1. Keep new Markdown discoverable from `README.md`, `docs/README.md`, `specs/index.md`, or `agent-memory/index.md` to avoid orphan docs.
+2. Remove the legacy `satoidc/satoidc/auth/lnurl_schemas.py` compatibility shim when downstream imports no longer need it.
+3. Normalize or archive `relatorio.md`, which currently contains mojibake and duplicates tracked state.
 
 ## Suggested First Specs
 

@@ -5,7 +5,7 @@ tags:
 type: decision
 project: satoidc
 status: active
-updated: 2026-05-15
+updated: 2026-05-16
 ---
 
 # Decisions
@@ -35,3 +35,5 @@ updated: 2026-05-15
 - 2026-05-15: Treat full browser authorization-code e2e as a priority release gate. The suite must cover a real browser redirect through consent, code exchange, ID Token, refresh token issuance, and UserInfo for both public PKCE and confidential `client_secret_post` clients.
 - 2026-05-15: Preserve OAuth redirect query strings through login hidden fields without HTML entity corruption. Continue using `safe_redirect` for redirect safety, but do not encode `&` into `&amp;` inside form values that must round-trip as URLs.
 - 2026-05-15: Keep Authlib bearer-token integration compatible with its current header/scope expectations: preserve an `Authorization` key in the FastAPI request adapter and pass UserInfo required scopes as a list.
+- 2026-05-16: For hardened OIDC signing, design against a Vault-compatible Transit interface. Prefer OpenBao as the default self-hosted backend because it better matches SatOIDC's open-source, sovereignty, auditability, and future-project philosophy; keep HashiCorp Vault compatibility for managed service, Enterprise support, or existing Vault estates.
+- 2026-05-16: Promote the Gemini report findings into explicit backlog/specs instead of treating `relatorio.md` as a source of truth. The durable tracked work is public route boundary hardening, external signing backend, route service extraction, operational observability, token load checks, LNURL shim cleanup, and report encoding/archive cleanup.

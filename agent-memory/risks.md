@@ -6,7 +6,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-15
+updated: 2026-05-16
 ---
 
 # Risks And Pitfalls
@@ -14,12 +14,16 @@ updated: 2026-05-15
 High priority:
 
 - OIDC signing keys now persist encrypted in the database, but production hardening should still evaluate Vault Transit or another external cryptographic backend.
+- `AuthMiddleware` currently uses broad public-prefix matching. Harden it with segment-boundary-aware matching before adding protected routes that share names with public prefixes.
 
 Medium priority:
 - LNURL callback intentionally consumes a challenge before signature validation as a replay-defense measure, including invalid signatures. The model field is now named `consumed` to avoid implying successful signature verification.
 - LNURL registration can create a user with nullable identity fields and `nickname=None` despite non-null model expectation.
 - Refresh grant has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
 - Keep an eye on README/examples encoding when editing from non-UTF-8 shell sessions.
+- Prefer a Vault-compatible external signing boundary for hardened production. OpenBao is the better philosophical/default self-hosted fit; HashiCorp Vault remains a compatibility target for managed/vendor-supported environments.
+- NiceGUI route files still contain persistence-heavy actions that should be extracted gradually into service/use-case helpers.
+- Add sanitized operational logging for auth, OIDC, LNURL, and UI mutation failures before production hardening.
 
 Resolved/reduced on 2026-05-08:
 
