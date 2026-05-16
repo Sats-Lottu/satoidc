@@ -1,4 +1,10 @@
+import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+from starlette.status import HTTP_307_TEMPORARY_REDIRECT
 
 from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
@@ -11,10 +17,39 @@ from setup_wizard.get_root import (
 )
 
 
+def test_setup_wizard_import_does_not_load_app_pages():
+    project_dir = Path(__file__).resolve().parents[1]
+    code = (
+        "import sys;"
+        "import setup_wizard.__main__;"
+        "raise SystemExit('satoidc.routes.profile' in sys.modules)"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=project_dir,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
 def test_setup_wizard_builds_fastapi_app():
     app = create_app(mount_ui=False)
 
     assert app.title == "SatOIDC Setup Wizard"
+
+
+def test_setup_wizard_redirects_unknown_routes():
+    app = create_app(mount_ui=False)
+    client = TestClient(app, follow_redirects=False)
+
+    response = client.get("/profile")
+
+    assert response.status_code == HTTP_307_TEMPORARY_REDIRECT
+    assert response.headers["location"] == "/"
 
 
 async def test_setup_wizard_detects_missing_root_user(db_session):
