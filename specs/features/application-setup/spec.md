@@ -173,8 +173,14 @@ Out of scope:
 
 ## Traceability
 
-- Code: TBD
-- Tests: TBD
+- Code:
+  - `satoidc/setup_wizard/bootstrap.py`
+  - `satoidc/satoidc/runtime_config.py`
+  - `satoidc/satoidc/settings.py`
+  - `satoidc/entrypoint.sh`
+- Tests:
+  - `satoidc/tests/test_bootstrap.py`
+  - `satoidc/tests/test_settings.py`
 - Docs:
   - `specs/flows/setup-wizard.md`
   - `docs/deployment/vps.md`

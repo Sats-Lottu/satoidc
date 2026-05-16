@@ -2,8 +2,12 @@ from typing import Any
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PRODUCTION_ENVIRONMENTS = {"production", "prod"}
-PLACEHOLDER_SECRET = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
+from satoidc.runtime_config import (
+    PLACEHOLDER_SECRET,
+    is_operator_issuer_missing,
+    is_production_environment,
+    validate_database_url_pair,
+)
 
 
 class Settings(BaseSettings):
@@ -35,7 +39,7 @@ class Settings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
-        return self.APP_ENV.lower() in PRODUCTION_ENVIRONMENTS
+        return is_production_environment(self.APP_ENV)
 
     @property
     def session_cookie_https_only(self) -> bool:
@@ -44,9 +48,16 @@ class Settings(BaseSettings):
         return self.is_production
 
     def model_post_init(self, __context: Any) -> None:
+        validate_database_url_pair(self.DATABASE_URL, self.SYNC_DATABASE_URL)
+
         if not self.is_production:
             return
 
+        if is_operator_issuer_missing(self.OAUTH2_JWT_ISS):
+            raise ValueError(
+                "OAUTH2_JWT_ISS must be configured to the public issuer "
+                "URL in production"
+            )
         if self.SESSION_MIDDLEWARE_SECRET_KEY == PLACEHOLDER_SECRET:
             raise ValueError(
                 "SESSION_MIDDLEWARE_SECRET_KEY must be changed in production"

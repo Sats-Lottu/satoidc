@@ -43,6 +43,8 @@ SatOIDC must keep first-class support for both SQLite and PostgreSQL.
   `SYNC_DATABASE_URL` to PostgreSQL URLs for the same database.
 - The app must not mix SQLite for async routes with PostgreSQL for Authlib, or
   the inverse.
+- Startup settings validate that `DATABASE_URL` and `SYNC_DATABASE_URL` target
+  the same backend and database before engines are created.
 - Production documentation should present PostgreSQL as the recommended
   database, while preserving SQLite as a supported local/simple deployment
   option.
@@ -88,7 +90,9 @@ Session middleware settings:
 Production behavior:
 
 - Production mode rejects placeholder session/JWT secrets.
+- Production mode rejects missing or local-development OIDC issuer values.
 - Production mode requires HTTPS-only session cookies.
+- Production mode rejects mismatched async/sync database URLs.
 
 ## OAuth App Configuration
 

@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+echo "Validating bootstrap configuration..."
+poetry run python -m setup_wizard.bootstrap
+
 echo "Running database migrations..."
 poetry run alembic upgrade head
 

@@ -54,9 +54,10 @@ deployments.
 
 `satoidc/entrypoint.sh`:
 
-1. Runs Alembic migrations.
-2. Runs setup wizard if a root user is missing.
-3. Starts FastAPI on `0.0.0.0:8000`.
+1. Validates bootstrap configuration.
+2. Runs Alembic migrations.
+3. Runs setup wizard if a root user is missing.
+4. Starts FastAPI on `0.0.0.0:8000`.
 
 ## Compose Stack
 
@@ -134,6 +135,9 @@ Vault-compatible Transit backend:
 - Given production Compose starts, then PostgreSQL is used for persistence.
 - Given production Compose starts with `APP_ENV=production`, then placeholder
   secrets and insecure session cookies are rejected by application settings.
+- Given production Compose starts with missing/local issuer configuration or
+  mismatched async/sync database URLs, then bootstrap validation fails before
+  migrations run.
 - Given CI runs, then lint, non-e2e tests, and Docker image build are executed.
 - Given CI succeeds on `main`, then CD can trigger the configured Coolify
   deployment webhook.

@@ -9,7 +9,7 @@ be removed from this file and summarized in `docs/priority-execution-history.md`
 
 ### 1. Refactor Application Setup Bootstrap
 
-Status: draft.
+Status: in progress.
 
 Spec:
 
@@ -22,6 +22,20 @@ Expected outcome:
   generation, root-user bootstrap, database readiness, OIDC signing readiness,
   and actionable messages for values that must remain managed by Coolify or the
   process environment.
+
+Progress:
+
+- Bootstrap configuration validation now runs before migrations in the
+  container entrypoint.
+- Production startup reports actionable blocks for placeholder generated
+  secrets, missing/local issuer configuration, insecure session cookies, and
+  async/sync database URL mismatches without printing secret values.
+
+Remaining:
+
+- Add an approved persistence path for generated secrets.
+- Fold root-user and OIDC signing-key readiness into the same bootstrap report.
+- Add database readiness checks before migrations.
 
 ### 2. Add OpenBao-Compatible External Signing Backend
 
@@ -38,7 +52,7 @@ Expected outcome:
 
 ### 3. Validate SQLite And PostgreSQL Support Matrix
 
-Status: backlog.
+Status: in progress.
 
 Specs:
 
@@ -50,6 +64,17 @@ Expected outcome:
 
 - Document and verify the SQLite/PostgreSQL support matrix, including migration
   compatibility and async/sync database URL consistency.
+
+Progress:
+
+- Runtime settings now reject mismatched async/sync database URL pairs.
+- Tests cover valid SQLite and PostgreSQL URL pairs and mismatched backend or
+  database names.
+
+Remaining:
+
+- Add Testcontainers-backed PostgreSQL migration/startup smoke coverage.
+- Document the final matrix after container-backed verification exists.
 
 ### 4. Extract Persistence-Heavy UI Actions Into Services
 

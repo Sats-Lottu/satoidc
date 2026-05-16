@@ -15,6 +15,8 @@ by FastAPI routes and Authlib helpers.
 - Authlib SQLAlchemy helpers use a separate synchronous scoped session named
   `db`.
 - `DATABASE_URL` and `SYNC_DATABASE_URL` must point to the same database.
+- Runtime settings reject mismatched async/sync URL pairs before SQLAlchemy
+  engines are created.
 - OAuth routes that call Authlib from async request handlers run synchronous
   Authlib work in a threadpool and call `remove_sync_session()` afterward.
 
@@ -128,3 +130,5 @@ Future schema changes must add migrations rather than rewriting the baseline.
   run successfully against SQLite.
 - Given PostgreSQL URLs are configured, then migrations and deployment startup
   run successfully against PostgreSQL.
+- Given async and sync database URLs target different backends or database
+  names, then runtime settings fail before the app starts.
