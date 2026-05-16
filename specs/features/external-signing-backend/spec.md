@@ -178,6 +178,9 @@ Rationale:
 
 - Unit: backend interface selection, error handling, metadata mapping.
 - Integration: fake Transit server or adapter stub for signing and rotation.
+- Container integration: use Testcontainers to start OpenBao through Docker and
+  verify real Vault-compatible Transit setup, signing, rotation, failure, and
+  key-material isolation behavior.
 - Security/regression: assert private key material is absent from logs, HTTP
   responses, and audit events.
 - Manual/operations: documented OpenBao local compose setup before production
@@ -189,6 +192,11 @@ Do not start by wiring a full secret manager through every part of the app.
 Introduce a narrow signing backend boundary first, then add an OpenBao-backed
 implementation. Keep HashiCorp Vault compatibility at the HTTP/API contract
 layer.
+
+Do not treat a fake Transit adapter as sufficient for the OpenBao integration
+milestone. The production-facing backend needs at least one Testcontainers
+integration test that boots OpenBao, enables Transit, creates or rotates a key,
+and signs through the same client path used by SatOIDC.
 
 ## Traceability
 

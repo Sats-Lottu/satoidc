@@ -236,6 +236,12 @@ When email sending is disabled, registration and profile email changes may
 still create tokens, but the UI must clearly state that delivery is not
 configured in development or administration contexts.
 
+Integration coverage for the SMTP backend must use Testcontainers to start a
+disposable email server through Docker. The test server must capture delivered
+messages so tests can assert recipient, subject, verification/recovery link
+shape, token delivery, and absence of sensitive application data in message
+content.
+
 ## OIDC Claim Considerations
 
 Current OIDC UserInfo includes `email` when the granted scope includes `email`.
@@ -326,6 +332,8 @@ Reset password page:
   password rejection.
 - UserInfo tests for `email_verified` when the `email` scope is granted.
 - Migration tests or database contract checks for defaults and indexes.
+- Testcontainers-backed SMTP/email-server integration tests for verification
+  and password recovery delivery behavior.
 
 ## Open Questions
 

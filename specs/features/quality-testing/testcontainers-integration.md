@@ -36,7 +36,8 @@ In scope:
 - PostgreSQL-backed migration and persistence tests.
 - Async and sync database URL consistency checks.
 - Authlib sync helper behavior against PostgreSQL.
-- Optional container-backed smoke tests for future service integrations.
+- Email-server integration tests for verification and account recovery delivery.
+- OpenBao integration tests for the Vault-compatible Transit signing backend.
 
 Out of scope:
 
@@ -53,6 +54,12 @@ Out of scope:
   `metadata.create_all`.
 - Tests must verify both async route sessions and Authlib sync sessions point to
   the same physical database.
+- Email verification/account recovery implementation must include a
+  Testcontainers-backed disposable email server rather than relying only on
+  console or mocked delivery.
+- OpenBao/Vault-compatible signing implementation must include a
+  Testcontainers-backed OpenBao service rather than relying only on a fake
+  Transit adapter.
 - Container logs and failures must not expose secrets beyond test-only
   credentials.
 
@@ -71,6 +78,10 @@ Out of scope:
   Authlib sync helpers operate on the same database.
 - Given database migrations are added, then integration tests catch
   PostgreSQL-specific incompatibilities.
+- Given email verification or recovery sends a message, then a disposable email
+  server started by Testcontainers captures the expected message and link.
+- Given OpenBao-backed signing is configured, then OpenBao starts through
+  Testcontainers and SatOIDC signs through the Vault-compatible Transit path.
 - Given Docker is unavailable, then integration tests skip or fail with a clear
   environment message instead of failing obscurely.
 
@@ -81,3 +92,5 @@ Out of scope:
 - Prefer a small number of high-signal PostgreSQL tests over duplicating the
   entire SQLite suite.
 - Use test-only credentials and random database names generated per test run.
+- Prefer lightweight, purpose-built service containers for email capture and
+  OpenBao. Avoid requiring long-lived Docker Compose services for these tests.

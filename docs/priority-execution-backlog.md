@@ -49,6 +49,8 @@ Expected outcome:
 
 - Add a signing backend interface and a Vault-compatible Transit backend so
   production deployments can keep OIDC private signing material outside SatOIDC.
+- Include Testcontainers-backed OpenBao integration coverage for the real
+  Transit path.
 
 ### 3. Validate SQLite And PostgreSQL Support Matrix
 
@@ -137,6 +139,8 @@ Expected outcome:
 
 - Implement verified-email state, single-use verification/recovery tokens,
   verified-email password reset, UI updates, and focused tests.
+- Include Testcontainers-backed email-server integration coverage for SMTP
+  delivery and captured verification/recovery messages.
 
 ### 9. Refactor Test Layer For Quality Specs
 
