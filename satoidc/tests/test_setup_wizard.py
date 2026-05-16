@@ -5,11 +5,12 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
-from starlette.status import HTTP_307_TEMPORARY_REDIRECT
+from starlette.status import HTTP_303_SEE_OTHER, HTTP_307_TEMPORARY_REDIRECT
 
 from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission
+from satoidc.models.database import get_session
 from setup_wizard.__main__ import create_app
 from setup_wizard.get_root import (
     authenticate_root_user,
@@ -52,6 +53,41 @@ def test_setup_wizard_redirects_unknown_routes():
 
     assert response.status_code == HTTP_307_TEMPORARY_REDIRECT
     assert response.headers["location"] == "/"
+
+
+async def test_setup_root_login_sets_http_session(db_session, make_user):
+    user = await make_user(password_hash=hash_password("StrongPass1!"))
+    db_session.add(
+        Permission(
+            user_id=user.id,
+            granted_by=None,
+            permission_type=PermissionsEnum.ROOT,
+            expiration_date=None,
+            reason="test root user",
+        )
+    )
+    await db_session.commit()
+
+    async def override_get_session():
+        yield db_session
+
+    app = create_app(mount_ui=False)
+    app.dependency_overrides[get_session] = override_get_session
+    try:
+        with TestClient(app, follow_redirects=False) as client:
+            response = client.post(
+                "/setup/root-login",
+                data={
+                    "identifier": user.login,
+                    "password": "StrongPass1!",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == HTTP_303_SEE_OTHER
+    assert response.headers["location"] == "/"
+    assert "setup_session" in response.cookies
 
 
 def test_setup_wizard_parses_root_user_ids():

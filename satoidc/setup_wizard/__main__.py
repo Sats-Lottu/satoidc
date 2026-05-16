@@ -36,7 +36,6 @@ def create_app(*, mount_ui: bool = True) -> FastAPI:
             setup_app,
             title="SatOIDC - Setup Wizard",
             dark=True,
-            storage_secret=ENV.SESSION_MIDDLEWARE_SECRET_KEY,
         )
     setup_app.add_api_route(
         "/{path:path}",
