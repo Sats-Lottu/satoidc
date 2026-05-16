@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
+from nicegui import Event
 from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -15,6 +16,7 @@ DEVELOPER_ACCESS_PERMISSIONS = {
     PermissionsEnum.ROOT,
 }
 ADMIN_ACCESS_PERMISSIONS = {PermissionsEnum.ADMIN, PermissionsEnum.ROOT}
+permission_request_events = Event[dict]()
 
 
 class PermissionRequestError(Exception):

@@ -16,6 +16,7 @@ from satoidc.auth.permissions import (
     create_permission_request,
     get_latest_permission_request,
     has_developer_access,
+    permission_request_events,
 )
 from satoidc.auth.security import hash_password, verify_password
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
@@ -357,7 +358,7 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
 
             async def submit():
                 try:
-                    await create_permission_request(
+                    permission_request = await create_permission_request(
                         session,
                         user.id,
                         permission_type=PermissionsEnum.DEVELOPER,
@@ -371,6 +372,16 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                     refresh_profile()
                     return
                 await session.commit()
+                permission_request_events.emit(
+                    {
+                        "action": "created",
+                        "permission_request_id": permission_request.id,
+                        "permission_type": str(
+                            permission_request.permission_type
+                        ),
+                        "requester_id": str(permission_request.requester_id),
+                    }
+                )
                 ui.notify(
                     "Developer access request submitted.",
                     type="positive",

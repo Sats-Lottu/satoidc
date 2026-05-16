@@ -20,6 +20,7 @@ from satoidc.auth.permissions import (
     deny_permission_request,
     get_admin_dashboard_metrics,
     list_permission_requests,
+    permission_request_events,
 )
 from satoidc.auth.security import page_security
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
@@ -54,59 +55,24 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
     session: Session, request: Request
 ):  # pragma: no cover
     actor_id = UUID(request.session.get("user_id"))
-    metrics = await get_admin_dashboard_metrics(session)
-    pending_requests = await list_permission_requests(
-        session, status=PermissionRequestStatusEnum.PENDING, limit=25
-    )
-    recent_decisions = await session.scalars(
-        select(Permission)
-        .options(selectinload(Permission.user))
-        .where(Permission.permission_type == PermissionsEnum.DEVELOPER)
-        .order_by(Permission.created_at.desc())
-        .limit(5)
-    )
-    recent_permissions = list(recent_decisions.all())
-    users = list(
-        (
-            await session.scalars(
-                select(User).order_by(User.created_at.desc()).limit(10)
-            )
-        ).all()
-    )
-    clients = list(
-        (
-            await session.scalars(
-                select(OAuth2Client)
-                .order_by(OAuth2Client.client_id_issued_at.desc())
-                .limit(10)
-            )
-        ).all()
-    )
-    inactive_permissions = list(
-        (
-            await session.scalars(
-                select(Permission)
-                .options(selectinload(Permission.user))
-                .where(
-                    (Permission.disabled.is_(True))
-                    | (Permission.expiration_date <= func.now())
-                )
-                .order_by(Permission.created_at.desc())
-                .limit(10)
-            )
-        ).all()
-    )
 
     async def approve_request(permission_request_id: int):
-        await approve_permission_request(
+        permission_request = await approve_permission_request(
             session,
             permission_request_id,
             actor_id=actor_id,
             decision_reason="Approved in admin dashboard",
         )
         await session.commit()
+        await permission_request_events.call(
+            {
+                "action": "approved",
+                "permission_request_id": permission_request.id,
+                "permission_type": str(permission_request.permission_type),
+                "requester_id": str(permission_request.requester_id),
+            }
+        )
         ui.notify("Developer access approved.", type="positive")
-        ui.navigate.to("/dashboard/admin")
 
     def deny_dialog(permission_request_id: int):
         with ui.dialog() as dialog, ui.card().classes(
@@ -118,15 +84,27 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
             reason = ui.textarea("Decision note").classes(INPUT_CLASSES)
 
             async def deny_request():
-                await deny_permission_request(
+                permission_request = await deny_permission_request(
                     session,
                     permission_request_id,
                     actor_id=actor_id,
                     decision_reason=reason.value,
                 )
                 await session.commit()
+                await permission_request_events.call(
+                    {
+                        "action": "denied",
+                        "permission_request_id": permission_request.id,
+                        "permission_type": str(
+                            permission_request.permission_type
+                        ),
+                        "requester_id": str(
+                            permission_request.requester_id
+                        ),
+                    }
+                )
                 ui.notify("Permission request denied.", type="warning")
-                ui.navigate.to("/dashboard/admin")
+                dialog.close()
 
             with ui.row().classes("justify-end gap-3 w-full"):
                 ui.button("Cancel", on_click=dialog.close).classes(
@@ -137,12 +115,52 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                 )
         dialog.open()
 
-    app_header(
-        title="Admin Dashboard",
-        user_label="Admin",
-        show_brand=False,
-    )
-    with ui.column().classes(PAGE):
+    @ui.refreshable
+    async def admin_dashboard_content():  # noqa: PLR0912, PLR0915
+        session.expire_all()
+        metrics = await get_admin_dashboard_metrics(session)
+        pending_requests = await list_permission_requests(
+            session, status=PermissionRequestStatusEnum.PENDING, limit=25
+        )
+        recent_decisions = await session.scalars(
+            select(Permission)
+            .options(selectinload(Permission.user))
+            .where(Permission.permission_type == PermissionsEnum.DEVELOPER)
+            .order_by(Permission.created_at.desc())
+            .limit(5)
+        )
+        recent_permissions = list(recent_decisions.all())
+        users = list(
+            (
+                await session.scalars(
+                    select(User).order_by(User.created_at.desc()).limit(10)
+                )
+            ).all()
+        )
+        clients = list(
+            (
+                await session.scalars(
+                    select(OAuth2Client)
+                    .order_by(OAuth2Client.client_id_issued_at.desc())
+                    .limit(10)
+                )
+            ).all()
+        )
+        inactive_permissions = list(
+            (
+                await session.scalars(
+                    select(Permission)
+                    .options(selectinload(Permission.user))
+                    .where(
+                        (Permission.disabled.is_(True))
+                        | (Permission.expiration_date <= func.now())
+                    )
+                    .order_by(Permission.created_at.desc())
+                    .limit(10)
+                )
+            ).all()
+        )
+
         with ui.column().classes(f"{CONTENT} gap-6"):
             with ui.row().classes(
                 "w-full items-center justify-between gap-3 max-sm:flex-col "
@@ -349,6 +367,18 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                         ui.label(
                             "No expired or disabled permissions."
                         ).classes(SUCCESS_TEXT)
+
+    @permission_request_events.subscribe
+    async def _refresh_admin_dashboard(_data: dict):
+        await admin_dashboard_content.refresh()
+
+    app_header(
+        title="Admin Dashboard",
+        user_label="Admin",
+        show_brand=False,
+    )
+    with ui.column().classes(PAGE):
+        await admin_dashboard_content()
 
 
 @router.page("/developer")

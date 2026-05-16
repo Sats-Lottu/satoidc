@@ -30,6 +30,16 @@
 - Run lint: `cd satoidc; poetry run ruff check`
 - Run public client example: `cd satoidc; poetry run task start_public_client <client-id>`
 
+## Git And Commit Conventions
+
+- When writing, reviewing, staging, committing, branching, pushing, or opening PRs, use the Codex skill `convencoes-git-commits`.
+- Write all Git-facing content in English, including commit messages, branch names, PR titles/descriptions, tags, releases, changelog entries, squash/rebase messages, and trailers.
+- Use Conventional Commits, matching the existing history, for example `feat(auth): Add permission requests` or `docs(memory): Update project state`.
+- Keep commit subjects imperative, specific, and at most 50 characters after the type/scope prefix when practical.
+- Before creating a commit, inspect `git status --short`, `git diff`, and `git diff --cached`; stage only related changes and keep commits atomic.
+- Do not include unrelated user changes, local reports, generated files, secrets, `.env` files, local databases, virtualenvs, coverage output, or NiceGUI local storage.
+- Run the relevant tests or checks before committing; if they are skipped, state why in the final response.
+
 ## Conventions
 
 - Use `specs/` for Spec-Driven Development. For behavior changes, create or update a spec before implementation when the change affects auth, OIDC/OAuth2 behavior, LNURL-auth, persistence, security, user flows, or public contracts.
