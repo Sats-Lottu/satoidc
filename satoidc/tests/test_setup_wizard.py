@@ -3,7 +3,14 @@ from datetime import datetime, timedelta, timezone
 from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission
+from setup_wizard.__main__ import create_app
 from setup_wizard.get_root import authenticate_root_user, exists_root_user
+
+
+def test_setup_wizard_builds_fastapi_app():
+    app = create_app(mount_ui=False)
+
+    assert app.title == "SatOIDC Setup Wizard"
 
 
 async def test_setup_wizard_detects_missing_root_user(db_session):
