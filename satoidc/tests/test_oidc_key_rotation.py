@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
@@ -155,6 +156,31 @@ async def test_active_jwt_config_and_key_listing_use_persisted_key(db_session):
     assert config["iss"]
     assert config["exp"] > 0
     assert keys[0].status == "active"
+
+
+def test_active_jwt_config_logs_sanitized_decrypt_failure(
+    monkeypatch, caplog
+):
+    get_jwks()
+    caplog.set_level(logging.ERROR, logger="satoidc.auth.oidc_keys")
+
+    def fail_decrypt(encrypted_private_jwk):
+        raise RuntimeError("private-jwk-secret")
+
+    monkeypatch.setattr(
+        "satoidc.auth.oidc_keys._decrypt_private_jwk", fail_decrypt
+    )
+
+    with pytest.raises(RuntimeError, match="private-jwk-secret"):
+        get_active_jwt_config()
+
+    assert any(
+        record.event_name == "oidc.signing_config_failed"
+        and record.component == "oidc_keys"
+        and record.reason == "RuntimeError"
+        for record in caplog.records
+    )
+    assert "private-jwk-secret" not in caplog.text
 
 
 async def test_id_token_uses_active_kid_and_audits_signature(

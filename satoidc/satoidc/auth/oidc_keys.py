@@ -110,7 +110,20 @@ def ensure_active_signing_key() -> OidcSigningKey:
 
 def get_active_jwt_config() -> dict[str, Any]:
     key_row = ensure_active_signing_key()
-    private_jwk = _decrypt_private_jwk(key_row.private_jwk_encrypted)
+    try:
+        private_jwk = _decrypt_private_jwk(key_row.private_jwk_encrypted)
+    except Exception as exc:
+        log.error(
+            "OIDC signing configuration failed",
+            extra={
+                "event_name": "oidc.signing_config_failed",
+                "component": "oidc_keys",
+                "outcome": "failed",
+                "reason": exc.__class__.__name__,
+                "kid": key_row.kid,
+            },
+        )
+        raise
     return {
         "key": jwk.import_key(private_jwk),
         "kid": key_row.kid,

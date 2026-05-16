@@ -110,10 +110,11 @@ Progress:
 - LNURL callback failures for invalid/expired challenges, action mismatch, and
   bad signatures now emit sanitized reason-class logs without wallet
   signatures.
+- OIDC signing configuration failures and admin signing-key mutation failures
+  now emit sanitized reason-class logs without private key material.
 
 Remaining:
 
-- Add logs for OIDC signing backend failures.
 - Add logs for profile and dashboard mutation failures.
 - Add broader sensitive-field regression coverage for passwords, tokens,
   private JWKs, and client secrets.

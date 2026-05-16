@@ -371,3 +371,88 @@ async def test_admin_activate_oidc_key_translates_value_error(monkeypatch):
 
     assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
     assert exc_info.value.detail == "Unknown OIDC signing key: missing"
+
+
+async def test_admin_rotate_oidc_key_logs_sanitized_failure(
+    monkeypatch, caplog
+):
+    caplog.set_level(logging.ERROR, logger="satoidc.routes.oauth2")
+    request = make_request()
+    request.scope["session"] = {"user_id": uuid4().hex}
+
+    async def fake_permissions(user_id):
+        return {oauth2_routes.PermissionsEnum.ROOT}
+
+    async def fake_threadpool(func, *args, **kwargs):
+        raise RuntimeError("private_jwk=secret")
+
+    monkeypatch.setattr(
+        oauth2_routes, "get_active_user_permissions", fake_permissions
+    )
+    monkeypatch.setattr(oauth2_routes, "run_in_threadpool", fake_threadpool)
+
+    with pytest.raises(RuntimeError, match="private_jwk=secret"):
+        await oauth2_routes.admin_rotate_oidc_key(request)
+
+    assert any(
+        record.event_name == "oidc.key_rotation_failed"
+        and record.component == "oauth2"
+        and record.reason == "RuntimeError"
+        for record in caplog.records
+    )
+    assert "private_jwk=secret" not in caplog.text
+
+
+async def _call_admin_oidc_key_route(route_name: str, request: Request):
+    if route_name == "create":
+        return await oauth2_routes.admin_create_oidc_key(request)
+    if route_name == "retire":
+        return await oauth2_routes.admin_retire_expired_oidc_keys(request)
+    return await oauth2_routes.admin_activate_oidc_key("key-1", request)
+
+
+@pytest.mark.parametrize(
+    ("route_name", "event_name"),
+    [
+        (
+            "create",
+            "oidc.key_create_failed",
+        ),
+        (
+            "retire",
+            "oidc.key_retire_failed",
+        ),
+        (
+            "activate",
+            "oidc.key_activation_failed",
+        ),
+    ],
+)
+async def test_admin_oidc_key_operations_log_sanitized_unexpected_failures(
+    monkeypatch, caplog, route_name, event_name
+):
+    caplog.set_level(logging.ERROR, logger="satoidc.routes.oauth2")
+    request = make_request()
+    request.scope["session"] = {"user_id": uuid4().hex}
+
+    async def fake_permissions(user_id):
+        return {oauth2_routes.PermissionsEnum.ROOT}
+
+    async def fake_threadpool(func, *args, **kwargs):
+        raise RuntimeError("client_secret=secret")
+
+    monkeypatch.setattr(
+        oauth2_routes, "get_active_user_permissions", fake_permissions
+    )
+    monkeypatch.setattr(oauth2_routes, "run_in_threadpool", fake_threadpool)
+
+    with pytest.raises(RuntimeError, match="client_secret=secret"):
+        await _call_admin_oidc_key_route(route_name, request)
+
+    assert any(
+        record.event_name == event_name
+        and record.component == "oauth2"
+        and record.reason == "RuntimeError"
+        for record in caplog.records
+    )
+    assert "client_secret=secret" not in caplog.text

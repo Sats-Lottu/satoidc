@@ -283,6 +283,18 @@ def _key_response(key):
     }
 
 
+def _log_key_admin_failure(event_name: str, error: Exception) -> None:
+    log.error(
+        "OIDC key admin operation failed",
+        extra={
+            "event_name": event_name,
+            "component": "oauth2",
+            "outcome": "failed",
+            "reason": error.__class__.__name__,
+        },
+    )
+
+
 @well_known_router.get("/.well-known/openid-configuration")
 def well_known_root():
     return well_known()
@@ -310,23 +322,35 @@ async def admin_list_oidc_keys(request: Request):
 @admin_oidc_keys_router.post("")
 async def admin_create_oidc_key(request: Request):
     actor = await _require_key_admin(request)
-    key = await run_in_threadpool(create_signing_key, actor=actor)
+    try:
+        key = await run_in_threadpool(create_signing_key, actor=actor)
+    except Exception as exc:
+        _log_key_admin_failure("oidc.key_create_failed", exc)
+        raise
     return _key_response(key)
 
 
 @admin_oidc_keys_router.post("/rotate")
 async def admin_rotate_oidc_key(request: Request):
     actor = await _require_key_admin(request)
-    key = await run_in_threadpool(rotate_signing_key, actor=actor)
+    try:
+        key = await run_in_threadpool(rotate_signing_key, actor=actor)
+    except Exception as exc:
+        _log_key_admin_failure("oidc.key_rotation_failed", exc)
+        raise
     return _key_response(key)
 
 
 @admin_oidc_keys_router.post("/retire-expired")
 async def admin_retire_expired_oidc_keys(request: Request):
     actor = await _require_key_admin(request)
-    retired_count = await run_in_threadpool(
-        retire_expired_signing_keys, actor=actor
-    )
+    try:
+        retired_count = await run_in_threadpool(
+            retire_expired_signing_keys, actor=actor
+        )
+    except Exception as exc:
+        _log_key_admin_failure("oidc.key_retire_failed", exc)
+        raise
     return {"retired": retired_count}
 
 
@@ -338,5 +362,9 @@ async def admin_activate_oidc_key(kid: str, request: Request):
             activate_signing_key, kid, actor=actor
         )
     except ValueError as exc:
+        _log_key_admin_failure("oidc.key_activation_failed", exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        _log_key_admin_failure("oidc.key_activation_failed", exc)
+        raise
     return _key_response(key)
