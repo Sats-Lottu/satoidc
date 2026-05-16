@@ -1,271 +1,143 @@
 # Priority Execution Backlog
 
-Updated: 2026-05-15
+Updated: 2026-05-16
 
-This backlog lists the highest-priority execution work found during the current
-state review. It is ordered by security impact, product blocking value, and
-implementation dependency.
+This backlog is a temporary queue for open execution work. Completed items must
+be removed from this file and summarized in `docs/priority-execution-history.md`.
 
-## P0 - Security And Production Readiness
+## Open Items
 
-### 1. Persist And Rotate OIDC Signing Keys
+### 1. Harden Public Route Boundary
 
-Status: implemented.
+Status: draft.
 
-Related specs:
+Spec:
 
-- `specs/features/oidc-key-rotation/spec.md`
-- `specs/flows/token-lifecycle.md`
-
-Problem:
-
-- Previously, the RSA signing key was generated in memory at process startup.
-- Existing ID tokens could become unverifiable after restart.
-- Multiple replicas could publish inconsistent JWKS documents.
+- `specs/features/public-route-boundary/spec.md`
 
 Expected outcome:
 
-- Signing keys are persisted in `oidc_signing_keys`.
-- Stable `kid` values are published in JWKS.
-- Old public keys remain publishable in `validating` state until `retired_after`.
-- Audit events cover key lifecycle and token signing.
+- Replace broad public route prefix matching with exact or segment-aware checks
+  and add regression tests for lookalike protected paths.
 
-### 2. Harden Login Redirect Safety
+### 2. Add OpenBao-Compatible External Signing Backend
 
-Status: implemented.
+Status: draft.
 
-Related specs:
+Spec:
 
-- `specs/contracts/security-session.md`
-- `specs/flows/login.md`
-
-Problem:
-
-- Password registration sanitizes `redirect_to` with `safe_redirect`.
-- Password login previously redirected to submitted `redirect_to` after
-  successful authentication.
+- `specs/features/external-signing-backend/spec.md`
 
 Expected outcome:
 
-- `safe_redirect` is applied to password login and LNURL redirect navigation.
-- Regression tests cover external URLs, host-relative URLs, empty values, and
-  ordinary relative paths.
+- Add a signing backend interface and a Vault-compatible Transit backend so
+  production deployments can keep OIDC private signing material outside SatOIDC.
 
-### 3. Make Session And Secrets Production-Aware
+### 3. Validate SQLite And PostgreSQL Support Matrix
 
-Status: implemented.
+Status: backlog.
 
-Related specs:
+Specs:
 
+- `specs/contracts/database.md`
 - `specs/contracts/runtime-config.md`
 - `specs/flows/deployment.md`
 
-Problem:
+Expected outcome:
 
-- Session cookies previously used a fixed `https_only=False`.
-- Compose defaults include placeholder secrets and database credentials.
-- There is no production secret manager integration.
+- Document and verify the SQLite/PostgreSQL support matrix, including migration
+  compatibility and async/sync database URL consistency.
+
+### 4. Extract Persistence-Heavy UI Actions Into Services
+
+Status: draft.
+
+Spec:
+
+- `specs/features/route-service-extraction/spec.md`
 
 Expected outcome:
 
-- Environment-driven secure cookie settings.
-- Fail-fast behavior for placeholder secrets in production mode.
-- Documented production deployment baseline.
+- Move account, wallet, client-management, and permission-request mutations out
+  of NiceGUI route closures into focused service helpers with unit coverage.
 
-## P1 - Access Control And Admin Operations
+### 5. Add Operational Observability Baseline
 
-### 4. Normalize Permission Taxonomy
+Status: draft.
 
-Status: implemented.
+Spec:
 
-Related specs:
-
-- `specs/contracts/database.md`
-- `specs/features/permission-requests/spec.md`
-- `specs/flows/page-security.md`
-
-Problem:
-
-- `developer` was previously used as an ad hoc string in UI checks while the
-  model enum only had `root`, `admin`, and `support`.
+- `specs/features/operational-observability/spec.md`
 
 Expected outcome:
 
-- `developer` is a first-class enum value.
-- Models, migrations, setup behavior, UI checks, tests, and docs are aligned.
-- `root` remains all-powerful.
+- Add sanitized standard-library logging for important auth, authorization,
+  OIDC, LNURL, and mutation failures.
 
-### 5. Implement Permission Requests
+### 6. Add Lightweight Load/Concurrency Checks For Token Issuance
 
-Status: implemented.
+Status: backlog.
 
-Related specs:
+Specs:
 
-- `specs/features/permission-requests/spec.md`
-- `specs/features/permission-requests/design.md`
-- `specs/features/permission-requests/test-plan.md`
-
-Problem:
-
-- Profile previously showed a placeholder developer access request action.
-- Admin dashboard previously showed static permission request content.
-
-Expected outcome:
-
-- Developer access requests are persisted.
-- Admin dashboard shows pending requests and operational counts.
-- Admins can approve or deny with audit data.
-- Approval grants developer access.
-- Empty states, pending counts, and useful admin summary widgets are present.
-
-### 6. Complete Admin Dashboard Operational Views
-
-Status: implemented.
-
-Related specs:
-
-- `specs/features/permission-requests/spec.md`
-- `specs/features/permission-requests/design.md`
-
-Problem:
-
-- Admin dashboard was not yet an operational console.
-
-Expected outcome:
-
-- Pending request count.
-- Recent developer approvals.
-- Total users.
-- Users with developer access.
-- Registered OAuth clients.
-- Recently created clients.
-- Disabled or expired permissions.
-
-## P2 - Account, LNURL, And Client Management
-
-### 7. Rename LNURL Challenge State From Verified To Consumed
-
-Status: implemented.
-
-Related specs:
-
-- `specs/flows/lnurl-auth.md`
-
-Problem:
-
-- The callback consumes the challenge before signature validation.
-- This is intentional to prevent repeated attempts against the same challenge.
-- The old field name `verified` suggested successful signature validation,
-  which was not what the field meant.
-
-Expected outcome:
-
-- `LnurlAuthChallenge.consumed` is used in the model and callback queries.
-- Migration, tests, and docs were updated.
-- The current security behavior is preserved: a callback attempt consumes the
-  challenge even if the signature is invalid.
-
-### 8. Finish LNURL Wallet Link And Relink From Profile
-
-Status: implemented.
-
-Related specs:
-
-- `specs/flows/profile.md`
-- `specs/flows/lnurl-auth.md`
-
-Problem:
-
-- Profile can unlink wallet when password login exists.
-- Link and relink previously showed placeholder notifications.
-
-Expected outcome:
-
-- Native NiceGUI QR/dialog flow for wallet link and relink is complete.
-- Reuses LNURL challenge TTL and event behavior.
-- Ensures replay-safe challenge consumption.
-
-### 9. Complete OAuth Client Management
-
-Status: implemented.
-
-Related specs:
-
-- `specs/flows/client-registration.md`
-- `specs/flows/home-and-client-console.md`
-
-Problem:
-
-- Client creation has validation and one-time credential display.
-- Developer dashboard previously lacked edit, delete/disable, and secret rotation.
-
-Expected outcome:
-
-- Can edit client metadata safely.
-- Can disable or delete clients.
-- Can rotate client secrets (shown only once).
-- Includes safe copy affordances for identifiers.
-- Integration and authenticated e2e coverage added.
-
-## P3 - Test Coverage And Documentation Quality
-
-### 10. Add Full OAuth Browser E2E
-
-Status: implemented.
-
-Related specs:
-
-- `specs/flows/authorization-code.md`
+- `specs/contracts/authlib-adapter.md`
 - `specs/flows/token-lifecycle.md`
-- `specs/flows/relying-party-examples.md`
-
-Problem:
-
-- Previous e2e coverage included public pages, metadata endpoints,
-  authenticated UI screens, developer dashboard states, and create-client
-  validation/success.
-- Full browser authorization-code flow with a real client was not covered.
 
 Expected outcome:
 
-- Exercises login, consent, redirect, code exchange, ID token, refresh token
-  issuance, and UserInfo.
-- Covers public client PKCE and confidential `client_secret_post` paths.
+- Add a lightweight smoke benchmark for `/oauth/token` against PostgreSQL to
+  establish a local latency/error/threadpool baseline.
 
-### 11. Add Authenticated UI E2E
+### 7. Remove LNURL Schema Compatibility Shim When Safe
 
-Status: implemented.
+Status: backlog.
 
-Related specs:
+Reference:
 
-- `specs/flows/profile.md`
-- `specs/flows/client-registration.md`
-- `specs/features/permission-requests/spec.md`
-
-Problem:
-
-- Profile, dashboard, and create-client authenticated workflows lacked e2e coverage.
+- `docs/changes-2026-05-08.md`
 
 Expected outcome:
 
-- Profile rendering and wallet-link QR dialog smoke checks implemented.
-- Developer dashboard empty and populated states covered.
-- Create-client validation and successful creation checked.
-- Admin permission request approval state covered.
+- Confirm no imports depend on `satoidc/satoidc/auth/lnurl_schemas.py`, then
+  remove the compatibility re-export.
 
-### 12. Normalize Encoding And Documentation Drift
+### 8. Normalize Or Archive `relatorio.md`
 
-Status: implemented.
-
-Problem:
-
-- Some shell sessions previously showed mojibake in README/examples/legal docs.
-- Several docs described older placeholder state and needed alignment as
-  implementation evolved.
+Status: backlog.
 
 Expected outcome:
 
-- No mojibake patterns remain in README, examples, legal docs, docs, specs,
-  or agent memory.
-- `README.md`, `docs/`, `specs/`, and `agent-memory/` are synchronized with
-  the completed priority backlog.
+- Fix the encoding and link it as an analysis artifact, or archive/remove it
+  after actionable tasks are tracked elsewhere.
+
+### 9. Implement Email Verification And Account Recovery
+
+Status: draft.
+
+Spec:
+
+- `specs/features/email-verification/spec.md`
+
+Expected outcome:
+
+- Implement verified-email state, single-use verification/recovery tokens,
+  verified-email password reset, UI updates, and focused tests.
+
+### 10. Refactor Test Layer For Quality Specs
+
+Status: draft.
+
+Specs:
+
+- `specs/features/quality-testing/spec.md`
+- `specs/features/quality-testing/pytest-extensions.md`
+- `specs/features/quality-testing/hypothesis-property.md`
+- `specs/features/quality-testing/tavern-api-security.md`
+- `specs/features/quality-testing/playwright-ui.md`
+- `specs/features/quality-testing/locust-load.md`
+- `specs/features/quality-testing/testcontainers-integration.md`
+
+Expected outcome:
+
+- Implement the test markers, task commands, fixtures, dependencies, and test
+  directory structure needed by the quality-testing specs.

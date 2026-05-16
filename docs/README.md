@@ -8,6 +8,7 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
 - [Project Analysis](project-analysis.md): broad repository map, runtime stack, protocol surface, examples, validation, and risks.
 - [Known Issues](known-issues.md): prioritized technical debt and production hardening items.
 - [Priority Execution Backlog](priority-execution-backlog.md): ordered backlog for the most important remaining implementation work.
+- [Priority Execution History](priority-execution-history.md): summary of completed backlog items removed from the active queue.
 - [Changes On 2026-05-08](changes-2026-05-08.md): schema package, registration endpoint, test coverage, and related bug fix.
 
 ## Related Indexes
