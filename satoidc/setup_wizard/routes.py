@@ -21,7 +21,11 @@ from setup_wizard.bootstrap import (
     BootstrapStatus,
     validate_bootstrap_environment,
 )
-from setup_wizard.get_root import authenticate_root_user, exists_root_user
+from setup_wizard.get_root import (
+    authenticate_root_user,
+    exists_root_user,
+    has_active_root_permission,
+)
 
 router = APIRouter()
 
@@ -122,6 +126,54 @@ def render_root_login(session: Session, request: Request):
             ui.button("Continue", on_click=submit).classes("w-full")
 
 
+def render_existing_root_setup(session: Session, request: Request):
+    lnurl_auth_login_root = LNURLAuthQRLoginRoot(
+        base_url=str(request.base_url), session=session
+    )
+    ui.timer(
+        ENV.LNURL_K1_TTL_SECONDS,
+        lnurl_auth_login_root.refresh_qrcode,
+    )
+
+    @lnurl_auth_events.subscribe
+    async def _login_event_handler(data: dict):
+        if data.get("k1") != lnurl_auth_login_root.k1:
+            return
+
+        user_id = data.get("user_id")
+        if not user_id:
+            ui.notify("Lightning login failed.", type="negative")
+            return
+
+        if not await has_active_root_permission(session, user_id):
+            ui.notify(
+                "Lightning wallet is not a root account.",
+                type="negative",
+            )
+            return
+
+        request.session["setup_root_user_id"] = str(user_id)
+        ui.notify("Root access granted.", type="positive")
+        ui.navigate.reload()
+
+    with (
+        ui.dialog() as login_dialog,
+        ui.card().classes("w-full max-w-lg mx-auto items-center"),
+    ):
+        lnurl_auth_login_root.qrcode()
+        ui.button("Close", on_click=login_dialog.close)
+
+    if not request.session.get("setup_root_user_id"):
+        render_root_login(session, request)
+        with ui.page_sticky(x_offset=18, y_offset=18):
+            ui.button(icon="qr_code", on_click=login_dialog.open).props(
+                "fab"
+            )
+        return
+
+    render_reconfiguration_panel(request)
+
+
 class LNURLAuthQRRegisterRoot:
     def __init__(self, base_url: str, session: Session):
         self.base_url = base_url
@@ -160,6 +212,42 @@ class LNURLAuthQRRegisterRoot:
         ).tooltip("Click to copy")
 
 
+class LNURLAuthQRLoginRoot:
+    def __init__(self, base_url: str, session: Session):
+        self.base_url = base_url
+        self.k1 = None
+        self.action = "login"
+        self.session = session
+
+    async def refresh_qrcode(self):
+        challenge = LnurlAuthChallenge(action=self.action)
+        self.session.add(challenge)
+        await self.session.commit()
+        await self.session.refresh(challenge)
+        self.k1 = challenge.k1
+        self.qrcode.refresh()
+
+    @ui.refreshable_method
+    def qrcode(self):
+        lnurl_auth = url_encode(
+            f"{self.base_url}auth/lnurl/callback?tag=login&k1={self.k1}&action={self.action}"
+        )
+        qrcode = segno.make_qr(lnurl_auth, error="l")
+        ui.label("Login with LN Wallet")
+        with ui.link(target=f"lightning:{lnurl_auth}").tooltip(
+            "Open in Lightning Wallet"
+        ):
+            ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
+                "w-64"
+            ).tooltip("Scan with a root Lightning Wallet to access setup")
+        ui.label(lnurl_auth).classes(
+            "mt-2 w-full break-all text-xs text-center"
+        ).on("click", lambda e: ui.clipboard.write(lnurl_auth)).on(
+            "click",
+            lambda e: ui.notify("LNURL copied to clipboard!", type="positive"),
+        ).tooltip("Click to copy")
+
+
 @router.page("/", dark=True)
 async def set_root(session: Session, request: Request):
     ui.add_head_html(
@@ -168,11 +256,7 @@ async def set_root(session: Session, request: Request):
     )
 
     if await exists_root_user():
-        if not request.session.get("setup_root_user_id"):
-            render_root_login(session, request)
-            return
-
-        render_reconfiguration_panel(request)
+        render_existing_root_setup(session, request)
         return
 
     lnurl_auth_register_root = LNURLAuthQRRegisterRoot(

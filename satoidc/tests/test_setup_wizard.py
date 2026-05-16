@@ -4,7 +4,11 @@ from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission
 from setup_wizard.__main__ import create_app
-from setup_wizard.get_root import authenticate_root_user, exists_root_user
+from setup_wizard.get_root import (
+    authenticate_root_user,
+    exists_root_user,
+    has_active_root_permission,
+)
 
 
 def test_setup_wizard_builds_fastapi_app():
@@ -56,6 +60,7 @@ async def test_setup_wizard_authenticates_active_root_user(
 
     assert authenticated is not None
     assert authenticated.id == user.id
+    assert await has_active_root_permission(db_session, user.id) is True
 
 
 async def test_setup_wizard_rejects_non_root_credentials(
@@ -68,6 +73,7 @@ async def test_setup_wizard_rejects_non_root_credentials(
     )
 
     assert authenticated is None
+    assert await has_active_root_permission(db_session, user.id) is False
 
 
 async def test_setup_wizard_rejects_invalid_root_credentials(
@@ -113,3 +119,4 @@ async def test_setup_wizard_rejects_expired_root_permission(
     )
 
     assert authenticated is None
+    assert await has_active_root_permission(db_session, user.id) is False

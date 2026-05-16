@@ -144,8 +144,9 @@ when no root permission exists. You can also start the setup wizard manually:
 poetry run task setup_wizard
 ```
 
-After a root user exists, manual setup wizard access requires root login/email
-and password credentials before showing service setup checks.
+After a root user exists, manual setup wizard access requires root credentials
+before showing service setup checks. You can sign in with root login/email and
+password credentials, or with a Lightning wallet linked to a root account.
 
 ---
 

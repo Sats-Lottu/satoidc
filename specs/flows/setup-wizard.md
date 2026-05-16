@@ -21,7 +21,9 @@ Startup behavior:
 3. If no root permission exists, the wizard shows the initial root creation
    flow.
 4. If a root permission exists, the wizard requires root credentials before
-   showing setup/reconfiguration checks.
+   showing setup/reconfiguration checks. Root access may use login/email plus
+   password credentials, or LNURL-auth with a Lightning wallet linked to a root
+   account.
 5. The wizard includes the setup route and LNURL callback route.
 
 ## Password Root Creation
@@ -62,8 +64,9 @@ poetry run task setup_wizard
 ```
 
 After the first root user exists, on-demand access to the wizard is protected
-by login/email plus password credentials for an active user with a current root
-permission.
+by root credentials for an active user with a current root permission. Password
+login accepts login/email plus password, and Lightning login accepts a linked
+LNURL-auth wallet for a root account.
 
 ## Current Gaps
 
@@ -86,6 +89,10 @@ Related feature spec: `specs/features/application-setup/spec.md`.
 - Given a root permission exists, when `python -m setup_wizard` runs, then the
   setup UI starts and requires valid root credentials before exposing setup
   checks.
+- Given a Lightning wallet is linked to a root account, when its LNURL login
+  callback succeeds, then setup access is granted.
+- Given a Lightning wallet is not linked to a root account, when its LNURL
+  login callback succeeds, then setup access is rejected.
 - Given valid password setup input, when submitted, then a root user and root
   permission are persisted.
 - Given LNURL setup succeeds, when the callback event arrives, then a root

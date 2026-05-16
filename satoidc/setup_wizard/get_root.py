@@ -53,3 +53,21 @@ async def authenticate_root_user(
         return None
 
     return user
+
+
+async def has_active_root_permission(
+    session: AsyncSession,
+    user_id,
+) -> bool:
+    root_permission = await session.scalar(
+        select(Permission).where(
+            Permission.user_id == user_id,
+            Permission.permission_type == PermissionsEnum.ROOT,
+            Permission.disabled.is_(False),
+            or_(
+                Permission.expiration_date > func.now(),
+                Permission.expiration_date.is_(None),
+            ),
+        )
+    )
+    return root_permission is not None
