@@ -10,6 +10,7 @@ updated: 2026-05-16
 
 # Decisions
 
+- 2026-05-16: Track application setup bootstrap as a dedicated feature spec. Future setup work should make startup validate or generate required owned runtime values before the main app starts, while keeping Coolify-managed environment variables in Coolify.
 - 2026-05-16: Use GitHub Actions plus Coolify for CI/CD. CI runs Ruff, the default non-e2e test suite, and Docker image build on pushes and pull requests; CD triggers the Coolify deploy webhook after successful `main` CI and keeps production runtime variables in Coolify.
 - 2026-05-06: Use `satoidc` as the Obsidian vault for this project. If the vault is not registered in Obsidian, initialize the repository itself as the vault root.
 - 2026-05-06: Keep project memory in root `agent-memory/` so agents can discover it without scanning implementation directories.

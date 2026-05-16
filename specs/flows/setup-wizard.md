@@ -54,10 +54,17 @@ down.
 
 ## Current Gaps
 
+- Setup is limited to root-user creation and does not yet cover all runtime
+  values needed to start the main application safely.
+- Missing or placeholder production secrets are rejected by runtime settings,
+  but there is no unified bootstrap flow to generate safe owned secrets or
+  guide operators through platform-managed values.
 - The setup wizard uses older visual styling than the main NiceGUI app.
 - The setup wizard creates `nickname=None` when the optional nickname is empty,
   while the model expects a non-null nickname.
 - The wizard and main app share port 8000 during container startup.
+
+Related feature spec: `specs/features/application-setup/spec.md`.
 
 ## Acceptance Criteria
 
