@@ -24,7 +24,6 @@ jobs:
       OAUTH2_JWT_ISS: http://localhost:8000
       OAUTH2_JWT_SECRET_KEY: ci-only-secret
       SESSION_MIDDLEWARE_SECRET_KEY: ci-only-secret
-      SESSION_COOKIE_HTTPS_ONLY: "false"
 
     steps:
       - name: Check out repository
