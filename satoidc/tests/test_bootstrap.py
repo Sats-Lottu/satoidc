@@ -1,6 +1,7 @@
 from setup_wizard.bootstrap import (
     BootstrapStatus,
     RuntimeValueKind,
+    check_database_ready,
     validate_bootstrap_environment,
 )
 
@@ -77,3 +78,39 @@ def test_bootstrap_reports_database_url_mismatch_without_secrets():
         for check in report.checks
     )
     assert "secret" not in "\n".join(report.blocking_messages)
+
+
+async def test_database_readiness_accepts_sqlite_memory():
+    check = await check_database_ready("sqlite+aiosqlite:///:memory:")
+
+    assert check.status == BootstrapStatus.OK
+
+
+async def test_database_readiness_failure_hides_url_secrets(monkeypatch):
+    class BrokenConnection:
+        async def __aenter__(self):
+            raise RuntimeError("postgresql://user:secret@db/app_db failed")
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return None
+
+    class BrokenEngine:
+        @staticmethod
+        def connect():
+            return BrokenConnection()
+
+        @staticmethod
+        async def dispose():
+            return None
+
+    monkeypatch.setattr(
+        "setup_wizard.bootstrap.create_async_engine",
+        lambda _url: BrokenEngine(),
+    )
+
+    check = await check_database_ready(
+        "postgresql+psycopg://user:secret@db:5432/app_db"
+    )
+
+    assert check.status == BootstrapStatus.BLOCKED
+    assert "secret" not in check.message

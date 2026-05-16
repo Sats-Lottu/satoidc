@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from dataclasses import dataclass
 from enum import Enum
 from typing import Mapping
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from satoidc.runtime_config import (
     is_operator_issuer_missing,
@@ -151,9 +155,39 @@ def validate_bootstrap_environment(
     return BootstrapReport(tuple(checks))
 
 
+async def check_database_ready(database_url: str) -> BootstrapCheck:
+    engine = create_async_engine(database_url)
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+    except Exception:
+        return _check(
+            "DATABASE_URL",
+            RuntimeValueKind.OPERATOR_MANAGED,
+            True,
+            "Database readiness check failed. Verify database service "
+            "health, network reachability, credentials, and DATABASE_URL.",
+        )
+    finally:
+        await engine.dispose()
+
+    return _check(
+        "DATABASE_URL",
+        RuntimeValueKind.OPERATOR_MANAGED,
+        False,
+        "Database readiness check passed.",
+    )
+
+
 def main() -> int:
     report = validate_bootstrap_environment()
     if report.can_start:
+        database_url = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
+        database_check = asyncio.run(check_database_ready(database_url))
+        if database_check.status == BootstrapStatus.BLOCKED:
+            print("Bootstrap configuration is incomplete:")
+            print(f"- {database_check.message}")
+            return 1
         print("Bootstrap configuration checks passed.")
         return 0
 

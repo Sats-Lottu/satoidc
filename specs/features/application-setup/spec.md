@@ -181,6 +181,7 @@ Out of scope:
 - Tests:
   - `satoidc/tests/test_bootstrap.py`
   - `satoidc/tests/test_settings.py`
+  - `satoidc/tests/test_database.py`
 - Docs:
   - `specs/flows/setup-wizard.md`
   - `docs/deployment/vps.md`

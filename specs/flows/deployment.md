@@ -54,7 +54,7 @@ deployments.
 
 `satoidc/entrypoint.sh`:
 
-1. Validates bootstrap configuration.
+1. Validates bootstrap configuration and database connectivity.
 2. Runs Alembic migrations.
 3. Runs setup wizard if a root user is missing.
 4. Starts FastAPI on `0.0.0.0:8000`.

@@ -27,6 +27,7 @@ Progress:
 
 - Bootstrap configuration validation now runs before migrations in the
   container entrypoint.
+- Bootstrap now checks database connectivity before migrations.
 - Production startup reports actionable blocks for placeholder generated
   secrets, missing/local issuer configuration, insecure session cookies, and
   async/sync database URL mismatches without printing secret values.
@@ -35,7 +36,6 @@ Remaining:
 
 - Add an approved persistence path for generated secrets.
 - Fold root-user and OIDC signing-key readiness into the same bootstrap report.
-- Add database readiness checks before migrations.
 
 ### 2. Add OpenBao-Compatible External Signing Backend
 
