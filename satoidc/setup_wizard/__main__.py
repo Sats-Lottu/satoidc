@@ -5,6 +5,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from satoidc.routes.lnurl_auth import router as lnurl_auth_router
 from satoidc.settings import ENV
+from satoidc.ui_theme import apply_theme
 
 from .routes import router
 
@@ -21,6 +22,7 @@ def create_app(*, mount_ui: bool = True) -> FastAPI:
     setup_app.include_router(router)
     setup_app.include_router(lnurl_auth_router)
     if mount_ui:
+        apply_theme()
         ui.run_with(setup_app, title="SatOIDC - Setup Wizard", dark=True)
     return setup_app
 

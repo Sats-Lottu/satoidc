@@ -10,6 +10,18 @@ from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import LnurlAuthChallenge, Permission, User
 from satoidc.models.database import get_session
+from satoidc.routes.ui_components import (
+    DIALOG_CLASSES,
+    ERROR_TEXT,
+    MUTED_TEXT,
+    PRIMARY_BUTTON_CLASSES,
+    SECONDARY_BUTTON_CLASSES,
+    app_header,
+    auth_context_panel,
+    auth_shell,
+    card,
+    responsive_grid,
+)
 from satoidc.settings import ENV
 from satoidc.validators import (
     is_valid_email,
@@ -39,39 +51,33 @@ def finalizing_setup():
 
 
 def setup_header():
-    with (
-        ui.header(elevated=True)
-        .style("background-color:#3874c8; color:white")
-        .classes("items-center justify-between px-4")
-    ):
-        with ui.row().classes("items-center gap-2"):
-            ui.icon("verified_user")
-            ui.label("SatOIDC").classes("text-lg font-bold")
-
-        with ui.link(
-            target="https://github.com/Sats-Lottu/satoidc", new_tab=True
-        ).classes("text-white"):
-            ui.icon("eva-github").style("font-size:28px; padding:0")
+    app_header(
+        nav=[("GitHub", "https://github.com/Sats-Lottu/satoidc", "github")]
+    )
 
 
 def render_reconfiguration_panel(request: Request):
     report = validate_bootstrap_environment()
 
-    setup_header()
-    with ui.column().classes("flex justify-center w-full items-center gap-4"):
-        ui.label("Service Setup").classes("text-2xl font-bold mb-2")
-        with ui.card().classes("w-full max-w-2xl mx-auto"):
+    with auth_shell("max-w-2xl"):
+        with ui.column().classes("gap-4"):
+            ui.label("Service Setup").classes("text-2xl font-bold")
+            ui.label(
+                "Review the runtime checks before restarting or changing "
+                "deployment configuration."
+            ).classes(MUTED_TEXT)
+        with card("w-full gap-4"):
             ui.label("Bootstrap checks").classes("text-xl font-semibold")
             ui.label(
                 "Root authentication is active. Update environment values "
                 "outside the app, then restart services as needed."
-            ).classes("text-sm text-gray-400")
+            ).classes(MUTED_TEXT)
 
             for check in report.checks:
                 status_color = (
-                    "text-positive"
+                    "text-emerald-400"
                     if check.status == BootstrapStatus.OK
-                    else "text-negative"
+                    else ERROR_TEXT
                 )
                 with ui.row().classes("items-start gap-3 w-full"):
                     ui.icon(
@@ -81,49 +87,87 @@ def render_reconfiguration_panel(request: Request):
                     ).classes(status_color)
                     with ui.column().classes("gap-1"):
                         ui.label(check.name).classes("font-semibold")
-                        ui.label(check.message).classes("text-sm")
+                        ui.label(check.message).classes(
+                            f"text-sm {MUTED_TEXT}"
+                        )
 
             with ui.row().classes("gap-3 mt-4"):
-                ui.button("Shut down wizard", on_click=app.shutdown)
+                ui.button(
+                    "Shut down wizard",
+                    icon="close",
+                    on_click=app.shutdown,
+                ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
                 ui.button(
                     "Sign out",
+                    icon="logout",
                     on_click=lambda: (
                         request.session.pop("setup_root_user_id", None),
                         ui.navigate.reload(),
                     ),
-                )
+                ).classes(PRIMARY_BUTTON_CLASSES)
 
 
 def render_root_login(session: Session, request: Request):
-    setup_header()
-    with ui.column().classes("flex justify-center w-full items-center gap-4"):
-        ui.label("Root Access Required").classes("text-2xl font-bold mb-2")
-        with ui.card().classes("w-full max-w-lg mx-auto items-center"):
-            ui.label(
-                "Sign in with root credentials to access setup."
-            ).classes("text-sm text-gray-400")
-            identifier_field = ui.input("Login or email").classes("w-full")
-            password_field = ui.input(
-                "Password",
-                password=True,
-                password_toggle_button=True,
-            ).classes("w-full")
+    with auth_shell():
+        with responsive_grid(2, "gap-6 items-stretch"):
+            auth_context_panel(
+                eyebrow="Setup Access",
+                title="Root credentials protect service reconfiguration.",
+                body=(
+                    "After initial setup, this wizard remains available for "
+                    "runtime checks but requires a root account or linked "
+                    "Lightning wallet."
+                ),
+                features=[
+                    (
+                        "admin_panel_settings",
+                        "Root only",
+                        "Only active root users can reach setup checks.",
+                    ),
+                    (
+                        "qr_code",
+                        "Lightning access",
+                        "Use the floating QR action for linked root wallets.",
+                    ),
+                    (
+                        "lock",
+                        "Isolated session",
+                        "Setup uses its own session cookie.",
+                    ),
+                ],
+            )
+            with card("max-w-lg w-full mx-auto items-stretch gap-4"):
+                with ui.column().classes("gap-1"):
+                    ui.label("Root Access Required").classes(
+                        "text-2xl font-bold"
+                    )
+                    ui.label(
+                        "Sign in with root credentials to access setup."
+                    ).classes(MUTED_TEXT)
+                identifier_field = ui.input("Login or email").classes("w-full")
+                password_field = ui.input(
+                    "Password",
+                    password=True,
+                    password_toggle_button=True,
+                ).classes("w-full")
 
-            async def submit():
-                user = await authenticate_root_user(
-                    session,
-                    identifier_field.value,
-                    password_field.value,
+                async def submit():
+                    user = await authenticate_root_user(
+                        session,
+                        identifier_field.value,
+                        password_field.value,
+                    )
+                    if user is None:
+                        ui.notify("Invalid root credentials.", type="negative")
+                        return
+
+                    request.session["setup_root_user_id"] = user.id.hex
+                    ui.notify("Root access granted.", type="positive")
+                    ui.navigate.reload()
+
+                ui.button("Continue", icon="login", on_click=submit).classes(
+                    f"w-full {PRIMARY_BUTTON_CLASSES}"
                 )
-                if user is None:
-                    ui.notify("Invalid root credentials.", type="negative")
-                    return
-
-                request.session["setup_root_user_id"] = user.id.hex
-                ui.notify("Root access granted.", type="positive")
-                ui.navigate.reload()
-
-            ui.button("Continue", on_click=submit).classes("w-full")
 
 
 def render_existing_root_setup(session: Session, request: Request):
@@ -158,10 +202,12 @@ def render_existing_root_setup(session: Session, request: Request):
 
     with (
         ui.dialog() as login_dialog,
-        ui.card().classes("w-full max-w-lg mx-auto items-center"),
+        card(f"{DIALOG_CLASSES} max-w-lg mx-auto items-center gap-4"),
     ):
         lnurl_auth_login_root.qrcode()
-        ui.button("Close", on_click=login_dialog.close)
+        ui.button("Close", icon="close", on_click=login_dialog.close).props(
+            "outline"
+        ).classes(SECONDARY_BUTTON_CLASSES)
 
     if not request.session.get("setup_root_user_id"):
         render_root_login(session, request)
@@ -200,7 +246,7 @@ class LNURLAuthQRRegisterRoot:
             "Open in Lightning Wallet"
         ):
             ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
-                "w-64"
+                "w-64 h-64"
             ).tooltip(
                 "Scan with your Lightning Wallet to register as root user"
             )
@@ -238,7 +284,7 @@ class LNURLAuthQRLoginRoot:
             "Open in Lightning Wallet"
         ):
             ui.image(qrcode.svg_data_uri(light="white", border=1)).classes(
-                "w-64"
+                "w-64 h-64"
             ).tooltip("Scan with a root Lightning Wallet to access setup")
         ui.label(lnurl_auth).classes(
             "mt-2 w-full break-all text-xs text-center"
@@ -248,17 +294,7 @@ class LNURLAuthQRLoginRoot:
         ).tooltip("Click to copy")
 
 
-@router.page("/", dark=True)
-async def set_root(session: Session, request: Request):
-    ui.add_head_html(
-        '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css"'
-        ' rel="stylesheet" />'
-    )
-
-    if await exists_root_user():
-        render_existing_root_setup(session, request)
-        return
-
+def render_initial_root_setup(session: Session, request: Request):
     lnurl_auth_register_root = LNURLAuthQRRegisterRoot(
         base_url=str(request.base_url), session=session
     )
@@ -281,19 +317,47 @@ async def set_root(session: Session, request: Request):
 
     with (
         ui.dialog() as dialog,
-        ui.card().classes("w-full max-w-lg mx-auto items-center"),
+        card(f"{DIALOG_CLASSES} max-w-lg mx-auto items-center gap-4"),
     ):
         lnurl_auth_register_root.qrcode()
-        ui.button("Close", on_click=dialog.close)
+        ui.button("Close", icon="close", on_click=dialog.close).props(
+            "outline"
+        ).classes(SECONDARY_BUTTON_CLASSES)
     # Refresh QR code every 60 seconds to prevent reuse of old challenges
 
-    setup_header()
-
-    # Content
-    with ui.column().classes("flex justify-center w-full items-center"):
-        ui.label("Create Root").classes("text-2xl font-bold mb-2")
-
-        with ui.card().classes("w-full max-w-lg mx-auto items-center"):
+    with auth_shell():
+        with responsive_grid(2, "gap-6 items-stretch"):
+            auth_context_panel(
+                eyebrow="Initial Setup",
+                title="Create the first SatOIDC root account.",
+                body=(
+                    "The setup wizard creates the first root identity and "
+                    "keeps later service setup behind root credentials."
+                ),
+                features=[
+                    (
+                        "verified_user",
+                        "Root bootstrap",
+                        "Creates the first account with root permission.",
+                    ),
+                    (
+                        "qr_code",
+                        "Wallet option",
+                        "Use the floating QR action to bootstrap with LNURL.",
+                    ),
+                    (
+                        "security",
+                        "Controlled startup",
+                        "The wizard shuts down after successful setup.",
+                    ),
+                ],
+            )
+            with card("max-w-lg w-full mx-auto items-stretch gap-4"):
+                with ui.column().classes("gap-1"):
+                    ui.label("Create Root").classes("text-2xl font-bold")
+                    ui.label(
+                        "Register the initial administrator account."
+                    ).classes(MUTED_TEXT)
             login_field = (
                 ui.input(
                     "Login",
@@ -388,6 +452,27 @@ async def set_root(session: Session, request: Request):
 
             # Buttons
             with ui.row().classes("gap-3 mt-4"):
-                ui.button("Create account", on_click=submit).classes("w-full")
+                ui.button(
+                    "Create account",
+                    icon="admin_panel_settings",
+                    on_click=submit,
+                ).classes(f"w-full {PRIMARY_BUTTON_CLASSES}")
     with ui.page_sticky(x_offset=18, y_offset=18):
-        ui.button(icon="qr_code", on_click=dialog.open).props("fab")
+        ui.button(icon="qr_code", on_click=dialog.open).props("fab").classes(
+            PRIMARY_BUTTON_CLASSES
+        )
+
+
+@router.page("/", dark=True)
+async def set_root(session: Session, request: Request):
+    ui.add_head_html(
+        '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css"'
+        ' rel="stylesheet" />',
+        shared=True,
+    )
+
+    if await exists_root_user():
+        render_existing_root_setup(session, request)
+        return
+
+    render_initial_root_setup(session, request)
