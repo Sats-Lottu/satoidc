@@ -15,6 +15,8 @@
 - `docs/architecture.md`: current system map and request flows.
 - `docs/project-analysis.md`: broad repository analysis and implementation notes.
 - `docs/known-issues.md`: prioritized risks and technical debt.
+- `docs/priority-execution-backlog.md`: temporary active task queue; keep only open work here.
+- `docs/priority-execution-history.md`: summary of completed backlog items removed from the active queue.
 - `DESIGN.md`: source of truth for NiceGUI interface conventions.
 - `specs/index.md`: active and historical Spec-Driven Development entries.
 - `agent-memory/index.md`: durable agent memory with decisions, commands, state, risks, and open questions.
@@ -30,6 +32,15 @@
 - Run lint: `cd satoidc; poetry run ruff check`
 - Run public client example: `cd satoidc; poetry run task start_public_client <client-id>`
 
+Planned quality-testing commands are specified but not implemented yet:
+
+- Unit-focused tests: `cd satoidc; poetry run task test_unit`
+- Hypothesis property tests: `cd satoidc; poetry run task test_property`
+- Tavern API security tests: `cd satoidc; poetry run task test_api_security`
+- Testcontainers integration tests: `cd satoidc; poetry run task test_integration`
+- Locust load smoke tests: `cd satoidc; poetry run task test_load`
+- Complete non-load suite: `cd satoidc; poetry run task test_all`
+
 ## Git And Commit Conventions
 
 - When writing, reviewing, staging, committing, branching, pushing, or opening PRs, use the Codex skill `convencoes-git-commits`.
@@ -43,6 +54,7 @@
 ## Conventions
 
 - Use `specs/` for Spec-Driven Development. For behavior changes, create or update a spec before implementation when the change affects auth, OIDC/OAuth2 behavior, LNURL-auth, persistence, security, user flows, or public contracts.
+- Keep `docs/priority-execution-backlog.md` as an active temporary queue. Remove completed tasks from it and summarize them in `docs/priority-execution-history.md`.
 - Use `DESIGN.md` as the source of truth for SatOIDC interface conventions before changing NiceGUI pages.
 - Keep standalone Markdown discoverable through an index. Link new docs from `README.md`, `docs/README.md`, `specs/index.md`, or `agent-memory/index.md` as appropriate.
 - Follow the existing FastAPI plus NiceGUI routing style.
@@ -55,6 +67,7 @@
 - Keep route-level UI changes consistent with the existing NiceGUI component and class patterns.
 - Add focused tests for protocol, auth, validation, persistence, and time-sensitive behavior. Use `freezegun` for expiration windows and clock-dependent token/challenge behavior.
 - Keep browser e2e tests marked with `e2e`; the default `task test` command intentionally excludes them.
+- Before implementing new test layers, follow `specs/features/quality-testing/` for markers, task commands, dependencies, fixtures and directory layout.
 
 ## UI Verification
 

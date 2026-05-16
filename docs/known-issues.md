@@ -23,13 +23,13 @@ Updated: 2026-05-16
 2. Remove the legacy `satoidc/satoidc/auth/lnurl_schemas.py` compatibility shim when downstream imports no longer need it.
 3. Normalize or archive `relatorio.md`, which currently contains mojibake and duplicates tracked state.
 
-## Suggested First Specs
+## Active Specs And Backlog
 
-- `login-redirect-safety`
-- `oidc-key-rotation` is drafted in `specs/features/oidc-key-rotation/`; implementation is still pending.
-- `permissions-model`
-- `lnurl-challenge-state-rename`
-- `oidc-discovery-contract`
+- See `docs/priority-execution-backlog.md` for the active task queue.
+- See `specs/index.md` for current draft, review, approved, implemented and
+  superseded specs.
+- Completed backlog items are summarized in
+  `docs/priority-execution-history.md`.
 
 ## Recently Resolved Or Reduced
 

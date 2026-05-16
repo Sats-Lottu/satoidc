@@ -31,7 +31,7 @@ The project implements an **OpenID Provider (OP)** with:
 - Password-based login plus LNURL-auth login/registration flows.
 - NiceGUI web interface for onboarding, login, consent, profile and client management.
 
-SatOIDC is currently a **beta implementation**. The codebase already contains the main protocol and UI building blocks, while the roadmap focuses on production hardening, tests, key management and permission consistency.
+SatOIDC is currently a **beta implementation**. The codebase already contains the main protocol and UI building blocks, while the active backlog focuses on production hardening, account recovery, test-layer refactoring and operational readiness.
 
 ---
 
@@ -83,7 +83,7 @@ Main implementation areas:
 - `examples/`: relying-party client examples. See [examples/README.md](examples/README.md).
 - `satoidc/`: Poetry project root. See [satoidc/README.md](satoidc/README.md).
 
-For a deeper technical map, start from [docs/README.md](docs/README.md), especially [docs/project-analysis.md](docs/project-analysis.md) and [docs/architecture.md](docs/architecture.md).
+For a deeper technical map, start from [docs/README.md](docs/README.md), especially [docs/project-analysis.md](docs/project-analysis.md), [docs/architecture.md](docs/architecture.md), and the active [priority execution backlog](docs/priority-execution-backlog.md).
 
 ---
 
@@ -217,6 +217,8 @@ poetry run task start_public_client <client-id>
 
 ## Tests And Validation
 
+Current implemented commands:
+
 ```bash
 cd satoidc
 poetry run task test
@@ -231,6 +233,15 @@ cd satoidc
 poetry run task playwright_install
 poetry run task test_e2e
 ```
+
+The quality-testing specs define the next test-layer commands to implement:
+
+- `poetry run task test_unit`
+- `poetry run task test_property`
+- `poetry run task test_api_security`
+- `poetry run task test_integration`
+- `poetry run task test_load`
+- `poetry run task test_all`
 
 Useful sanity check:
 
@@ -266,6 +277,10 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [x] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
 - [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
 - [x] Make session/cookie settings production-aware, including HTTPS-only cookies.
+- [ ] Harden public route boundary matching for lookalike protected paths.
+- [ ] Add OpenBao/Vault-compatible external signing backend.
+- [ ] Add sanitized operational logging for auth, OIDC, LNURL and UI mutation failures.
+- [ ] Validate the SQLite/PostgreSQL support matrix.
 
 ### Product And Developer Experience
 
@@ -274,6 +289,9 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [x] Add client metadata validation for redirect URIs, scopes, grant types and auth methods.
 - [ ] Add screenshots to this README once the UI stabilizes.
 - [x] Normalize text encoding in README/examples/legal docs where mojibake appears.
+- [ ] Implement verified-email account recovery and password reset.
+- [ ] Refactor persistence-heavy NiceGUI actions into service helpers.
+- [ ] Refactor the test layer to match the quality-testing specs.
 
 ### Future Protocol Work
 
@@ -289,7 +307,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 
 - Use HTTPS in production.
 - Use strong environment secrets.
-- Persisted signing keys are available; evaluate Vault Transit or another external signing backend before hardened production use.
+- Persisted signing keys are available; prefer OpenBao/Vault-compatible Transit or another external signing backend before hardened production use.
 - Treat local SQLite files and NiceGUI storage as development state.
 - Review [docs/known-issues.md](docs/known-issues.md) before production deployment.
 
@@ -302,6 +320,8 @@ SatOIDC uses:
 - [AGENTS.md](AGENTS.md) for agent-facing project instructions.
 - [DESIGN.md](DESIGN.md) for web interface conventions.
 - [docs](docs/README.md) for architecture, analysis and known issues.
+- [docs/priority-execution-backlog.md](docs/priority-execution-backlog.md) for active temporary execution tasks.
+- [docs/priority-execution-history.md](docs/priority-execution-history.md) for completed backlog summaries.
 - [specs](specs/README.md) and [specs/index.md](specs/index.md) for Spec-Driven Development.
 - [agent-memory](agent-memory/index.md) for durable project memory.
 

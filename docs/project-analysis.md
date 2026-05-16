@@ -1,12 +1,12 @@
 # SatOIDC Project Analysis
 
-Updated: 2026-05-15
+Updated: 2026-05-16
 
 ## Summary
 
 SatOIDC is a Python OpenID Connect Provider built with FastAPI, NiceGUI, Authlib, SQLAlchemy, Alembic, and Poetry. It aims to provide OAuth2/OIDC authentication while adding Bitcoin/Lightning login through LNURL-auth.
 
-The current implementation is a beta-stage identity provider with real protocol integration pieces, a UI surface, database models, migrations, Docker deployment, OIDC client examples, unit/integration tests, and browser e2e coverage for the priority OAuth and UI flows. The priority execution backlog is complete as of 2026-05-15; remaining work is mostly production hardening, broader lifecycle coverage, and UX refinement.
+The current implementation is a beta-stage identity provider with real protocol integration pieces, a UI surface, database models, migrations, Docker deployment, OIDC client examples, unit/integration tests, and browser e2e coverage for the priority OAuth and UI flows. The active execution backlog now tracks open production-hardening, account recovery, testing, observability, and cleanup work; completed backlog items are summarized separately in `docs/priority-execution-history.md`.
 
 ## Repository Layout
 
