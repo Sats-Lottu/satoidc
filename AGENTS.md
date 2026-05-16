@@ -45,6 +45,7 @@ Planned quality-testing commands are specified but not implemented yet:
 
 - When writing, reviewing, staging, committing, branching, pushing, or opening PRs, use the Codex skill `convencoes-git-commits`.
 - Write all Git-facing content in English, including commit messages, branch names, PR titles/descriptions, tags, releases, changelog entries, squash/rebase messages, and trailers.
+- Branch names must follow Git convention prefixes such as `feature/`, `bugfix/`, `docs/`, `test/`, `refactor/`, `chore/`, `perf/`, or `ci/`; do not use the default Codex app `codex/` branch prefix in this repository.
 - Use Conventional Commits, matching the existing history, for example `feat(auth): Add permission requests` or `docs(memory): Update project state`.
 - Keep commit subjects imperative, specific, and at most 50 characters after the type/scope prefix when practical.
 - Before creating a commit, inspect `git status --short`, `git diff`, and `git diff --cached`; stage only related changes and keep commits atomic.
