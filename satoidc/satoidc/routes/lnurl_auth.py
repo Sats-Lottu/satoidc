@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Annotated
@@ -11,6 +12,8 @@ from satoidc.models import LnurlAuthChallenge, User
 from satoidc.models.database import get_session
 from satoidc.schemas.lnurl import LnurlAuthCallbackIn
 from satoidc.settings import ENV
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["LNURL Auth"])
 
@@ -38,13 +41,43 @@ async def lnurl_auth_callback(  # noqa: PLR0911, PLR0912
         .execution_options(synchronize_session=False)
     )
     if not challenge:
+        log.info(
+            "LNURL callback rejected",
+            extra={
+                "event_name": "lnurl.callback_failed",
+                "component": "lnurl_auth",
+                "outcome": "rejected",
+                "reason": "invalid_or_expired_k1",
+                "action": query.action,
+            },
+        )
         return {"status": "ERROR", "reason": "Invalid or expired k1"}
     await session.refresh(challenge)
     if challenge.action != query.action:
+        log.info(
+            "LNURL callback rejected",
+            extra={
+                "event_name": "lnurl.callback_failed",
+                "component": "lnurl_auth",
+                "outcome": "rejected",
+                "reason": "action_mismatch",
+                "action": query.action,
+            },
+        )
         return {"status": "ERROR", "reason": "Action mismatch"}
 
     # 2) Verify the signature: wallet signs k1 with linkingPrivKey.
     if not verify(query.k1, query.key, query.sig):
+        log.info(
+            "LNURL callback rejected",
+            extra={
+                "event_name": "lnurl.callback_failed",
+                "component": "lnurl_auth",
+                "outcome": "rejected",
+                "reason": "bad_signature",
+                "action": query.action,
+            },
+        )
         return {"status": "ERROR", "reason": "Bad Signature Error"}
 
     # 3) Resolve or create a user by linkingKey.

@@ -91,7 +91,13 @@ Start with standard-library `logging` and consistent event fields. Introduce
 
 ## Traceability
 
-- Code: `satoidc/satoidc/auth/`, `satoidc/satoidc/routes/`
-- Tests: `satoidc/tests/`
+- Code:
+  - `satoidc/satoidc/auth/middleware.py`
+  - `satoidc/satoidc/routes/lnurl_auth.py`
+  - `satoidc/satoidc/routes/oauth2.py`
+- Tests:
+  - `satoidc/tests/test_security.py`
+  - `satoidc/tests/test_lnurl_auth.py`
+  - `satoidc/tests/test_oauth_routes.py`
 - Docs: `docs/priority-execution-backlog.md`
 - Decisions: `agent-memory/decisions.md`

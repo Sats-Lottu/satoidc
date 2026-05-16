@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from types import SimpleNamespace
@@ -224,6 +225,25 @@ def test_auth_middleware_redirects_protected_route(app_client):
     assert response.headers["location"] == (
         "/login?redirect_to=%2Fprofile%3Ftab%3Dwallet"
     )
+
+
+def test_auth_middleware_logs_missing_session_without_query_secret(
+    app_client, caplog
+):
+    caplog.set_level(logging.INFO, logger="satoidc.auth.middleware")
+
+    response = app_client.get(
+        "/profile?token=secret-token", follow_redirects=False
+    )
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert any(
+        record.event_name == "auth.session_missing"
+        and record.component == "auth_middleware"
+        and record.path == "/profile"
+        for record in caplog.records
+    )
+    assert "secret-token" not in caplog.text
 
 
 def test_auth_middleware_allows_public_oauth_route(app_client):

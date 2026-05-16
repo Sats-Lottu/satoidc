@@ -91,7 +91,7 @@ Expected outcome:
 
 ### 5. Add Operational Observability Baseline
 
-Status: draft.
+Status: in progress.
 
 Spec:
 
@@ -101,6 +101,22 @@ Expected outcome:
 
 - Add sanitized standard-library logging for important auth, authorization,
   OIDC, LNURL, and mutation failures.
+
+Progress:
+
+- Middleware redirects for missing sessions now emit sanitized operational
+  logs without query strings.
+- OAuth authorization failures now emit sanitized reason-class logs.
+- LNURL callback failures for invalid/expired challenges, action mismatch, and
+  bad signatures now emit sanitized reason-class logs without wallet
+  signatures.
+
+Remaining:
+
+- Add logs for OIDC signing backend failures.
+- Add logs for profile and dashboard mutation failures.
+- Add broader sensitive-field regression coverage for passwords, tokens,
+  private JWKs, and client secrets.
 
 ### 6. Add Lightweight Load/Concurrency Checks For Token Issuance
 

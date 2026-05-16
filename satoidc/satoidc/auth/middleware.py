@@ -1,8 +1,11 @@
+import logging
 from urllib.parse import quote, urlencode
 
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
+log = logging.getLogger(__name__)
 
 PUBLIC_PREFIXES = (
     "/_nicegui",  # assets internos
@@ -42,6 +45,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         user_id = request.session.get("user_id")
         if not user_id:
+            log.info(
+                "Missing session for protected route",
+                extra={
+                    "event_name": "auth.session_missing",
+                    "component": "auth_middleware",
+                    "outcome": "redirect",
+                    "path": path,
+                },
+            )
             full = path + (
                 ("?" + request.url.query) if request.url.query else ""
             )

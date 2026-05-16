@@ -1,4 +1,5 @@
 import hmac
+import logging
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -29,6 +30,8 @@ from satoidc.enums import PermissionsEnum
 from satoidc.models import User
 from satoidc.models.database import get_session, remove_sync_session
 from satoidc.settings import ENV
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/oauth", tags=["OAuth2"])
 well_known_router = APIRouter(tags=["OAuth2"])
@@ -93,6 +96,15 @@ async def authorize(  # noqa: PLR0911
 ):
     user_id = request.session.get("user_id")
     if not user_id:
+        log.info(
+            "OAuth authorization rejected",
+            extra={
+                "event_name": "oauth.authorize_failed",
+                "component": "oauth2",
+                "outcome": "rejected",
+                "reason": "login_required",
+            },
+        )
         return JSONResponse({"error": "login_required"}, status_code=401)
 
     csrf_expected = request.session.get("csrf_token")
@@ -101,6 +113,15 @@ async def authorize(  # noqa: PLR0911
         or not csrf_token
         or not hmac.compare_digest(csrf_expected, csrf_token)
     ):
+        log.info(
+            "OAuth authorization rejected",
+            extra={
+                "event_name": "oauth.authorize_failed",
+                "component": "oauth2",
+                "outcome": "rejected",
+                "reason": "invalid_csrf",
+            },
+        )
         return JSONResponse({"error": "invalid_csrf"}, status_code=403)
 
     request.session.pop("csrf_token", None)
@@ -108,10 +129,28 @@ async def authorize(  # noqa: PLR0911
     try:
         uid = UUID(user_id)
     except (ValueError, TypeError):
+        log.info(
+            "OAuth authorization rejected",
+            extra={
+                "event_name": "oauth.authorize_failed",
+                "component": "oauth2",
+                "outcome": "rejected",
+                "reason": "invalid_session",
+            },
+        )
         return JSONResponse({"error": "invalid_session"}, status_code=401)
 
     user = await session.scalar(select(User).where(User.id == uid))
     if not user:
+        log.info(
+            "OAuth authorization rejected",
+            extra={
+                "event_name": "oauth.authorize_failed",
+                "component": "oauth2",
+                "outcome": "rejected",
+                "reason": "invalid_session",
+            },
+        )
         return JSONResponse({"error": "invalid_session"}, status_code=401)
 
     try:

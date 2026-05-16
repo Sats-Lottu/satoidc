@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from http import HTTPStatus
 from types import SimpleNamespace
@@ -53,7 +54,8 @@ async def test_authorize_requires_logged_in_user(db_session):
     assert response.body == b'{"error":"login_required"}'
 
 
-async def test_authorize_rejects_invalid_csrf(db_session, make_user):
+async def test_authorize_rejects_invalid_csrf(db_session, make_user, caplog):
+    caplog.set_level(logging.INFO, logger="satoidc.routes.oauth2")
     user = await make_user()
     request = make_request(method="POST")
     request.scope["session"] = {"user_id": user.id.hex, "csrf_token": "good"}
@@ -62,6 +64,12 @@ async def test_authorize_rejects_invalid_csrf(db_session, make_user):
 
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.body == b'{"error":"invalid_csrf"}'
+    assert any(
+        record.event_name == "oauth.authorize_failed"
+        and record.component == "oauth2"
+        and record.reason == "invalid_csrf"
+        for record in caplog.records
+    )
 
 
 async def test_authorize_rejects_invalid_or_unknown_session(
