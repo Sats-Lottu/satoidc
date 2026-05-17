@@ -52,33 +52,7 @@ Expected outcome:
 - Include Testcontainers-backed OpenBao integration coverage for the real
   Transit path.
 
-### 3. Validate SQLite And PostgreSQL Support Matrix
-
-Status: in progress.
-
-Specs:
-
-- `specs/contracts/database.md`
-- `specs/contracts/runtime-config.md`
-- `specs/flows/deployment.md`
-
-Expected outcome:
-
-- Document and verify the SQLite/PostgreSQL support matrix, including migration
-  compatibility and async/sync database URL consistency.
-
-Progress:
-
-- Runtime settings now reject mismatched async/sync database URL pairs.
-- Tests cover valid SQLite and PostgreSQL URL pairs and mismatched backend or
-  database names.
-
-Remaining:
-
-- Add Testcontainers-backed PostgreSQL migration/startup smoke coverage.
-- Document the final matrix after container-backed verification exists.
-
-### 4. Extract Persistence-Heavy UI Actions Into Services
+### 3. Extract Persistence-Heavy UI Actions Into Services
 
 Status: draft.
 
@@ -91,7 +65,7 @@ Expected outcome:
 - Move account, wallet, client-management, and permission-request mutations out
   of NiceGUI route closures into focused service helpers with unit coverage.
 
-### 5. Add Lightweight Load/Concurrency Checks For Token Issuance
+### 4. Add Lightweight Load/Concurrency Checks For Token Issuance
 
 Status: backlog.
 
@@ -105,7 +79,7 @@ Expected outcome:
 - Add a lightweight smoke benchmark for `/oauth/token` against PostgreSQL to
   establish a local latency/error/threadpool baseline.
 
-### 6. Implement Email Verification And Account Recovery
+### 5. Implement Email Verification And Account Recovery
 
 Status: draft.
 
@@ -120,7 +94,7 @@ Expected outcome:
 - Include Testcontainers-backed email-server integration coverage for SMTP
   delivery and captured verification/recovery messages.
 
-### 7. Refactor Test Layer For Quality Specs
+### 6. Refactor Test Layer For Quality Specs
 
 Status: in progress.
 
@@ -150,8 +124,6 @@ Progress:
 
 Remaining:
 
-- Replace the integration marker smoke with Testcontainers-backed PostgreSQL
-  migration/startup coverage.
 - Add Tavern YAML coverage for API security contracts.
 - Extend load smoke coverage to seeded token issuance once PostgreSQL setup
   helpers exist.

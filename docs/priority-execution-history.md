@@ -7,6 +7,14 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-17
 
+- Validate SQLite and PostgreSQL support matrix.
+  - Specs: `specs/contracts/database.md`,
+    `specs/contracts/runtime-config.md`, `specs/flows/deployment.md`
+  - Outcome: runtime settings validate async/sync database URL pairs, focused
+    tests cover SQLite and PostgreSQL URL matching rules, PostgreSQL 16
+    Testcontainers coverage applies Alembic migrations to `head`, and
+    `docs/database-support-matrix.md` documents supported database pairings.
+
 - Remove LNURL schema compatibility shim and archive legacy report.
   - Reference: `docs/changes-2026-05-08.md`
   - Outcome: no code or tests import

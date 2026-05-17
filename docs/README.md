@@ -8,6 +8,8 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
 - [Project Analysis](project-analysis.md): broad repository map, runtime stack, protocol surface, examples, validation, and risks.
 - [Known Issues](known-issues.md): prioritized technical debt and production hardening items.
 - [VPS Deployment](deployment/vps.md): GitHub Actions CI/CD and VPS runbook.
+- [Database Support Matrix](database-support-matrix.md): SQLite/PostgreSQL
+  support scope, URL pairing rules, and verification commands.
 - [Priority Execution Backlog](priority-execution-backlog.md): temporary active queue for open execution work.
 - [Priority Execution History](priority-execution-history.md): summary of completed backlog items removed from the active queue.
 - [Backlog Priority Plan](backlog-priority-plan.md): branch-level sequencing, grouped work, commit plan, and approval questions for active backlog implementation.
