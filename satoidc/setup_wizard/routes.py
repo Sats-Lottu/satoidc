@@ -485,105 +485,113 @@ def render_initial_root_setup(session: Session, request: Request):
                     ui.label(
                         "Register the initial administrator account."
                     ).classes(MUTED_TEXT)
-            login_field = (
-                ui.input(
-                    "Login",
-                    validation={"Invalid login!": is_valid_login},
-                )
-                .classes("w-full")
-                .tooltip("Lowercase letters and numbers, 6-30 characters")
-            )
-            email_field = (
-                ui.input(
-                    "Email",
-                    validation={"Invalid email!": is_valid_email},
-                )
-                .props("type=email")
-                .classes("w-full")
-            ).tooltip("Enter a valid email address")
-            nickname_field = (
-                ui.input("Nickname (optional)", value="Satoshi")
-                .classes("w-full")
-                .tooltip(
-                    "Letters, numbers, dots, underscores or hyphens, "
-                    "2-80 characters"
-                )
-            )
 
-            password_field = (
-                ui.input(
-                    "Password",
+                login_field = (
+                    ui.input(
+                        "Login",
+                        validation={"Invalid login!": is_valid_login},
+                    )
+                    .classes(INPUT_CLASSES)
+                    .tooltip(
+                        "Lowercase letters and numbers, 6-30 characters"
+                    )
+                )
+                email_field = (
+                    ui.input(
+                        "Email",
+                        validation={"Invalid email!": is_valid_email},
+                    )
+                    .props("type=email")
+                    .classes(INPUT_CLASSES)
+                ).tooltip("Enter a valid email address")
+                nickname_field = (
+                    ui.input("Nickname (optional)", value="Satoshi")
+                    .classes(INPUT_CLASSES)
+                    .tooltip(
+                        "Letters, numbers, dots, underscores or hyphens, "
+                        "2-80 characters"
+                    )
+                )
+
+                password_field = (
+                    ui.input(
+                        "Password",
+                        password=True,
+                        password_toggle_button=True,
+                        validation={
+                            "Weak password!": lambda v: (
+                                is_valid_password(v)
+                                if len(v) >= 0
+                                else True
+                            ),
+                        },
+                    )
+                    .classes(INPUT_CLASSES)
+                    .tooltip(
+                        "Password requirements:\n"
+                        "- 8-128 characters\n"
+                        "- At least one uppercase letter (A-Z)\n"
+                        "- At least one lowercase letter (a-z)\n"
+                        "- At least one number (0-9)\n"
+                        "- At least one special character (!@#$...)"
+                    )
+                )
+                _confirm = ui.input(
+                    "Confirm password",
                     password=True,
                     password_toggle_button=True,
                     validation={
-                        "Weak password!": lambda v: (
-                            is_valid_password(v) if len(v) >= 0 else True
-                        ),
+                        "Not same password!": lambda value: (
+                            password_field.value == value
+                        )
                     },
-                )
-                .classes("w-full")
-                .tooltip(
-                    "Password requirements:\n"
-                    "• 8-128 characters\n"
-                    "• At least one uppercase letter (A-Z)\n"
-                    "• At least one lowercase letter (a-z)\n"
-                    "• At least one number (0-9)\n"
-                    "• At least one special character (!@#$...)"
-                )
-            )
-            _confirm = ui.input(
-                "Confirm password",
-                password=True,
-                password_toggle_button=True,
-                validation={
-                    "Not same password!": lambda value: (
-                        password_field.value == value
+                ).classes(INPUT_CLASSES)
+
+                async def submit():
+                    validation_errors = validate_registration_form(
+                        login_field.value,
+                        nickname_field.value,
+                        password_field.value,
+                        email_field.value,
+                    ).values()
+                    if validation_errors:
+                        ui.notify(
+                            "\n".join(validation_errors), type="negative"
+                        )
+                        return
+                    login = login_field.value.strip()
+                    email = email_field.value.strip().lower()
+                    nickname = (nickname_field.value or "").strip() or None
+                    pw_hash = hash_password(password_field.value)
+
+                    user = User(
+                        lnurl_pubkey=None,
+                        login=login,
+                        email=email,
+                        nickname=nickname,
+                        password_hash=pw_hash,
                     )
-                },
-            ).classes("w-full")
+                    permission = Permission(
+                        permission_type=PermissionsEnum.ROOT,
+                        granted_by=None,
+                        reason="Initial root user created via setup wizard",
+                        expiration_date=None,
+                        user_id=user.id,
+                    )
+                    session.add(user)
+                    session.add(permission)
+                    await session.commit()
+                    await session.refresh(user)
+                    finalizing_setup()
 
-            async def submit():
-                validation_errors = validate_registration_form(
-                    login_field.value,
-                    nickname_field.value,
-                    password_field.value,
-                    email_field.value,
-                ).values()
-                if validation_errors:
-                    ui.notify("\n".join(validation_errors), type="negative")
-                    return
-                login = login_field.value.strip()
-                email = email_field.value.strip().lower()
-                nickname = (nickname_field.value or "").strip() or None
-                pw_hash = hash_password(password_field.value)
-
-                user = User(
-                    lnurl_pubkey=None,
-                    login=login,
-                    email=email,
-                    nickname=nickname,
-                    password_hash=pw_hash,
-                )
-                permission = Permission(
-                    permission_type=PermissionsEnum.ROOT,
-                    granted_by=None,
-                    reason="Initial root user created via setup wizard",
-                    expiration_date=None,
-                    user_id=user.id,
-                )
-                session.add(user)
-                session.add(permission)
-                await session.commit()
-                await session.refresh(user)
-                finalizing_setup()
-
-            # Buttons
-            with ui.row().classes("gap-3 mt-4"):
-                ui.button(
-                    "Create account",
-                    icon="admin_panel_settings",
-                    on_click=submit,
-                ).classes(f"w-full {PRIMARY_BUTTON_CLASSES}")
+                with ui.row().classes(
+                    "gap-3 mt-2 w-full justify-end max-sm:flex-col"
+                ):
+                    ui.button(
+                        "Create account",
+                        icon="admin_panel_settings",
+                        on_click=submit,
+                    ).classes(f"w-full {PRIMARY_BUTTON_CLASSES}")
     with ui.page_sticky(x_offset=18, y_offset=18):
         ui.button(icon="qr_code", on_click=dialog.open).props("fab").classes(
             PRIMARY_BUTTON_CLASSES
