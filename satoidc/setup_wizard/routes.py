@@ -16,6 +16,7 @@ from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
     DIALOG_CLASSES,
     ERROR_TEXT,
+    INPUT_CLASSES,
     MUTED_TEXT,
     PRIMARY_BUTTON_CLASSES,
     SECONDARY_BUTTON_CLASSES,
@@ -223,32 +224,33 @@ def render_root_login(request: Request):
                     ).classes(MUTED_TEXT)
                 if setup_error:
                     ui.label("Invalid root credentials.").classes(ERROR_TEXT)
-                ui.html(
-                    f"""
-                    <form method="post" action="/setup/root-login"
-                          class="w-full flex flex-col gap-4">
-                      <label class="flex flex-col gap-1 text-sm">
-                        <span class="{MUTED_TEXT}">Login or email</span>
-                        <input name="identifier" autocomplete="username"
-                               class="w-full rounded-md border border-slate-700
-                                      bg-slate-950 px-3 py-2 text-slate-100
-                                      outline-none focus:border-emerald-400" />
-                      </label>
-                      <label class="flex flex-col gap-1 text-sm">
-                        <span class="{MUTED_TEXT}">Password</span>
-                        <input name="password" type="password"
-                               autocomplete="current-password"
-                               class="w-full rounded-md border border-slate-700
-                                      bg-slate-950 px-3 py-2 text-slate-100
-                                      outline-none focus:border-emerald-400" />
-                      </label>
-                      <button type="submit"
-                              class="w-full {PRIMARY_BUTTON_CLASSES}">
-                        Continue
-                      </button>
-                    </form>
-                    """
-                )
+                with (
+                    ui.element("form")
+                    .props('method="post" action="/setup/root-login"')
+                    .classes("flex flex-col gap-3 w-full")
+                ):
+                    ui.input("Login or email").props(
+                        "name='identifier' autocomplete='username'"
+                    ).classes(INPUT_CLASSES)
+                    ui.input(
+                        "Password",
+                        password=True,
+                        password_toggle_button=True,
+                    ).props(
+                        "name='password' autocomplete='current-password'"
+                    ).classes(INPUT_CLASSES)
+
+                    with ui.row().classes(
+                        "gap-3 w-full justify-end max-sm:flex-col-reverse"
+                    ):
+                        ui.button(
+                            "Shut down",
+                            icon="close",
+                            on_click=app.shutdown,
+                        ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
+                        ui.button("Continue", icon="login").props(
+                            "type='submit'"
+                        ).classes(PRIMARY_BUTTON_CLASSES)
 
 
 async def render_existing_root_setup(session: Session, request: Request):
