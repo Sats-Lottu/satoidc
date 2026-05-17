@@ -52,6 +52,7 @@ asyncio_default_fixture_loop_scope = "function"
 main_file = "satoidc/main.py"
 markers = [
     "e2e: end-to-end browser tests",
+    "setup: setup wizard focused tests",
 ]
 filterwarnings = [
     "ignore::authlib.deprecate.AuthlibDeprecationWarning",
@@ -87,6 +88,7 @@ quote-style = "double"
 run = "fastapi dev satoidc/main.py"
 setup_wizard = "python -m setup_wizard"
 test = "pytest -m \"not e2e\""
+test_setup = "pytest -m setup tests/setup"
 test_e2e = "pytest -m e2e tests/e2e"
 lint = "ruff check"
 spellcheck = "typos --config pyproject.toml --force-exclude ."
