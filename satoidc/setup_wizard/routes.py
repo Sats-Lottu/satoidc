@@ -39,6 +39,7 @@ from setup_wizard.bootstrap import (
 )
 from setup_wizard.get_root import (
     authenticate_root_user,
+    database_schema_ready,
     exists_root_user,
     has_active_root_permission,
     parse_root_user_id,
@@ -181,6 +182,38 @@ def render_reconfiguration_panel():
                     "Sign out",
                     icon="logout",
                     on_click=lambda: ui.navigate.to("/setup/logout"),
+                ).classes(PRIMARY_BUTTON_CLASSES)
+
+
+def render_database_setup_required():
+    with auth_shell("max-w-2xl"):
+        with ui.column().classes("gap-4"):
+            ui.label("Database Setup Required").classes(
+                "text-2xl font-bold"
+            )
+            ui.label(
+                "The database is reachable, but SatOIDC tables are missing. "
+                "Apply migrations before creating or authenticating root "
+                "users."
+            ).classes(MUTED_TEXT)
+        with card("w-full gap-4"):
+            ui.label("Apply migrations").classes("text-xl font-semibold")
+            ui.label(
+                "Run this command from the project package directory, then "
+                "reload the setup wizard."
+            ).classes(MUTED_TEXT)
+            ui.code("poetry run alembic upgrade head").classes("w-full")
+
+            with ui.row().classes("gap-3 mt-4"):
+                ui.button(
+                    "Shut down wizard",
+                    icon="close",
+                    on_click=app.shutdown,
+                ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
+                ui.button(
+                    "Retry",
+                    icon="refresh",
+                    on_click=ui.navigate.reload,
                 ).classes(PRIMARY_BUTTON_CLASSES)
 
 
@@ -564,6 +597,10 @@ async def set_root(session: Session, request: Request):
         ' rel="stylesheet" />',
         shared=True,
     )
+
+    if not await database_schema_ready():
+        render_database_setup_required()
+        return
 
     if await exists_root_user():
         await render_existing_root_setup(session, request)

@@ -4,9 +4,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_307_TEMPORARY_REDIRECT
 
+import setup_wizard.get_root as get_root_module
 from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission
@@ -14,6 +17,7 @@ from satoidc.models.database import get_session
 from setup_wizard.__main__ import create_app
 from setup_wizard.get_root import (
     authenticate_root_user,
+    database_schema_ready,
     exists_root_user,
     has_active_root_permission,
     parse_root_user_id,
@@ -102,6 +106,32 @@ def test_setup_wizard_parses_root_user_ids():
 
 async def test_setup_wizard_detects_missing_root_user(db_session):
     assert await exists_root_user() is False
+
+
+async def test_setup_wizard_detects_ready_database_schema(db_session):
+    assert await database_schema_ready() is True
+
+
+async def test_setup_wizard_handles_missing_database_schema(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    database_path = tmp_path / "empty.db"
+    engine = create_async_engine(
+        f"sqlite+aiosqlite:///{database_path.as_posix()}"
+    )
+
+    async def empty_get_session():
+        async with AsyncSession(engine, expire_on_commit=False) as session:
+            yield session
+
+    monkeypatch.setattr(get_root_module, "get_session", empty_get_session)
+
+    try:
+        assert await database_schema_ready() is False
+        assert await exists_root_user() is False
+    finally:
+        await engine.dispose()
 
 
 async def test_setup_wizard_detects_existing_root_user(
