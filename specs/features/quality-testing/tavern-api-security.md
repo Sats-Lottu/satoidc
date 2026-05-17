@@ -2,7 +2,7 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: project maintainers
 - Created: 2026-05-16
 - Updated: 2026-05-17

@@ -127,8 +127,8 @@ Optional helper commands:
 - Pytest markers and taskipy commands exist for unit, property, API security,
   integration, e2e, load, and non-load suites.
 - The first bounded property tests cover redirect safety and validators.
-- API security smoke coverage currently exercises public route lookalike
-  boundaries through Python tests; Tavern YAML coverage remains follow-up work.
+- API security smoke coverage exercises public metadata and route-boundary
+  contracts through Python and Tavern tests.
 - The first Locust smoke scenario covers public metadata and auth pages against
   a configured base URL.
 

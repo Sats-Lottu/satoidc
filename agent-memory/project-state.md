@@ -45,8 +45,8 @@ Current test structure:
 - `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
 - Quality-testing commands are available for `test_unit`, `test_property`,
   `test_api_security`, `test_integration`, `test_load`, `test_load_ui`, and
-  `test_all`. The remaining quality-testing work is deeper Tavern coverage and
-  seeded token issuance load smoke coverage.
+  `test_all`. Python and Tavern API security smoke tests cover public metadata
+  and route-boundary contracts.
 - `test_integration` includes Testcontainers-backed PostgreSQL 16 coverage that
   applies Alembic migrations to `head` and verifies sync/async access to the
   same migrated database.
@@ -55,7 +55,7 @@ Current test structure:
   authorization codes through `/oauth/token`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
 - As of 2026-05-17, `poetry run task test` passes with
-  `207 passed, 19 deselected`.
+  `208 passed, 19 deselected`.
 - As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to
   NiceGUI visual rendering helpers/pages, QR UI classes, and defensive parse
@@ -75,8 +75,8 @@ Recent implementation state:
 - Full OAuth authorization-code browser e2e coverage now exercises login, consent, redirect, token exchange, ID Token, refresh token issuance, and UserInfo for public PKCE and confidential `client_secret_post` clients.
 - OAuth client management is integrated in the developer dashboard with edit, delete, disable/enable, identifier copy, and secret rotation actions.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
-- Open work includes OpenBao/Vault-compatible signing, service extraction,
-  email verification/account recovery, and deeper quality-testing coverage.
+- Open work includes OpenBao/Vault-compatible signing, service extraction, and
+  email verification/account recovery.
 
 UI design support:
 
