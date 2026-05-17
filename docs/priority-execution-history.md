@@ -7,6 +7,14 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-17
 
+- Add lightweight load/concurrency checks for token issuance.
+  - Specs: `specs/contracts/authlib-adapter.md`,
+    `specs/flows/token-lifecycle.md`
+  - Outcome: `test_integration` now includes a PostgreSQL/Testcontainers smoke
+    that applies migrations, starts SatOIDC against PostgreSQL, seeds a public
+    PKCE client with unique authorization codes, and exchanges them
+    concurrently through `/oauth/token`.
+
 - Validate SQLite and PostgreSQL support matrix.
   - Specs: `specs/contracts/database.md`,
     `specs/contracts/runtime-config.md`, `specs/flows/deployment.md`

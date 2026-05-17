@@ -4,7 +4,7 @@ Use this index to track active and historical specs.
 
 | Spec | Status | Area | Last Updated |
 | --- | --- | --- | --- |
-| [Authlib FastAPI Adapter](contracts/authlib-adapter.md) | draft | OAuth/OIDC | 2026-05-13 |
+| [Authlib FastAPI Adapter](contracts/authlib-adapter.md) | draft | OAuth/OIDC | 2026-05-17 |
 | [Database Contract](contracts/database.md) | draft | Persistence | 2026-05-17 |
 | [Runtime Configuration Contract](contracts/runtime-config.md) | draft | Runtime/Configuration | 2026-05-17 |
 | [Security And Session Contract](contracts/security-session.md) | draft | Auth/Security | 2026-05-13 |
@@ -35,7 +35,7 @@ Use this index to track active and historical specs.
 | [LNURL-auth Flow](flows/lnurl-auth.md) | draft | LNURL/Auth | 2026-05-06 |
 | [Relying-Party Example Flows](flows/relying-party-examples.md) | draft | Examples/OIDC | 2026-05-13 |
 | [Setup Wizard Flow](flows/setup-wizard.md) | draft | Bootstrap/Auth/UI | 2026-05-13 |
-| [OAuth Token Lifecycle Flow](flows/token-lifecycle.md) | draft | OAuth/OIDC | 2026-05-13 |
+| [OAuth Token Lifecycle Flow](flows/token-lifecycle.md) | draft | OAuth/OIDC | 2026-05-17 |
 
 ## Status Values
 
