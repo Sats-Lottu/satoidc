@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from satoidc.auth.security import hash_password, verify_password
 from satoidc.models import LnurlAuthChallenge, User
+from satoidc.services.email_tokens import invalidate_password_reset_tokens
 from satoidc.validators import (
     is_valid_email,
     is_valid_nickname,
@@ -38,7 +39,10 @@ async def update_profile_email(
     if existing_user:
         raise ProfileServiceError("Email is already in use.")
     user.email = value
+    user.email_verified = False
+    user.email_verified_at = None
     session.add(user)
+    await invalidate_password_reset_tokens(session, user)
     await session.commit()
     return user
 

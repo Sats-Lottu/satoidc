@@ -36,6 +36,18 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | `OIDC_TRANSIT_TOKEN` | empty string | Token used to call the Transit API. |
 | `OIDC_TRANSIT_MOUNT` | `transit` | Transit secret-engine mount path. |
 | `OIDC_TRANSIT_KEY_NAME` | `satoidc-id-token` | Transit RSA key name for ID Token signing. |
+| `EMAIL_SENDER_MODE` | `disabled` | Email delivery selector; supported values are `disabled`, `console`, and `smtp`. |
+| `EMAIL_PUBLIC_BASE_URL` | empty string | Optional public base URL used for verification and recovery links; falls back to request base URL or issuer. |
+| `EMAIL_VERIFICATION_TOKEN_TTL_SECONDS` | `86400` | Verification token lifetime. |
+| `EMAIL_RESET_TOKEN_TTL_SECONDS` | `1800` | Password reset token lifetime. |
+| `EMAIL_TOKEN_MIN_REQUEST_INTERVAL_SECONDS` | `60` | Minimum interval before issuing another active token for the same user/email/purpose. |
+| `SMTP_HOST` | empty string | SMTP hostname when `EMAIL_SENDER_MODE=smtp`. |
+| `SMTP_PORT` | `587` | SMTP port. |
+| `SMTP_USERNAME` | empty string | Optional SMTP username. |
+| `SMTP_PASSWORD` | empty string | Optional SMTP password. |
+| `SMTP_USE_TLS` | `true` | Whether to use implicit TLS for SMTP. |
+| `SMTP_START_TLS` | `false` | Whether to use STARTTLS for SMTP. |
+| `SMTP_FROM_EMAIL` | `no-reply@satoidc.local` | Sender address for SatOIDC email messages. |
 | `SESSION_MIDDLEWARE_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Starlette session signing secret. |
 | `SESSION_COOKIE_HTTPS_ONLY` | unset | Optional explicit secure-cookie override; defaults to enabled in production and disabled in development. |
 | `SETUP_GENERATED_SECRETS_PATH` | unset | Optional absolute shell env file path where bootstrap can persist generated-owned secrets before app startup. |

@@ -56,6 +56,7 @@ def test_userinfo_claims_follow_granted_scopes():
 
     assert claims["sub"] == str(user.id)
     assert claims["email"] == "satoshi@example.com"
+    assert claims["email_verified"] is False
     assert claims["name"] == "Satoshi"
     assert claims["lnurl_pubkey"] == "wallet-key"
 

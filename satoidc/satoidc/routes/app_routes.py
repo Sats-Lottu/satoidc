@@ -8,11 +8,13 @@ from .login import router as login_router
 from .oauth2 import admin_oidc_keys_router, well_known_router
 from .oauth2 import router as oauth_router
 from .profile import router as profile_router
+from .recovery import router as recovery_router
 from .register import router as register_router
 
 routers = [
     home_router,
     register_router,
+    recovery_router,
     login_router,
     dashboard_router,
     forbidden_router,

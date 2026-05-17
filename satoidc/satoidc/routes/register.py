@@ -33,6 +33,8 @@ from satoidc.routes.ui_components import (
     responsive_grid,
 )
 from satoidc.schemas.register import RegisterForm
+from satoidc.services.email_delivery import EmailDeliveryError
+from satoidc.services.email_tokens import request_email_verification
 from satoidc.settings import ENV
 from satoidc.utils import safe_redirect
 from satoidc.validators import (
@@ -103,6 +105,16 @@ async def register_post(
     await session.commit()
     await session.refresh(user)
     request.session["user_id"] = str(user.id)
+    try:
+        await request_email_verification(
+            session,
+            user,
+            request_base_url=str(request.base_url),
+            request_ip=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        )
+    except EmailDeliveryError:
+        return register_redirect("email_delivery", redirect_to)
     return RedirectResponse(redirect_to, status_code=303)
 
 
@@ -232,6 +244,11 @@ async def register_page(  # noqa: PLR0915
                         ui.label("Terms acceptance is required.").classes(
                             "text-sm text-red-600 dark:text-red-400"
                         )
+                    case "email_delivery":
+                        ui.label(
+                            "Account created, but verification email could "
+                            "not be sent."
+                        ).classes("text-sm text-red-600 dark:text-red-400")
                     case _:
                         ui.label("Unable to create account.").classes(
                             "text-sm text-red-600 dark:text-red-400"

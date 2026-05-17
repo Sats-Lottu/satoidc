@@ -7,6 +7,14 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-17
 
+- Implement email verification and account recovery.
+  - Spec: `specs/features/email-verification/spec.md`
+  - Outcome: users now have verified-email state, hashed single-use email
+    verification and password reset tokens, profile resend support,
+    enumeration-resistant recovery requests, reset-password flow, SMTP/console
+    delivery abstraction, Mailpit/Testcontainers SMTP coverage, and
+    `email_verified` in UserInfo for the `email` scope.
+
 - Extract persistence-heavy route actions into services.
   - Spec: `specs/features/route-service-extraction/spec.md`
   - Outcome: profile account, password, email, wallet-link, and wallet-unlink

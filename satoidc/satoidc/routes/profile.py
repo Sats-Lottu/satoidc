@@ -35,6 +35,11 @@ from satoidc.routes.ui_components import (
     page_shell,
     responsive_grid,
 )
+from satoidc.services.email_delivery import EmailDeliveryError
+from satoidc.services.email_tokens import (
+    EmailTokenError,
+    request_email_verification,
+)
 from satoidc.services.profile import (
     ProfileServiceError,
     create_wallet_link_challenge,
@@ -106,6 +111,7 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
     )
     wallet_state = "Linked" if user.lnurl_pubkey else "Not linked"
     password_state = "Configured" if user.password_hash else "Not configured"
+    email_state = "Verified" if user.email_verified else "Unverified"
     developer_state = (
         "Enabled" if has_developer_access(permissions) else "Not enabled"
     )
@@ -161,7 +167,24 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                 except ProfileServiceError as error:
                     ui.notify(str(error), type="negative")
                     return
-                ui.notify("Email updated.", type="positive")
+                try:
+                    await request_email_verification(
+                        session,
+                        user,
+                        request_base_url=str(request.base_url),
+                        request_ip=(
+                            request.client.host if request.client else None
+                        ),
+                        user_agent=request.headers.get("user-agent"),
+                    )
+                except (EmailDeliveryError, EmailTokenError):
+                    ui.notify(
+                        "Email updated, but verification could not be sent.",
+                        type="warning",
+                    )
+                    refresh_profile()
+                    return
+                ui.notify("Email updated. Verification sent.", type="positive")
                 refresh_profile()
 
             with ui.row().classes("justify-end gap-3 w-full"):
@@ -380,6 +403,23 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                 )
         dialog.open()
 
+    async def resend_verification():
+        try:
+            await request_email_verification(
+                session,
+                user,
+                request_base_url=str(request.base_url),
+                request_ip=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+            )
+        except EmailTokenError as error:
+            ui.notify(str(error), type="negative")
+            return
+        except EmailDeliveryError:
+            ui.notify("Verification email could not be sent.", type="negative")
+            return
+        ui.notify("Verification email requested.", type="positive")
+
     with page_shell("max-w-5xl"):
         with card("gap-4"):
             with ui.row().classes(
@@ -444,6 +484,16 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                         "mail",
                         email_dialog,
                     )
+                    if user.email:
+                        ui.label(f"Email status: {email_state}").classes(
+                            MUTED_TEXT
+                        )
+                        if not user.email_verified:
+                            ui.button(
+                                "Resend verification",
+                                icon="mark_email_unread",
+                                on_click=resend_verification,
+                            ).classes(SECONDARY_BUTTON_CLASSES)
 
                 with card("gap-4"):
                     ui.label("Security").classes("text-xl font-semibold")
@@ -499,6 +549,7 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                         _detail_row("Subject ID", str(user.id))
                         _detail_row("Login", user.login or "-")
                         _detail_row("Password", password_state)
+                        _detail_row("Email status", email_state)
                         _detail_row("Wallet", wallet_state)
                         _detail_row("Developer access", developer_state)
                         _detail_row("Created", created_at)
