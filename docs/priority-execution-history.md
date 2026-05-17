@@ -7,6 +7,21 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-17
 
+- Refactor test layer for quality specs.
+  - Specs: `specs/features/quality-testing/spec.md`,
+    `specs/features/quality-testing/pytest-extensions.md`,
+    `specs/features/quality-testing/hypothesis-property.md`,
+    `specs/features/quality-testing/tavern-api-security.md`,
+    `specs/features/quality-testing/playwright-ui.md`,
+    `specs/features/quality-testing/locust-load.md`,
+    `specs/features/quality-testing/testcontainers-integration.md`
+  - Outcome: pytest markers and taskipy commands now cover unit, property, API
+    security, integration, e2e, load, and non-load suites; Hypothesis covers
+    redirect/validator invariants; Python and Tavern API smoke tests cover
+    public metadata and route-boundary contracts; integration coverage uses
+    Testcontainers for PostgreSQL migrations and token issuance; Locust has a
+    bounded public-route smoke scenario.
+
 - Add lightweight load/concurrency checks for token issuance.
   - Specs: `specs/contracts/authlib-adapter.md`,
     `specs/flows/token-lifecycle.md`

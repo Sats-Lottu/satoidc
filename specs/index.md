@@ -18,7 +18,7 @@ Use this index to track active and historical specs.
 | [Automated Testing Baseline](features/quality-testing/spec.md) | draft | Testing/Quality | 2026-05-17 |
 | [Pytest And Test Extensions](features/quality-testing/pytest-extensions.md) | draft | Testing/Quality | 2026-05-17 |
 | [Hypothesis Property Tests](features/quality-testing/hypothesis-property.md) | draft | Testing/Quality | 2026-05-17 |
-| [Tavern API Security Tests](features/quality-testing/tavern-api-security.md) | draft | Testing/Security | 2026-05-17 |
+| [Tavern API Security Tests](features/quality-testing/tavern-api-security.md) | implemented | Testing/Security | 2026-05-17 |
 | [Playwright UI Tests](features/quality-testing/playwright-ui.md) | draft | Testing/UI | 2026-05-17 |
 | [Locust Load Tests](features/quality-testing/locust-load.md) | draft | Testing/Performance | 2026-05-17 |
 | [Testcontainers Integration Tests](features/quality-testing/testcontainers-integration.md) | draft | Testing/Integration | 2026-05-17 |
