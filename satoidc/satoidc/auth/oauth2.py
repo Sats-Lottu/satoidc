@@ -17,9 +17,15 @@ from authlib.oauth2.rfc7662 import (
 )
 from authlib.oidc.core import UserInfo
 from authlib.oidc.core.grants import OpenIDCode as _OpenIDCode
+from authlib.oidc.core.grants.util import create_half_hash
 
 from satoidc.auth.client_management import is_client_disabled
-from satoidc.auth.oidc_keys import audit_token_signed, get_active_jwt_config
+from satoidc.auth.oidc_keys import (
+    audit_token_signed,
+    ensure_active_signing_key,
+    get_active_jwt_config,
+)
+from satoidc.auth.oidc_signing_backends import get_signing_backend
 from satoidc.fastapi_oauth2 import (
     AuthorizationServer,
     ResourceProtector,
@@ -236,14 +242,41 @@ class OpenIDCode(_OpenIDCode):
         return generate_user_info(user, scope)
 
     def encode_id_token(self, token, request):
+        key_row = ensure_active_signing_key()
         jwt_config = get_active_jwt_config()
         context_token = _oidc_jwt_config.set(jwt_config)
         try:
-            id_token = super().encode_id_token(token, request)
+            if jwt_config["key"] is not None:
+                id_token = super().encode_id_token(token, request)
+            else:
+                id_token = self._encode_external_id_token(
+                    token, request, jwt_config, key_row
+                )
             audit_token_signed(jwt_config["kid"])
             return id_token
         finally:
             _oidc_jwt_config.reset(context_token)
+
+    def _encode_external_id_token(
+        self,
+        token,
+        request,
+        jwt_config,
+        key_row,
+    ):
+        header = self.get_encode_header(request.client)
+        claims = self.get_compatible_claims(request)
+        if request.authorization_code:
+            claims.update(
+                self.get_authorization_code_claims(request.authorization_code)
+            )
+        access_token = token.get("access_token")
+        if access_token:
+            at_hash = create_half_hash(access_token, jwt_config["alg"])
+            if at_hash is not None:
+                claims["at_hash"] = at_hash.decode("utf-8")
+        claims.update(self.generate_user_info(request.user, token["scope"]))
+        return get_signing_backend().encode_jwt(header, claims, key_row)
 
 
 authorization = AuthorizationServer()

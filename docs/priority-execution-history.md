@@ -7,6 +7,14 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-17
 
+- Add OpenBao-compatible external signing backend.
+  - Spec: `specs/features/external-signing-backend/spec.md`
+  - Outcome: OIDC signing supports `database` and Vault-compatible `transit`
+    backends, Transit key versions are recorded in signing-key metadata,
+    ID Tokens can be signed through OpenBao without private key material in
+    SatOIDC, and Testcontainers coverage verifies the real OpenBao Transit
+    path.
+
 - Refactor application setup bootstrap.
   - Spec: `specs/features/application-setup/spec.md`
   - Outcome: container startup validates runtime configuration before

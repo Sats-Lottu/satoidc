@@ -2,7 +2,7 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: TBD
 - Created: 2026-05-16
 - Updated: 2026-05-17
@@ -156,14 +156,18 @@ Rationale:
   - JWT `kid` remains stable.
   - JWKS remains standards-compatible.
 
-## Implementation Progress
+## Implementation Notes
 
 - The `database` signer is now selected through an OIDC signing backend
   boundary.
 - `OIDC_SIGNING_BACKEND` validates `database` and `transit` as supported
   choices.
-- `transit` currently fails closed with structured logging during token
-  configuration instead of falling back to database signing.
+- `transit` uses the Vault-compatible Transit HTTP API with RSA 2048 keys,
+  exported public keys, and `pkcs1v15` signatures through `/sign/:key/sha2-256`.
+- Transit key versions are stored in `backend_reference` as
+  `transit:<key-name>:<version>`.
+- Token issuance signs through Transit without loading private key material into
+  SatOIDC, and the integration suite verifies this path against OpenBao.
 
 ## Acceptance Criteria
 

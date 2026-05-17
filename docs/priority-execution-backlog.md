@@ -7,36 +7,7 @@ be removed from this file and summarized in `docs/priority-execution-history.md`
 
 ## Open Items
 
-### 1. Add OpenBao-Compatible External Signing Backend
-
-Status: in progress.
-
-Spec:
-
-- `specs/features/external-signing-backend/spec.md`
-
-Expected outcome:
-
-- Add a signing backend interface and a Vault-compatible Transit backend so
-  production deployments can keep OIDC private signing material outside SatOIDC.
-- Include Testcontainers-backed OpenBao integration coverage for the real
-  Transit path.
-
-Progress:
-
-- `OIDC_SIGNING_BACKEND` now accepts `database` and `transit`.
-- The current encrypted database-backed signer is behind a narrow backend
-  boundary.
-- Selecting `transit` fails closed during signing instead of silently falling
-  back to database signing.
-
-Remaining:
-
-- Implement the Vault-compatible Transit client.
-- Persist Transit key references and versions for generated signing metadata.
-- Add Testcontainers-backed OpenBao coverage for the real Transit path.
-
-### 2. Extract Persistence-Heavy UI Actions Into Services
+### 1. Extract Persistence-Heavy UI Actions Into Services
 
 Status: draft.
 
@@ -49,7 +20,7 @@ Expected outcome:
 - Move account, wallet, client-management, and permission-request mutations out
   of NiceGUI route closures into focused service helpers with unit coverage.
 
-### 3. Implement Email Verification And Account Recovery
+### 2. Implement Email Verification And Account Recovery
 
 Status: draft.
 
