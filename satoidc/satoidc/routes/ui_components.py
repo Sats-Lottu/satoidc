@@ -45,12 +45,9 @@ SECONDARY_BUTTON_CLASSES = (
     "duration-200"
 )
 INPUT_CLASSES = (
-    "w-full rounded-xl bg-white/70 dark:bg-slate-900/70 border "
-    "border-slate-200/80 dark:border-white/10 text-slate-950 "
-    "dark:text-slate-50 placeholder:text-slate-500 "
-    "dark:placeholder:text-slate-500 focus-within:ring-2 "
-    "focus-within:ring-sky-400/35 transition-all duration-200 "
-    "shadow-sm shadow-slate-200/40 dark:shadow-none"
+    "w-full rounded-lg text-slate-950 dark:text-slate-50 "
+    "placeholder:text-slate-500 dark:placeholder:text-slate-500 "
+    "transition-colors duration-200"
 )
 DIALOG_CLASSES = (
     "w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto "

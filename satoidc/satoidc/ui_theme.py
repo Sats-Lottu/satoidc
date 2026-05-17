@@ -21,18 +21,15 @@ def apply_theme() -> None:
         "focus-visible:ring-2 focus-visible:ring-sky-400/40"
     )
     field_classes = (
-        "w-full rounded-xl bg-white/70 dark:bg-slate-900/70 border "
-        "border-slate-200/80 dark:border-white/10 text-slate-950 "
-        "dark:text-slate-50 placeholder:text-slate-500 "
-        "dark:placeholder:text-slate-500 focus-within:ring-2 "
-        "focus-within:ring-sky-400/35 transition-all duration-200 "
-        "shadow-sm shadow-slate-200/40 dark:shadow-none"
+        "w-full rounded-lg text-slate-950 dark:text-slate-50 "
+        "placeholder:text-slate-500 dark:placeholder:text-slate-500 "
+        "transition-colors duration-200"
     )
-    ui.input.default_props("outlined dense color=info")
+    ui.input.default_props("outlined dense color=info hide-bottom-space")
     ui.input.default_classes(field_classes)
-    ui.textarea.default_props("outlined dense color=info")
+    ui.textarea.default_props("outlined dense color=info hide-bottom-space")
     ui.textarea.default_classes(field_classes)
-    ui.select.default_props("outlined dense color=info")
+    ui.select.default_props("outlined dense color=info hide-bottom-space")
     ui.select.default_classes(field_classes)
     ui.card.default_classes(
         "rounded-2xl border border-slate-200/70 dark:border-white/10 "
