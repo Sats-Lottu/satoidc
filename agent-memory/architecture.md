@@ -10,7 +10,7 @@ updated: 2026-05-08
 
 # Architecture Memory
 
-SatOIDC is a FastAPI + NiceGUI OpenID Provider with Authlib as the OAuth2/OIDC engine. The app starts in `satoidc/satoidc/__init__.py`, configures middleware, calls `config_oauth(app)`, includes routers, and attaches NiceGUI through `ui.run_with`.
+SatOIDC is a FastAPI + NiceGUI OpenID Provider with Authlib as the OAuth2/OIDC engine. The app starts in `satoidc/satoidc/main.py`, configures middleware, calls `config_oauth(app)`, includes routers, and attaches NiceGUI through `ui.run_with`.
 
 Core modules:
 

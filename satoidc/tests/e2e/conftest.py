@@ -13,7 +13,7 @@ import uvicorn
 from playwright.async_api import Browser, Page, async_playwright
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from satoidc import app
+from satoidc.main import app
 from satoidc.models.database import get_session
 
 

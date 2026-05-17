@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 import satoidc.auth.oauth2 as oauth2_module
 import satoidc.models.database as database_module
-from satoidc import app
+from satoidc.main import app
 from satoidc.models import User, table_registry
 from satoidc.models.database import get_session
 

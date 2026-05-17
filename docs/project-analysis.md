@@ -53,7 +53,7 @@ The current implementation is a beta-stage identity provider with real protocol 
 
 ## Application Startup
 
-`satoidc/satoidc/__init__.py` creates the FastAPI app, adds `AuthMiddleware`, adds Starlette `SessionMiddleware`, configures Authlib, includes all routers, and mounts NiceGUI with `ui.run_with(app, title="SatOIDC - Identity Service")`.
+`satoidc/satoidc/main.py` creates the FastAPI app, adds `AuthMiddleware`, adds Starlette `SessionMiddleware`, configures Authlib, includes all routers, and mounts NiceGUI with `ui.run_with(app, title="SatOIDC - Identity Service")`.
 
 Important behavior:
 

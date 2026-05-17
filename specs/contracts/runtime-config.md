@@ -73,7 +73,7 @@ Risk warning for internal signing:
 
 ## FastAPI App Configuration
 
-`satoidc/satoidc/__init__.py` creates `FastAPI(title="Identity Service",
+`satoidc/satoidc/main.py` creates `FastAPI(title="Identity Service",
 version="0.1.0")`.
 
 Middleware order:

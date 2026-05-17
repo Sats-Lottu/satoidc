@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Bootstrap/Auth/UI
-Last Updated: 2026-05-16
+Last Updated: 2026-05-17
 
 ## Intent
 
@@ -24,7 +24,42 @@ Startup behavior:
    showing setup/reconfiguration checks. Root access may use login/email plus
    password credentials, or LNURL-auth with a Lightning wallet linked to a root
    account.
-5. The wizard includes the setup route and LNURL callback route.
+5. The wizard includes only setup-specific routes and the LNURL callback
+   route. Unknown setup-wizard endpoints redirect to `/`.
+6. Importing `satoidc` package modules must not mount the main application.
+   The main application is exposed by `satoidc/main.py`.
+
+## Reconfiguration Access
+
+After a root permission exists, the wizard is still safe to run manually:
+
+1. User opens `/` in the setup wizard.
+2. The wizard requires an active root user.
+3. User authenticates with login/email plus password or with LNURL-auth from a
+   Lightning wallet linked to a root account.
+4. The wizard shows service configuration checks and operator guidance.
+5. The wizard does not offer first-root creation while a root permission exists.
+6. Re-running the wizard must not rotate existing secrets or overwrite
+   non-placeholder values unless an explicit future rotation flow is added.
+
+## Runtime Configuration Flow
+
+Configuration values are loaded through Pydantic settings in
+`satoidc/settings.py`. The setup flow classifies each value as one of:
+
+- Platform-managed: public deployment values such as `DOMAIN` and
+  `OAUTH2_JWT_ISS`; the operator must set these in the environment or hosting
+  platform.
+- Generated-owned: internal secrets that SatOIDC may generate in a future
+  approved setup step, then persist in a configured setup-state file or secret
+  store.
+- Database-backed: values whose authoritative state lives in the database, such
+  as root permissions and OIDC signing keys.
+
+If required values are missing at deployment time, the current wizard reports
+the failed bootstrap checks and keeps the operator in the setup flow. A future
+implementation may persist generated-owned values in a setup-state file, but it
+must not mutate platform-managed environment variables directly.
 
 ## Password Root Creation
 
@@ -52,7 +87,7 @@ Startup behavior:
 
 1. `poetry run alembic upgrade head`
 2. `poetry run python -m setup_wizard`
-3. `poetry run fastapi run --host 0.0.0.0 --port 8000 satoidc`
+3. `poetry run fastapi run --host 0.0.0.0 --port 8000 satoidc/main.py`
 
 If the wizard starts, it blocks until root setup completes and the app shuts
 down.
@@ -70,8 +105,8 @@ LNURL-auth wallet for a root account.
 
 ## Current Gaps
 
-- Setup is limited to root-user creation and does not yet cover all runtime
-  values needed to start the main application safely.
+- Setup reports runtime checks but does not yet persist generated-owned
+  configuration values.
 - Missing or placeholder production secrets are rejected by runtime settings,
   but there is no unified bootstrap flow to generate safe owned secrets or
   guide operators through platform-managed values.

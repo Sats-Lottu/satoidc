@@ -28,7 +28,7 @@ flowchart LR
 
 ### FastAPI Application
 
-Created in `satoidc/satoidc/__init__.py`.
+Created in `satoidc/satoidc/main.py`.
 
 Responsibilities:
 

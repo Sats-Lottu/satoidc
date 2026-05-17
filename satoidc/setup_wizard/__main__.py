@@ -1,7 +1,3 @@
-import os
-
-os.environ["SATOIDC_SETUP_WIZARD_MODE"] = "1"
-
 import uvicorn
 from fastapi import FastAPI, Request
 from nicegui import ui

@@ -15,7 +15,7 @@ SatOIDC is a Python project for an OpenID Connect provider with Bitcoin/Lightnin
 Important paths:
 
 - `satoidc/pyproject.toml`: Poetry project configuration and taskipy commands.
-- `satoidc/satoidc/__init__.py`: FastAPI app setup and NiceGUI integration.
+- `satoidc/satoidc/main.py`: FastAPI app setup and NiceGUI integration.
 - `satoidc/satoidc/routes/`: browser and API routes.
 - `satoidc/satoidc/auth/`: OAuth2, LNURL, security, and scopes.
 - `satoidc/satoidc/fastapi_oauth2/`: local FastAPI integration layer for Authlib.
