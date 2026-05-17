@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from uuid import UUID
 
 from sqlalchemy import func, inspect, or_, select
@@ -8,6 +10,19 @@ from satoidc.auth.security import verify_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission, User
 from satoidc.models.database import get_session
+
+
+@asynccontextmanager
+async def setup_session() -> AsyncIterator[AsyncSession]:
+    session_iterator = get_session()
+    try:
+        async for session in session_iterator:
+            yield session
+            break
+    finally:
+        close = getattr(session_iterator, "aclose", None)
+        if close is not None:
+            await close()
 
 
 def is_missing_schema_error(exc: OperationalError) -> bool:
@@ -27,7 +42,7 @@ def parse_root_user_id(value) -> UUID | None:
 
 
 async def database_schema_ready() -> bool:
-    async for session in get_session():
+    async with setup_session() as session:
         table_names = await session.run_sync(
             lambda sync_session: inspect(
                 sync_session.get_bind()
@@ -35,11 +50,9 @@ async def database_schema_ready() -> bool:
         )
         return {"users", "permissions"}.issubset(set(table_names))
 
-    return False
-
 
 async def exists_root_user() -> bool:
-    async for session in get_session():
+    async with setup_session() as session:
         try:
             result = await session.scalar(
                 select(Permission).where(
@@ -51,8 +64,6 @@ async def exists_root_user() -> bool:
                 return False
             raise
         return result is not None
-
-    return False
 
 
 async def authenticate_root_user(

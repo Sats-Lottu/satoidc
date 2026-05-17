@@ -43,6 +43,7 @@ from setup_wizard.get_root import (
     exists_root_user,
     has_active_root_permission,
     parse_root_user_id,
+    setup_session,
 )
 
 router = APIRouter()
@@ -124,14 +125,24 @@ def setup_header():
     )
 
 
-async def stored_root_has_access(session: Session, request: Request) -> bool:
+async def stored_root_has_access(
+    session_or_request: Session | Request,
+    request: Request | None = None,
+) -> bool:
+    provided_session = session_or_request if request is not None else None
+    request = request or session_or_request
     user_id = parse_root_user_id(request.session.get(SETUP_ROOT_USER_ID_KEY))
     if user_id is None:
         request.session.pop(SETUP_ROOT_USER_ID_KEY, None)
         return False
 
-    if await has_active_root_permission(session, user_id):
-        return True
+    if provided_session is not None:
+        if await has_active_root_permission(provided_session, user_id):
+            return True
+    else:
+        async with setup_session() as session:
+            if await has_active_root_permission(session, user_id):
+                return True
 
     request.session.pop(SETUP_ROOT_USER_ID_KEY, None)
     return False
@@ -286,7 +297,7 @@ def render_root_login(request: Request):
                         ).classes(PRIMARY_BUTTON_CLASSES)
 
 
-async def render_existing_root_setup(session: Session, request: Request):
+async def render_existing_root_setup(request: Request):
     lnurl_auth_login_root = LNURLAuthQRLoginRoot(
         base_url=str(request.base_url)
     )
@@ -305,13 +316,11 @@ async def render_existing_root_setup(session: Session, request: Request):
             ui.notify("Lightning login failed.", type="negative")
             return
 
-        has_root_permission = False
-        async for db_session in get_session():
+        async with setup_session() as db_session:
             has_root_permission = await has_active_root_permission(
                 db_session,
                 user_id,
             )
-            break
 
         if not has_root_permission:
             ui.notify(
@@ -332,7 +341,7 @@ async def render_existing_root_setup(session: Session, request: Request):
             "outline"
         ).classes(SECONDARY_BUTTON_CLASSES)
 
-    if not await stored_root_has_access(session, request):
+    if not await stored_root_has_access(request):
         render_root_login(request)
         with ui.page_sticky(x_offset=18, y_offset=18):
             ui.button(icon="qr_code", on_click=login_dialog.open).props(
@@ -351,11 +360,10 @@ class LNURLAuthQRRegisterRoot:
 
     async def refresh_qrcode(self):
         challenge = LnurlAuthChallenge(action=self.action)
-        async for session in get_session():
+        async with setup_session() as session:
             session.add(challenge)
             await session.commit()
             await session.refresh(challenge)
-            break
         self.k1 = challenge.k1
         self.qrcode.refresh()
 
@@ -390,11 +398,10 @@ class LNURLAuthQRLoginRoot:
 
     async def refresh_qrcode(self):
         challenge = LnurlAuthChallenge(action=self.action)
-        async for session in get_session():
+        async with setup_session() as session:
             session.add(challenge)
             await session.commit()
             await session.refresh(challenge)
-            break
         self.k1 = challenge.k1
         self.qrcode.refresh()
 
@@ -419,7 +426,7 @@ class LNURLAuthQRLoginRoot:
         ).tooltip("Click to copy")
 
 
-def render_initial_root_setup(session: Session, request: Request):
+def render_initial_root_setup(request: Request):
     lnurl_auth_register_root = LNURLAuthQRRegisterRoot(
         base_url=str(request.base_url)
     )
@@ -436,10 +443,9 @@ def render_initial_root_setup(session: Session, request: Request):
                 user_id=data.get("user_id"),
             )
 
-            async for db_session in get_session():
+            async with setup_session() as db_session:
                 db_session.add(permission)
                 await db_session.commit()
-                break
             finalizing_setup()
 
     with (
@@ -578,10 +584,11 @@ def render_initial_root_setup(session: Session, request: Request):
                         expiration_date=None,
                         user_id=user.id,
                     )
-                    session.add(user)
-                    session.add(permission)
-                    await session.commit()
-                    await session.refresh(user)
+                    async with setup_session() as db_session:
+                        db_session.add(user)
+                        db_session.add(permission)
+                        await db_session.commit()
+                        await db_session.refresh(user)
                     finalizing_setup()
 
                 with ui.row().classes(
@@ -599,7 +606,7 @@ def render_initial_root_setup(session: Session, request: Request):
 
 
 @router.page("/", dark=True)
-async def set_root(session: Session, request: Request):
+async def set_root(request: Request):
     ui.add_head_html(
         '<link href="https://unpkg.com/eva-icons@1.1.3/style/eva-icons.css"'
         ' rel="stylesheet" />',
@@ -611,7 +618,7 @@ async def set_root(session: Session, request: Request):
         return
 
     if await exists_root_user():
-        await render_existing_root_setup(session, request)
+        await render_existing_root_setup(request)
         return
 
-    render_initial_root_setup(session, request)
+    render_initial_root_setup(request)
