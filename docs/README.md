@@ -12,6 +12,7 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
 - [Priority Execution History](priority-execution-history.md): summary of completed backlog items removed from the active queue.
 - [Backlog Priority Plan](backlog-priority-plan.md): branch-level sequencing, grouped work, commit plan, and approval questions for active backlog implementation.
 - [Changes On 2026-05-08](changes-2026-05-08.md): schema package, registration endpoint, test coverage, and related bug fix.
+- [Legacy Analysis Report](archive/legacy-analysis-report.md): archived external analysis whose actionable items were promoted into backlog/specs.
 
 ## Related Indexes
 

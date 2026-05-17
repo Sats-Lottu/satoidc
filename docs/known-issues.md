@@ -1,6 +1,6 @@
 # Known Issues And Technical Debt
 
-Updated: 2026-05-16
+Updated: 2026-05-17
 
 ## High Priority
 
@@ -19,8 +19,6 @@ Updated: 2026-05-16
 ## Lower Priority
 
 1. Keep new Markdown discoverable from `README.md`, `docs/README.md`, `specs/index.md`, or `agent-memory/index.md` to avoid orphan docs.
-2. Remove the legacy `satoidc/satoidc/auth/lnurl_schemas.py` compatibility shim when downstream imports no longer need it.
-3. Normalize or archive `relatorio.md`, which currently contains mojibake and duplicates tracked state.
 
 ## Active Specs And Backlog
 
@@ -33,7 +31,8 @@ Updated: 2026-05-16
 ## Recently Resolved Or Reduced
 
 - Registration now has a dedicated `POST /register` endpoint that validates, creates the user, logs the user in, and sanitizes `redirect_to`.
-- Schemas are centralized in `satoidc/satoidc/schemas/`, with a compatibility re-export for the old LNURL schema path.
+- Schemas are centralized in `satoidc/satoidc/schemas/`; the old LNURL schema
+  compatibility re-export was removed after confirming no imports used it.
 - Default unit/integration coverage reached 100% on 2026-05-08 with browser e2e smoke tests still passing separately.
 - Authlib metadata loading now uses `json.load()` for file handles instead of `json.loads()`.
 - Client creation now has developer/admin permission enforcement, metadata validation, and one-time credential display.
@@ -49,3 +48,5 @@ Updated: 2026-05-16
 - `AuthMiddleware` public route matching now requires exact matches or path
   segment boundaries, preventing lookalike paths such as `/oauth-settings` or
   `/api-admin` from being exposed by prefix accident.
+- The legacy root `relatorio.md` analysis was normalized to UTF-8 and archived
+  under `docs/archive/` after its actionable findings were tracked elsewhere.

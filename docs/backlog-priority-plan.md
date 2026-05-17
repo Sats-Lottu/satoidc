@@ -1,6 +1,6 @@
 # Backlog Priority Plan
 
-Updated: 2026-05-16
+Updated: 2026-05-17
 
 This plan orders the active execution backlog into implementation branches,
 groups related work, and defines an initial commit sequence. It does not
@@ -269,6 +269,8 @@ Proposed commits:
 
 ### 9. Remove LNURL Schema Compatibility Shim
 
+Status: completed.
+
 Backlog item: 8.
 
 Reference:
@@ -293,6 +295,8 @@ Proposed commits:
 2. `refactor(lnurl): Remove schema shim`
 
 ### 10. Normalize Or Archive relatorio.md
+
+Status: completed.
 
 Backlog item: 9.
 

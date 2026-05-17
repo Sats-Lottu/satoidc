@@ -1,4 +1,4 @@
-# Relatório de Análise da Base de Código
+﻿# Relatório de Análise da Base de Código
 
 ## Resumo Executivo
 A base de código do **SatOIDC** apresenta uma solução inovadora que integra fluxos tradicionais de OpenID Connect (OIDC) com autenticação via Bitcoin/Lightning Network (LNURL-auth). O projeto é estruturado utilizando tecnologias modernas (FastAPI, NiceGUI, Authlib, SQLAlchemy).
@@ -126,3 +126,4 @@ Não há vulnerabilidades críticas imediatas identificadas que demandem interru
 
 ## Conclusão
 O projeto SatOIDC demonstra ser uma ferramenta poderosa e cuidadosamente estruturada em um nível de documentação de especificações raramente visto. O uso de NiceGUI agilizou o desenvolvimento do MVP unificando back/front no Python. O caminho principal para evolução exige foco redobrado no desacoplamento da camada de serviços versus interface e no tratamento assíncrono escalável para assegurar robustez e manutenibilidade a longo prazo (production hardening).
+

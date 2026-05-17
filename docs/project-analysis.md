@@ -169,7 +169,8 @@ Token/user routes:
 - `GET /oauth/userinfo`
 - `GET /.well-known/jwks.json`
 
-Schemas are centralized in `satoidc/satoidc/schemas/`; legacy `auth/lnurl_schemas.py` only re-exports LNURL schemas for compatibility.
+Schemas are centralized in `satoidc/satoidc/schemas/`; the legacy
+`auth/lnurl_schemas.py` compatibility re-export has been removed.
 
 Scopes:
 
