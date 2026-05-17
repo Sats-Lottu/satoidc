@@ -6,16 +6,21 @@ import pytest
 from satoidc.auth.client_management import (
     CLIENT_DISABLED_AT,
     CLIENT_SECRET_ROTATED_AT,
+    ClientMetadataValidationError,
     is_client_disabled,
     rotate_client_secret,
     set_client_disabled,
 )
 from satoidc.models import OAuth2Client
-from satoidc.routes.create_client import (
-    ClientMetadataValidationError,
+from satoidc.services.oauth_clients import (
     build_client_metadata,
+    create_oauth_client,
+    delete_oauth_client,
     parse_multiline_values,
+    rotate_oauth_client_secret,
+    toggle_oauth_client_status,
     update_client_metadata,
+    update_oauth_client,
 )
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -243,3 +248,111 @@ def test_rotate_client_secret_rejects_public_client(
         for record in caplog.records
     )
     assert_no_sensitive_log_values("old-secret")
+
+
+async def test_create_oauth_client_persists_confidential_client(db_session):
+    client, secret = await create_oauth_client(
+        db_session,
+        user_id=USER_ID,
+        client_name="Client",
+        client_uri="https://client.example",
+        scope="openid profile",
+        redirect_uri="https://client.example/callback",
+        grant_type="authorization_code",
+        response_type="code",
+        token_endpoint_auth_method="client_secret_basic",
+    )
+
+    stored = await db_session.get(OAuth2Client, client.id)
+    assert stored is not None
+    assert secret
+    assert stored.client_secret == secret
+    assert stored.client_metadata["client_name"] == "Client"
+
+
+async def test_update_oauth_client_generates_secret_for_private_method(
+    db_session,
+):
+    client = OAuth2Client(
+        user_id=USER_ID,
+        client_id="public-client",
+        client_id_issued_at=1,
+        client_secret="",
+    )
+    client.set_client_metadata({"token_endpoint_auth_method": "none"})
+    db_session.add(client)
+    await db_session.commit()
+
+    generated_secret = await update_oauth_client(
+        db_session,
+        client,
+        client_name="Client",
+        client_uri="https://client.example",
+        scope="openid",
+        redirect_uri="https://client.example/callback",
+        grant_type="authorization_code",
+        response_type="code",
+        token_endpoint_auth_method="client_secret_post",
+    )
+
+    assert generated_secret
+    assert client.client_secret == generated_secret
+    assert client.client_metadata["token_endpoint_auth_method"] == (
+        "client_secret_post"
+    )
+
+
+async def test_update_oauth_client_clears_secret_for_public_method(
+    db_session,
+):
+    client = OAuth2Client(
+        user_id=USER_ID,
+        client_id="confidential-client",
+        client_id_issued_at=1,
+        client_secret="old-secret",
+    )
+    client.set_client_metadata(
+        {"token_endpoint_auth_method": "client_secret_basic"}
+    )
+    db_session.add(client)
+    await db_session.commit()
+
+    generated_secret = await update_oauth_client(
+        db_session,
+        client,
+        client_name="Client",
+        client_uri="https://client.example",
+        scope="openid",
+        redirect_uri="https://client.example/callback",
+        grant_type="authorization_code",
+        response_type="code",
+        token_endpoint_auth_method="none",
+    )
+
+    assert generated_secret is None
+    assert not client.client_secret
+    assert client.client_metadata["token_endpoint_auth_method"] == "none"
+
+
+async def test_client_management_services_persist_mutations(db_session):
+    client = OAuth2Client(
+        user_id=USER_ID,
+        client_id="managed-client",
+        client_id_issued_at=1,
+        client_secret="old-secret",
+    )
+    client.set_client_metadata(
+        {"token_endpoint_auth_method": "client_secret_basic"}
+    )
+    db_session.add(client)
+    await db_session.commit()
+
+    secret = await rotate_oauth_client_secret(db_session, client)
+    assert secret != "old-secret"
+    assert client.client_secret == secret
+
+    await toggle_oauth_client_status(db_session, client)
+    assert is_client_disabled(client)
+
+    await delete_oauth_client(db_session, client)
+    assert await db_session.get(OAuth2Client, client.id) is None

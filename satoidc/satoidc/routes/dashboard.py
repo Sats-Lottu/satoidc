@@ -12,8 +12,6 @@ from sqlalchemy.orm import selectinload
 from satoidc.auth.client_management import (
     ClientMetadataValidationError,
     is_client_disabled,
-    rotate_client_secret,
-    set_client_disabled,
 )
 from satoidc.auth.permissions import (
     approve_permission_request,
@@ -26,7 +24,6 @@ from satoidc.auth.security import page_security
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
 from satoidc.models import OAuth2Client, Permission, User
 from satoidc.models.database import get_session
-from satoidc.routes.create_client import update_client_metadata
 from satoidc.routes.ui_components import (
     CONTENT,
     DIALOG_CLASSES,
@@ -42,6 +39,12 @@ from satoidc.routes.ui_components import (
     card,
     empty_state,
     responsive_grid,
+)
+from satoidc.services.oauth_clients import (
+    delete_oauth_client,
+    rotate_oauth_client_secret,
+    toggle_oauth_client_status,
+    update_oauth_client,
 )
 
 router = APIRouter(prefix="/dashboard")
@@ -458,9 +461,9 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
             ).classes(INPUT_CLASSES)
 
             async def save():
-                generated_secret = None
                 try:
-                    next_metadata = update_client_metadata(
+                    generated_secret = await update_oauth_client(
+                        session,
                         client,
                         client_name=client_name.value,
                         client_uri=client_uri.value,
@@ -472,19 +475,10 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
                             token_endpoint_auth_method.value
                         ),
                     )
-                    if (
-                        next_metadata.get("token_endpoint_auth_method")
-                        == "none"
-                    ):
-                        client.client_secret = ""
-                    elif not client.client_secret:
-                        generated_secret = rotate_client_secret(client)
                 except ClientMetadataValidationError as error:
                     for message in error.messages[:3]:
                         ui.notify(message, type="negative")
                     return
-                session.add(client)
-                await session.commit()
                 ui.notify("Client updated.", type="positive")
                 if generated_secret:
                     secret_dialog(generated_secret)
@@ -510,12 +504,10 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
 
             async def rotate():
                 try:
-                    secret = rotate_client_secret(client)
+                    secret = await rotate_oauth_client_secret(session, client)
                 except ClientMetadataValidationError as error:
                     ui.notify(error.messages[0], type="negative")
                     return
-                session.add(client)
-                await session.commit()
                 dialog.close()
                 secret_dialog(secret)
 
@@ -529,9 +521,7 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
         dialog.open()
 
     async def toggle_client(client: OAuth2Client):
-        set_client_disabled(client, disabled=not is_client_disabled(client))
-        session.add(client)
-        await session.commit()
+        await toggle_oauth_client_status(session, client)
         ui.notify("Client status updated.", type="positive")
         ui.navigate.to("/dashboard/developer")
 
@@ -545,8 +535,7 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
             ).classes(MUTED_TEXT)
 
             async def delete():
-                await session.delete(client)
-                await session.commit()
+                await delete_oauth_client(session, client)
                 ui.notify("Client deleted.", type="positive")
                 ui.navigate.to("/dashboard/developer")
 

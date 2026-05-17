@@ -137,6 +137,10 @@ def get_jwks() -> dict[str, list[dict[str, Any]]]:
         .where(OidcSigningKey.status.in_(PUBLISHABLE_KEY_STATUSES))
         .order_by(OidcSigningKey.created_at)
     ).all()
+    keys = sorted(
+        keys,
+        key=lambda key: (key.status != "active", key.created_at),
+    )
     return {"keys": [json.loads(key.public_jwk) for key in keys]}
 
 

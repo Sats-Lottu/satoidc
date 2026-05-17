@@ -7,6 +7,16 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-17
 
+- Extract persistence-heavy route actions into services.
+  - Spec: `specs/features/route-service-extraction/spec.md`
+  - Outcome: profile account, password, email, wallet-link, and wallet-unlink
+    mutations now live in profile service helpers; OAuth client creation,
+    metadata updates, secret rotation, status toggles, and deletion now live in
+    OAuth client services; route modules translate UI values and notifications
+    without owning persistence logic. Unit tests cover the extracted service
+    behavior, and JWKS ordering now keeps the active key first after backend
+    switches.
+
 - Add OpenBao-compatible external signing backend.
   - Spec: `specs/features/external-signing-backend/spec.md`
   - Outcome: OIDC signing supports `database` and Vault-compatible `transit`
