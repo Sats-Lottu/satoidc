@@ -2,6 +2,10 @@
 
 Updated: 2026-05-17
 
+Status: historical. The active priority backlog was completed on 2026-05-17;
+keep this file as the execution-plan record and use
+`docs/priority-execution-backlog.md` for any new open queue.
+
 This plan orders the active execution backlog into implementation branches,
 groups related work, and defines an initial commit sequence. It does not
 authorize implementation by itself.

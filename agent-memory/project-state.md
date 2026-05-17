@@ -53,6 +53,8 @@ Current test structure:
 - `test_integration` also includes a PostgreSQL-backed token issuance
   concurrency smoke that starts SatOIDC locally and exchanges seeded PKCE
   authorization codes through `/oauth/token`.
+- Testcontainers-backed integration coverage also exercises OpenBao Transit
+  signing and Mailpit-backed email delivery behavior.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
 - As of 2026-05-17, `poetry run task test` passes with
   `242 passed, 21 deselected`.
@@ -88,6 +90,13 @@ Recent implementation state:
   single-use `EmailToken` rows, profile resend support, public
   `/verify-email`, `/forgot-password`, and `/reset-password` routes,
   SMTP/console/disabled sender modes, and `email_verified` UserInfo claims.
+- Production outbound HTTP/web requests should use async `httpx`. The project
+  records `httpx` as a direct Poetry dependency after the Transit client
+  refactor.
+- A local-only SQLite database drift was repaired on 2026-05-17 when
+  `satoidc.db` pointed at missing Alembic revision `7b0c2a4d9f31`. See
+  `docs/local-development-troubleshooting.md` before repairing or stamping any
+  other local database.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
 - No open priority execution backlog items remain.
 
