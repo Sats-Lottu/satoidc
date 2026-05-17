@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-16
+- Updated: 2026-05-17
 - Related code:
   - `satoidc/pyproject.toml`
   - `satoidc/tests/conftest.py`
