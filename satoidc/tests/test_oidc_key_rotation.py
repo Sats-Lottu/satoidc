@@ -168,7 +168,8 @@ def test_active_jwt_config_logs_sanitized_decrypt_failure(
         raise RuntimeError("private-jwk-secret")
 
     monkeypatch.setattr(
-        "satoidc.auth.oidc_keys._decrypt_private_jwk", fail_decrypt
+        "satoidc.auth.oidc_signing_backends._decrypt_private_jwk",
+        fail_decrypt,
     )
 
     with pytest.raises(RuntimeError, match="private-jwk-secret"):
@@ -181,6 +182,25 @@ def test_active_jwt_config_logs_sanitized_decrypt_failure(
         for record in caplog.records
     )
     assert_no_sensitive_log_values("private-jwk-secret")
+
+
+def test_transit_backend_fails_closed(monkeypatch, caplog):
+    get_jwks()
+    caplog.set_level(logging.ERROR, logger="satoidc.auth.oidc_keys")
+    monkeypatch.setattr(
+        "satoidc.auth.oidc_signing_backends.ENV.OIDC_SIGNING_BACKEND",
+        "transit",
+    )
+
+    with pytest.raises(RuntimeError, match="Transit backend client"):
+        get_active_jwt_config()
+
+    assert any(
+        record.event_name == "oidc.signing_config_failed"
+        and record.component == "oidc_keys"
+        and record.reason == "RuntimeError"
+        for record in caplog.records
+    )
 
 
 async def test_id_token_uses_active_kid_and_audits_signature(
