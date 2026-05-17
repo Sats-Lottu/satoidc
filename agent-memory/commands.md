@@ -5,11 +5,17 @@ tags:
 type: command
 project: satoidc
 status: active
-updated: 2026-05-15
+updated: 2026-05-17
 ---
 
 # Validated Commands
 
+- `cd satoidc; poetry add httpx`: ran on 2026-05-17 after standardizing outbound HTTP calls on async `httpx`; dependency was already available transitively, but Poetry recorded `httpx` as a direct project dependency and updated `poetry.lock`.
+- `cd satoidc; poetry run task lint`: ran on 2026-05-17 after OpenBao Transit signing, service extraction, email recovery, and async `httpx` client work; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-17 after OpenBao Transit signing, service extraction, email recovery, and async `httpx` client work; passed with `242 passed, 21 deselected`.
+- `cd satoidc; poetry run task test_integration`: ran on 2026-05-17 after container-backed quality-testing updates; passed with `4 passed, 259 deselected`.
+- `cd satoidc; poetry run alembic current`: ran on 2026-05-17 after repairing a local-only SQLite `alembic_version` drift; returned `77c82d7f11f8 (head)`.
+- Local-only Alembic repair for missing revision `7b0c2a4d9f31`: backed up `satoidc/satoidc.db`, verified the schema already matched migrations through `7f362123846e`, updated the local `alembic_version` row to `7f362123846e`, then ran `cd satoidc; poetry run alembic upgrade head`. Do not reuse this repair without inspecting the target schema first.
 - `docker compose --env-file .env.example config`: ran on 2026-05-16 after CI/CD and Compose production environment updates; passed and rendered the expected SatOIDC environment. Local Docker emitted an access warning for `C:\Users\luss1\.docker\config.json`.
 - `cd satoidc; poetry run task lint`: ran on 2026-05-16 after CI/CD workflow updates; passed.
 - `cd satoidc; poetry run task test`: ran on 2026-05-16 after CI/CD workflow updates; passed with `135 passed, 17 deselected` and 100% measured line coverage.

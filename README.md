@@ -31,7 +31,7 @@ The project implements an **OpenID Provider (OP)** with:
 - Password-based login plus LNURL-auth login/registration flows.
 - NiceGUI web interface for onboarding, login, consent, profile and client management.
 
-SatOIDC is currently a **beta implementation**. The codebase already contains the main protocol and UI building blocks, while the active backlog focuses on production hardening, account recovery, test-layer refactoring and operational readiness.
+SatOIDC is currently a **beta implementation**. The codebase contains the main protocol, UI, recovery, signing, and validation building blocks; the remaining work is focused on conformance, production observability, operational polish, and broader end-to-end coverage.
 
 ---
 
@@ -45,9 +45,10 @@ Current screens include:
 - Login with password or Lightning wallet.
 - Account registration with terms acceptance.
 - OAuth2/OIDC consent screen.
-- User profile and wallet status.
-- Developer/admin dashboard foundations.
+- User profile, email verification, password recovery and wallet status.
+- Developer/admin dashboards.
 - OAuth2 client registration.
+- OAuth2 client management, secret rotation and permission request approval.
 
 > Screenshots are not committed yet. The UI can be reviewed locally after running the development server.
 
@@ -62,6 +63,8 @@ flowchart LR
     App["SatOIDC<br/>FastAPI + NiceGUI"]
     Authlib["Authlib<br/>OAuth2/OIDC Engine"]
     DB["Database<br/>SQLite or PostgreSQL"]
+    Transit["OpenBao/Vault Transit<br/>optional signing backend"]
+    Mail["Email Sender<br/>SMTP / console / disabled"]
     Wallet["Lightning Wallet"]
 
     Client --> Browser
@@ -69,6 +72,8 @@ flowchart LR
     App --> Authlib
     Authlib --> DB
     App --> DB
+    App --> Transit
+    App --> Mail
     Browser --> Wallet
     Wallet --> App
 ```
@@ -92,7 +97,7 @@ For a deeper technical map, start from [docs/README.md](docs/README.md), especia
 | Capability                | Status         | Notes                                                                        |
 | ------------------------- | -------------- | ---------------------------------------------------------------------------- |
 | OAuth2 Authorization Code | Implemented    | Main supported flow.                                                         |
-| OpenID Connect ID Token   | Implemented    | Signed with persisted RS256 OIDC signing keys and stable `kid` headers.      |
+| OpenID Connect ID Token   | Implemented    | Signed with database or OpenBao/Vault-compatible Transit RS256 keys and stable `kid` headers. |
 | PKCE                      | Implemented    | Required for the Authorization Code Grant.                                   |
 | Discovery                 | Implemented    | Served at `/.well-known/openid-configuration`.                               |
 | JWKS                      | Implemented    | Publishes active and validating public signing keys with stable `kid` values. |
@@ -118,6 +123,13 @@ For a deeper technical map, start from [docs/README.md](docs/README.md), especia
 | `/.well-known/openid-configuration` | OIDC discovery metadata. |
 | `/.well-known/jwks.json` | Public signing keys. |
 | `/auth/lnurl/callback` | LNURL-auth wallet callback. |
+| `/verify-email` | Email verification token endpoint. |
+| `/forgot-password` | Password recovery request page. |
+| `/reset-password` | Password reset token page. |
+| `/profile` | Signed-in account profile page. |
+| `/dashboard` | Developer dashboard. |
+| `/dashboard/admin` | Admin dashboard. |
+| `/create_client` | OAuth2 client registration page. |
 
 ---
 
@@ -148,6 +160,11 @@ After a root user exists, manual setup wizard access requires root credentials
 before showing service setup checks. You can sign in with root login/email and
 password credentials, or with a Lightning wallet linked to a root account.
 
+If a local SQLite database reports an Alembic revision that is not present in
+`migrations/versions/`, follow
+[Local Development Troubleshooting](docs/local-development-troubleshooting.md)
+before deleting or stamping the database.
+
 ---
 
 ## Configuration
@@ -159,14 +176,21 @@ DATABASE_URL=sqlite+aiosqlite:///satoidc.db
 SYNC_DATABASE_URL=sqlite:///satoidc.db
 OAUTH2_JWT_ISS=http://localhost:8000
 OAUTH2_JWT_ALG=RS256
+OAUTH2_JWT_SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
+OIDC_SIGNING_BACKEND=database
 OAUTH2_TOKEN_EXPIRES_IN=300
 SESSION_MIDDLEWARE_SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
+EMAIL_SENDER_MODE=console
+EMAIL_PUBLIC_BASE_URL=http://localhost:8000
+SMTP_FROM_EMAIL=no-reply@satoidc.local
 ```
 
 For production-like deployments, configure PostgreSQL and strong secrets through the environment.
 When production starts with placeholder generated-owned secrets, bootstrap can
 persist replacement values to `SETUP_GENERATED_SECRETS_PATH`; the Compose stack
 defaults that path to `/app/generated/secrets.env` on a persistent volume.
+For hardened signing, set `OIDC_SIGNING_BACKEND=transit` and configure the
+Vault-compatible Transit endpoint and token through environment variables.
 
 ---
 
@@ -302,9 +326,9 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
 - [x] Make session/cookie settings production-aware, including HTTPS-only cookies.
 - [x] Harden public route boundary matching for lookalike protected paths.
-- [ ] Add OpenBao/Vault-compatible external signing backend.
+- [x] Add OpenBao/Vault-compatible external signing backend.
 - [ ] Add sanitized operational logging for auth, OIDC, LNURL and UI mutation failures.
-- [ ] Validate the SQLite/PostgreSQL support matrix.
+- [x] Validate the SQLite/PostgreSQL support matrix.
 
 ### Product And Developer Experience
 
@@ -313,9 +337,9 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [x] Add client metadata validation for redirect URIs, scopes, grant types and auth methods.
 - [ ] Add screenshots to this README once the UI stabilizes.
 - [x] Normalize text encoding in README/examples/legal docs where mojibake appears.
-- [ ] Implement verified-email account recovery and password reset.
-- [ ] Refactor persistence-heavy NiceGUI actions into service helpers.
-- [ ] Expand the quality-testing baseline with container-backed API and
+- [x] Implement verified-email account recovery and password reset.
+- [x] Refactor persistence-heavy NiceGUI actions into service helpers.
+- [x] Expand the quality-testing baseline with container-backed API and
   PostgreSQL coverage.
 
 ### Future Protocol Work
@@ -332,7 +356,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 
 - Use HTTPS in production.
 - Use strong environment secrets.
-- Persisted signing keys are available; prefer OpenBao/Vault-compatible Transit or another external signing backend before hardened production use.
+- Persisted database signing keys are available for development and small deployments; prefer OpenBao/Vault-compatible Transit for hardened production signing.
 - Treat local SQLite files and NiceGUI storage as development state.
 - Review [docs/known-issues.md](docs/known-issues.md) before production deployment.
 

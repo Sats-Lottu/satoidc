@@ -4,17 +4,17 @@ Updated: 2026-05-17
 
 ## High Priority
 
-1. OpenBao/Vault-compatible Transit remains a future hardening step for OIDC signing keys; the MVP persists private key material encrypted in the database and must warn about the combined database plus runtime-secret compromise risk.
+No high-priority technical debt is currently tracked in this document. New
+security or production-readiness findings should be added here before they are
+split into specs or backlog items.
 
 ## Medium Priority
 
 1. LNURL registration can create `User(nickname=None)` even though `nickname` is non-nullable.
 2. Refresh token revocation has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
 3. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
-4. Persistence-heavy NiceGUI route actions should be extracted into testable service/use-case helpers.
-5. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
-6. `/oauth/token` needs lightweight load/concurrency checks because Authlib SQLAlchemy operations are synchronous behind threadpool helpers.
-7. SQLite and PostgreSQL support should be validated as an explicit matrix so migrations and sync/async database URLs do not drift.
+4. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
+5. `/oauth/token` has a container-backed PostgreSQL concurrency smoke, but still needs a clearer load-testing threshold before production sizing decisions.
 
 ## Lower Priority
 
@@ -50,3 +50,14 @@ Updated: 2026-05-17
   `/api-admin` from being exposed by prefix accident.
 - The legacy root `relatorio.md` analysis was normalized to UTF-8 and archived
   under `docs/archive/` after its actionable findings were tracked elsewhere.
+- OpenBao/Vault-compatible Transit signing is implemented and covered by a
+  Testcontainers OpenBao integration test.
+- Profile and OAuth client NiceGUI persistence actions were extracted into
+  service helpers with focused unit coverage.
+- Email verification and password recovery are implemented with hashed
+  single-use tokens, SMTP/console/disabled sender modes, and Mailpit-backed
+  integration coverage.
+- SQLite and PostgreSQL migration support is covered by the database support
+  matrix and PostgreSQL Testcontainers migration checks.
+- The quality-testing task layer now includes unit, property, API security,
+  integration, load, and aggregate commands.
