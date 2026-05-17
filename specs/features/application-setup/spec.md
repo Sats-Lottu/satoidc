@@ -2,10 +2,10 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: TBD
 - Created: 2026-05-16
-- Updated: 2026-05-16
+- Updated: 2026-05-17
 - Related code:
   - `satoidc/entrypoint.sh`
   - `satoidc/setup_wizard/`
@@ -78,13 +78,16 @@ Out of scope:
 
 ### Fresh Production Deployment
 
-1. Entrypoint runs database readiness checks and migrations.
+1. Entrypoint runs configuration and database connectivity checks.
 2. Setup validates required runtime configuration.
 3. Setup identifies missing or placeholder secrets.
-4. Setup generates values that SatOIDC is allowed to own.
+4. Setup generates values that SatOIDC is allowed to own when
+   `SETUP_GENERATED_SECRETS_PATH` points to an absolute persistence file.
 5. Setup reports operator-required values that must be configured externally.
-6. Setup starts or skips root-user creation depending on existing permissions.
-7. Main FastAPI app starts only after setup is complete.
+6. Entrypoint runs migrations.
+7. Setup starts or skips root-user creation depending on existing permissions.
+8. Setup validates root permission and OIDC signing-key readiness.
+9. Main FastAPI app starts only after setup is complete.
 
 ### Existing Deployment Restart
 
@@ -116,6 +119,7 @@ Out of scope:
   - `OAUTH2_JWT_SECRET_KEY`
   - `SESSION_MIDDLEWARE_SECRET_KEY`
   - `SESSION_COOKIE_HTTPS_ONLY`
+  - `SETUP_GENERATED_SECRETS_PATH`
 - Bootstrap state:
   - root user and root permission existence
   - OIDC signing-key availability
@@ -175,8 +179,6 @@ Out of scope:
 
 - Code:
   - `satoidc/setup_wizard/bootstrap.py`
-  - `satoidc/satoidc/runtime_config.py`
-  - `satoidc/satoidc/settings.py`
   - `satoidc/entrypoint.sh`
 - Tests:
   - `satoidc/tests/test_bootstrap.py`

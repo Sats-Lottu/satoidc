@@ -15,18 +15,22 @@ deployments.
 
 Startup behavior:
 
-1. `exists_root_user()` checks whether any `Permission` row has
+1. Bootstrap validates runtime configuration and database connectivity.
+2. Alembic migrations run.
+3. `exists_root_user()` checks whether any `Permission` row has
    `permission_type == root`.
-2. The wizard starts a NiceGUI app on port 8000.
-3. If no root permission exists, the wizard shows the initial root creation
+4. The wizard starts a NiceGUI app on port 8000.
+5. If no root permission exists, the wizard shows the initial root creation
    flow.
-4. If a root permission exists, the wizard requires root credentials before
+6. If a root permission exists, the wizard requires root credentials before
    showing setup/reconfiguration checks. Root access may use login/email plus
    password credentials, or LNURL-auth with a Lightning wallet linked to a root
    account.
-5. The wizard includes only setup-specific routes and the LNURL callback
+7. The wizard includes only setup-specific routes and the LNURL callback
    route. Unknown setup-wizard endpoints redirect to `/`.
-6. Importing `satoidc` package modules must not mount the main application.
+8. Bootstrap validates database-backed root permission and OIDC signing-key
+   readiness after the wizard exits.
+9. Importing `satoidc` package modules must not mount the main application.
    The main application is exposed by `satoidc/main.py`.
 
 ## Reconfiguration Access
@@ -51,8 +55,8 @@ Configuration values are loaded through Pydantic settings in
   `OAUTH2_JWT_ISS`; the operator must set these in the environment or hosting
   platform.
 - Generated-owned: internal secrets that SatOIDC may generate in a future
-  approved setup step, then persist in a configured setup-state file or secret
-  store.
+  approved setup step, then persist in `SETUP_GENERATED_SECRETS_PATH` when it
+  points to an absolute shell env file path.
 - Database-backed: values whose authoritative state lives in the database, such
   as root permissions and OIDC signing keys.
 
@@ -85,9 +89,12 @@ must not mutate platform-managed environment variables directly.
 
 `satoidc/entrypoint.sh` runs:
 
-1. `poetry run alembic upgrade head`
-2. `poetry run python -m setup_wizard`
-3. `poetry run fastapi run --host 0.0.0.0 --port 8000 satoidc/main.py`
+1. `poetry run python -m setup_wizard.bootstrap`
+2. Source `SETUP_GENERATED_SECRETS_PATH` when bootstrap generated it.
+3. `poetry run alembic upgrade head`
+4. `poetry run python -m setup_wizard`
+5. `poetry run python -m setup_wizard.bootstrap --database-state`
+6. `poetry run fastapi run --host 0.0.0.0 --port 8000 satoidc/main.py`
 
 If the wizard starts, it blocks until root setup completes and the app shuts
 down.
@@ -105,11 +112,6 @@ LNURL-auth wallet for a root account.
 
 ## Current Gaps
 
-- Setup reports runtime checks but does not yet persist generated-owned
-  configuration values.
-- Missing or placeholder production secrets are rejected by runtime settings,
-  but there is no unified bootstrap flow to generate safe owned secrets or
-  guide operators through platform-managed values.
 - The setup wizard uses older visual styling than the main NiceGUI app.
 - The setup wizard creates `nickname=None` when the optional nickname is empty,
   while the model expects a non-null nickname.

@@ -55,9 +55,12 @@ deployments.
 `satoidc/entrypoint.sh`:
 
 1. Validates bootstrap configuration and database connectivity.
-2. Runs Alembic migrations.
-3. Runs setup wizard if a root user is missing.
-4. Starts FastAPI on `0.0.0.0:8000`.
+2. Sources generated secrets from `SETUP_GENERATED_SECRETS_PATH` when the
+   bootstrap created that file.
+3. Runs Alembic migrations.
+4. Runs setup wizard if a root user is missing.
+5. Validates database-backed root permission and OIDC signing-key readiness.
+6. Starts FastAPI on `0.0.0.0:8000`.
 
 ## Compose Stack
 
@@ -87,6 +90,8 @@ SatOIDC environment:
 - `OAUTH2_TOKEN_EXPIRES_IN`: defaults to `300`.
 - `SESSION_MIDDLEWARE_SECRET_KEY`: defaults to a development placeholder.
 - `SESSION_COOKIE_HTTPS_ONLY`: defaults to `false`.
+- `SETUP_GENERATED_SECRETS_PATH`: optional absolute shell env file path used
+  by bootstrap to persist generated-owned secrets before app startup.
 
 Ports:
 
@@ -98,7 +103,6 @@ Startup dependency:
 
 ## Production Gaps
 
-- Session secret default is unsafe for production.
 - Database password defaults are unsafe for production.
 - Production mode requires HTTPS-only session cookies.
 - OIDC signing keys are persisted internally, but hardened production should

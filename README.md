@@ -164,6 +164,9 @@ SESSION_MIDDLEWARE_SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_SECRET
 ```
 
 For production-like deployments, configure PostgreSQL and strong secrets through the environment.
+When production starts with placeholder generated-owned secrets, bootstrap can
+persist replacement values to `SETUP_GENERATED_SECRETS_PATH`; the Compose stack
+defaults that path to `/app/generated/secrets.env` on a persistent volume.
 
 ---
 

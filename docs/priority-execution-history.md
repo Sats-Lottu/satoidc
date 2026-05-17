@@ -7,6 +7,14 @@ This file summarizes completed execution backlog items. Keep active work in
 
 ## Completed On Or Before 2026-05-17
 
+- Refactor application setup bootstrap.
+  - Spec: `specs/features/application-setup/spec.md`
+  - Outcome: container startup validates runtime configuration before
+    migrations, can persist generated-owned secrets to an approved
+    `SETUP_GENERATED_SECRETS_PATH` without logging values, reloads those
+    generated secrets before importing the app, and validates database-backed
+    root permission plus OIDC signing-key readiness before starting SatOIDC.
+
 - Refactor test layer for quality specs.
   - Specs: `specs/features/quality-testing/spec.md`,
     `specs/features/quality-testing/pytest-extensions.md`,

@@ -7,37 +7,7 @@ be removed from this file and summarized in `docs/priority-execution-history.md`
 
 ## Open Items
 
-### 1. Refactor Application Setup Bootstrap
-
-Status: in progress.
-
-Spec:
-
-- `specs/features/application-setup/spec.md`
-
-Expected outcome:
-
-- Refactor setup so fresh deployments validate or generate every required
-  runtime value before the main app starts, including safe secret/token
-  generation, root-user bootstrap, database readiness, OIDC signing readiness,
-  and actionable messages for values that must remain managed by Coolify or the
-  process environment.
-
-Progress:
-
-- Bootstrap configuration validation now runs before migrations in the
-  container entrypoint.
-- Bootstrap now checks database connectivity before migrations.
-- Production startup reports actionable blocks for placeholder generated
-  secrets, missing/local issuer configuration, insecure session cookies, and
-  async/sync database URL mismatches without printing secret values.
-
-Remaining:
-
-- Add an approved persistence path for generated secrets.
-- Fold root-user and OIDC signing-key readiness into the same bootstrap report.
-
-### 2. Add OpenBao-Compatible External Signing Backend
+### 1. Add OpenBao-Compatible External Signing Backend
 
 Status: draft.
 
@@ -52,7 +22,7 @@ Expected outcome:
 - Include Testcontainers-backed OpenBao integration coverage for the real
   Transit path.
 
-### 3. Extract Persistence-Heavy UI Actions Into Services
+### 2. Extract Persistence-Heavy UI Actions Into Services
 
 Status: draft.
 
@@ -65,7 +35,7 @@ Expected outcome:
 - Move account, wallet, client-management, and permission-request mutations out
   of NiceGUI route closures into focused service helpers with unit coverage.
 
-### 4. Implement Email Verification And Account Recovery
+### 3. Implement Email Verification And Account Recovery
 
 Status: draft.
 
