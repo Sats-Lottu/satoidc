@@ -7,20 +7,7 @@ be removed from this file and summarized in `docs/priority-execution-history.md`
 
 ## Open Items
 
-### 1. Extract Persistence-Heavy UI Actions Into Services
-
-Status: draft.
-
-Spec:
-
-- `specs/features/route-service-extraction/spec.md`
-
-Expected outcome:
-
-- Move account, wallet, client-management, and permission-request mutations out
-  of NiceGUI route closures into focused service helpers with unit coverage.
-
-### 2. Implement Email Verification And Account Recovery
+### 1. Implement Email Verification And Account Recovery
 
 Status: draft.
 

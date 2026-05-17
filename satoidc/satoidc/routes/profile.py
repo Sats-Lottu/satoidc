@@ -18,9 +18,8 @@ from satoidc.auth.permissions import (
     has_developer_access,
     permission_request_events,
 )
-from satoidc.auth.security import hash_password, verify_password
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
-from satoidc.models import LnurlAuthChallenge, Permission, User
+from satoidc.models import Permission, User
 from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
     DIALOG_CLASSES,
@@ -36,12 +35,15 @@ from satoidc.routes.ui_components import (
     page_shell,
     responsive_grid,
 )
-from satoidc.settings import ENV
-from satoidc.validators import (
-    is_valid_email,
-    is_valid_nickname,
-    is_valid_password,
+from satoidc.services.profile import (
+    ProfileServiceError,
+    create_wallet_link_challenge,
+    unlink_profile_wallet,
+    update_profile_email,
+    update_profile_nickname,
+    update_profile_password,
 )
+from satoidc.settings import ENV
 
 router = APIRouter()
 
@@ -124,13 +126,13 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
             )
 
             async def save():
-                value = (nickname.value or "").strip()
-                if not is_valid_nickname(value):
-                    ui.notify("Invalid nickname format.", type="negative")
+                try:
+                    await update_profile_nickname(
+                        session, user, nickname.value
+                    )
+                except ProfileServiceError as error:
+                    ui.notify(str(error), type="negative")
                     return
-                user.nickname = value or "Satoshi"
-                session.add(user)
-                await session.commit()
                 ui.notify("Nickname updated.", type="positive")
                 refresh_profile()
 
@@ -154,22 +156,11 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
             )
 
             async def save():
-                value = (email.value or "").strip().lower()
-                if not is_valid_email(value):
-                    ui.notify("Invalid email address.", type="negative")
+                try:
+                    await update_profile_email(session, user, email.value)
+                except ProfileServiceError as error:
+                    ui.notify(str(error), type="negative")
                     return
-                existing_user = await session.scalar(
-                    select(User).where(
-                        User.email == value,
-                        User.id != user.id,
-                    )
-                )
-                if existing_user:
-                    ui.notify("Email is already in use.", type="negative")
-                    return
-                user.email = value
-                session.add(user)
-                await session.commit()
                 ui.notify("Email updated.", type="positive")
                 refresh_profile()
 
@@ -210,22 +201,21 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
             ).classes(f"text-sm {MUTED_TEXT}")
 
             async def save():
-                if current_password and not verify_password(
-                    current_password.value or "", user.password_hash
-                ):
-                    ui.notify(
-                        "Current password is incorrect.", type="negative"
+                try:
+                    await update_profile_password(
+                        session,
+                        user,
+                        current_password=(
+                            current_password.value
+                            if current_password
+                            else None
+                        ),
+                        new_password=new_password.value,
+                        confirm_password=confirm_password.value,
                     )
+                except ProfileServiceError as error:
+                    ui.notify(str(error), type="negative")
                     return
-                if not is_valid_password(new_password.value or ""):
-                    ui.notify("New password is too weak.", type="negative")
-                    return
-                if new_password.value != confirm_password.value:
-                    ui.notify("Passwords do not match.", type="negative")
-                    return
-                user.password_hash = hash_password(new_password.value)
-                session.add(user)
-                await session.commit()
                 ui.notify("Password updated.", type="positive")
                 refresh_profile()
 
@@ -252,15 +242,11 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
                 ).classes(ERROR_TEXT)
 
             async def unlink():
-                if not user.password_hash:
-                    ui.notify(
-                        "Set a password before unlinking this wallet.",
-                        type="negative",
-                    )
+                try:
+                    await unlink_profile_wallet(session, user)
+                except ProfileServiceError as error:
+                    ui.notify(str(error), type="negative")
                     return
-                user.lnurl_pubkey = None
-                session.add(user)
-                await session.commit()
                 ui.notify("Wallet unlinked.", type="positive")
                 refresh_profile()
 
@@ -279,10 +265,7 @@ async def profile(  # noqa: PLR0912, PLR0915, PLR1702
             self.k1 = None
 
         async def refresh_qrcode(self):
-            challenge = LnurlAuthChallenge(action="link", user_id=user.id)
-            session.add(challenge)
-            await session.commit()
-            await session.refresh(challenge)
+            challenge = await create_wallet_link_challenge(session, user)
             self.k1 = challenge.k1
             self.qrcode.refresh()
 

@@ -55,7 +55,7 @@ Current test structure:
   authorization codes through `/oauth/token`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
 - As of 2026-05-17, `poetry run task test` passes with
-  `208 passed, 19 deselected`.
+  `234 passed, 20 deselected`.
 - As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to
   NiceGUI visual rendering helpers/pages, QR UI classes, and defensive parse
@@ -81,9 +81,11 @@ Recent implementation state:
 - OIDC signing now supports `OIDC_SIGNING_BACKEND=database` and
   `OIDC_SIGNING_BACKEND=transit`; the Transit backend uses a Vault-compatible
   API and is covered by a Testcontainers OpenBao integration test.
+- Profile and OAuth client persistence-heavy UI actions are now extracted into
+  `satoidc.services.profile` and `satoidc.services.oauth_clients`, with focused
+  unit coverage. Route modules keep NiceGUI composition and notification glue.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
-- Open work includes OpenBao/Vault-compatible signing, service extraction, and
-  email verification/account recovery.
+- Open work includes email verification/account recovery.
 
 UI design support:
 

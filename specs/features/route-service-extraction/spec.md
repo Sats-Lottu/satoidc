@@ -2,10 +2,10 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: TBD
 - Created: 2026-05-16
-- Updated: 2026-05-16
+- Updated: 2026-05-17
 - Related code:
   - `satoidc/satoidc/routes/profile.py`
   - `satoidc/satoidc/routes/dashboard.py`
@@ -88,6 +88,18 @@ before extracting the whole dashboard. Keep service modules close to existing
 domains, for example `satoidc/satoidc/services/profile.py` and
 `satoidc/satoidc/services/oauth_clients.py`, only if that matches the local
 code shape during implementation.
+
+Implemented on 2026-05-17:
+
+- `satoidc/satoidc/services/profile.py` owns profile nickname, email,
+  password, wallet unlink, and wallet-link challenge persistence.
+- `satoidc/satoidc/services/oauth_clients.py` owns OAuth client metadata
+  validation plus client creation, update, secret rotation, status toggle, and
+  deletion persistence.
+- Existing permission request helpers in `satoidc/satoidc/auth/permissions.py`
+  remain the source of truth for developer-access requests and decisions.
+- Focused unit tests cover profile services and OAuth client service
+  persistence behavior.
 
 ## Traceability
 
