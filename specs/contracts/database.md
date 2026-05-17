@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Persistence
-Last Updated: 2026-05-16
+Last Updated: 2026-05-17
 
 ## Intent
 
@@ -34,6 +34,8 @@ SatOIDC must support both SQLite and PostgreSQL.
   pointing at the same PostgreSQL database.
 - Migrations must remain compatible with both SQLite and PostgreSQL unless a
   spec explicitly narrows the support matrix.
+- The current matrix is documented in
+  `docs/database-support-matrix.md`.
 
 ## Tables
 

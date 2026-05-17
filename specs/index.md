@@ -5,8 +5,8 @@ Use this index to track active and historical specs.
 | Spec | Status | Area | Last Updated |
 | --- | --- | --- | --- |
 | [Authlib FastAPI Adapter](contracts/authlib-adapter.md) | draft | OAuth/OIDC | 2026-05-13 |
-| [Database Contract](contracts/database.md) | draft | Persistence | 2026-05-16 |
-| [Runtime Configuration Contract](contracts/runtime-config.md) | draft | Runtime/Configuration | 2026-05-16 |
+| [Database Contract](contracts/database.md) | draft | Persistence | 2026-05-17 |
+| [Runtime Configuration Contract](contracts/runtime-config.md) | draft | Runtime/Configuration | 2026-05-17 |
 | [Security And Session Contract](contracts/security-session.md) | draft | Auth/Security | 2026-05-13 |
 | [Permission Requests](features/permission-requests/spec.md) | implemented | Auth/UI/Admin | 2026-05-13 |
 | [Email Verification And Account Recovery](features/email-verification/spec.md) | draft | Auth/Security | 2026-05-16 |
@@ -26,7 +26,7 @@ Use this index to track active and historical specs.
 | [OIDC Contract](contracts/oidc.md) | draft | OAuth/OIDC | 2026-05-06 |
 | [Authorization Code Flow](flows/authorization-code.md) | implemented | OAuth/OIDC | 2026-05-15 |
 | [OAuth Client Registration Flow](flows/client-registration.md) | implemented | OAuth/UI | 2026-05-15 |
-| [Deployment Flow](flows/deployment.md) | draft | Operations | 2026-05-16 |
+| [Deployment Flow](flows/deployment.md) | draft | Operations | 2026-05-17 |
 | [Login Flow](flows/login.md) | draft | Auth/UI | 2026-05-06 |
 | [Registration Flow](flows/registration.md) | draft | Auth/UI | 2026-05-08 |
 | [Page Security Flow](flows/page-security.md) | draft | Auth/UI | 2026-05-08 |
