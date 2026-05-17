@@ -39,6 +39,19 @@ class Settings(BaseSettings):
     OIDC_TRANSIT_MOUNT: str = "transit"
     OIDC_TRANSIT_KEY_NAME: str = "satoidc-id-token"
 
+    EMAIL_SENDER_MODE: str = "disabled"
+    EMAIL_PUBLIC_BASE_URL: str = ""
+    EMAIL_VERIFICATION_TOKEN_TTL_SECONDS: int = 86400
+    EMAIL_RESET_TOKEN_TTL_SECONDS: int = 1800
+    EMAIL_TOKEN_MIN_REQUEST_INTERVAL_SECONDS: int = 60
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
+    SMTP_START_TLS: bool = False
+    SMTP_FROM_EMAIL: str = "no-reply@satoidc.local"
+
     SESSION_MIDDLEWARE_SECRET_KEY: str = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
     SESSION_COOKIE_HTTPS_ONLY: bool | None = None
 
@@ -57,6 +70,10 @@ class Settings(BaseSettings):
         if self.OIDC_SIGNING_BACKEND not in {"database", "transit"}:
             raise ValueError(
                 "OIDC_SIGNING_BACKEND must be either 'database' or 'transit'"
+            )
+        if self.EMAIL_SENDER_MODE not in {"disabled", "console", "smtp"}:
+            raise ValueError(
+                "EMAIL_SENDER_MODE must be 'disabled', 'console', or 'smtp'"
             )
 
         if not self.is_production:

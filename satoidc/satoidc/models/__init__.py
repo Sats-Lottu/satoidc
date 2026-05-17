@@ -45,6 +45,10 @@ class User:
     password_hash: Mapped[Optional[str]] = mapped_column(nullable=True)
     nickname: Mapped[str] = mapped_column(default="Satoshi")
     is_active: Mapped[bool] = mapped_column(default=True)
+    email_verified: Mapped[bool] = mapped_column(default=False, index=True)
+    email_verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
     )
@@ -88,6 +92,48 @@ class User:
     def get_user_id(self):
         """Fetch user identifier"""
         return self.id
+
+
+@table_registry.mapped_as_dataclass
+class EmailToken:
+    __tablename__ = "email_tokens"
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    email: Mapped[str] = mapped_column(index=True)
+    purpose: Mapped[str] = mapped_column(index=True)
+    token_hash: Mapped[str] = mapped_column(unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), index=True
+    )
+    request_ip_hash: Mapped[Optional[str]] = mapped_column(
+        nullable=True, default=None
+    )
+    user_agent_hash: Mapped[Optional[str]] = mapped_column(
+        nullable=True, default=None
+    )
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    consumed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), init=False, server_default=func.now()
+    )
+
+    user: Mapped["User"] = relationship("User", init=False)
+
+    __table_args__ = (
+        Index(
+            "ix_email_tokens_user_purpose_expiry",
+            "user_id",
+            "purpose",
+            "expires_at",
+        ),
+        Index(
+            "ix_email_tokens_purpose_consumed",
+            "purpose",
+            "consumed_at",
+        ),
+    )
 
 
 @table_registry.mapped_as_dataclass

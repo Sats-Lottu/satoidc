@@ -19,6 +19,9 @@ PUBLIC_EXACT = {
     "/register",
     "/login",
     "/logout",
+    "/forgot-password",
+    "/reset-password",
+    "/verify-email",
     "/health",
     "/forbidden",  # página de acesso negado
     "/",

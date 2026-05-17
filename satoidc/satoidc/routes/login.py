@@ -221,6 +221,10 @@ async def login_page(
                         ui.label(
                             "Invalid login flow. Please try again."
                         ).classes(f"{ERROR_TEXT} mb-2")
+                    case "email_verification":
+                        ui.label(
+                            "Invalid or expired verification link."
+                        ).classes(f"{ERROR_TEXT} mb-2")
                     case _:
                         ui.label("Unknown error.").classes(
                             f"{ERROR_TEXT} mb-2"
@@ -263,6 +267,9 @@ async def login_page(
                 with ui.row().classes("gap-2 mt-2 justify-center"):
                     ui.label("Don't have an account?").classes(MUTED_TEXT)
                     ui.link("Register", "/register").classes(LINK_CLASSES)
+                    ui.link("Forgot password?", "/forgot-password").classes(
+                        LINK_CLASSES
+                    )
     with ui.page_sticky(x_offset=18, y_offset=18):
         ui.button(icon="qr_code", on_click=dialog.open).props(
             'fab aria-label="Open LNURL login QR code"'

@@ -55,7 +55,7 @@ Current test structure:
   authorization codes through `/oauth/token`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
 - As of 2026-05-17, `poetry run task test` passes with
-  `234 passed, 20 deselected`.
+  `242 passed, 21 deselected`.
 - As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to
   NiceGUI visual rendering helpers/pages, QR UI classes, and defensive parse
@@ -84,8 +84,12 @@ Recent implementation state:
 - Profile and OAuth client persistence-heavy UI actions are now extracted into
   `satoidc.services.profile` and `satoidc.services.oauth_clients`, with focused
   unit coverage. Route modules keep NiceGUI composition and notification glue.
+- Email verification and password recovery are implemented with hashed
+  single-use `EmailToken` rows, profile resend support, public
+  `/verify-email`, `/forgot-password`, and `/reset-password` routes,
+  SMTP/console/disabled sender modes, and `email_verified` UserInfo claims.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
-- Open work includes email verification/account recovery.
+- No open priority execution backlog items remain.
 
 UI design support:
 

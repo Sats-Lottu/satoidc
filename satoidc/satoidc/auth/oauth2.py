@@ -67,6 +67,9 @@ def generate_user_info(user, scope):
     user_info = UserInfo(sub=str(user.id))
     if "email" in scope:
         user_info["email"] = user.email
+        user_info["email_verified"] = bool(
+            getattr(user, "email_verified", False)
+        )
     if "profile" in scope:
         user_info["name"] = user.nickname
         user_info["lnurl_pubkey"] = user.lnurl_pubkey

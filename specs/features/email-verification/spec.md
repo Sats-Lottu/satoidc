@@ -2,10 +2,10 @@
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-16
+- Updated: 2026-05-17
 - Related code:
   - `satoidc/satoidc/models/`
   - `satoidc/satoidc/routes/login.py`
@@ -346,3 +346,22 @@ Reset password page:
   SMTP only, or a pluggable provider interface from the start?
 - Should email verification be required before `email` is emitted in OIDC
   UserInfo, or should clients receive both `email` and `email_verified = false`?
+
+## Implementation Notes
+
+Implemented on 2026-05-17:
+
+- `User` stores `email_verified` and `email_verified_at`.
+- `EmailToken` stores hashed single-use verification and reset tokens with
+  purpose, expiry, consumed state, request IP hash, and user-agent hash.
+- Registration creates unverified users and issues verification tokens.
+- Profile email changes reset verification state and invalidate active reset
+  tokens; users can request another verification message from profile.
+- `/verify-email`, `/forgot-password`, and `/reset-password` implement token
+  consumption, enumeration-resistant recovery requests, and password reset or
+  initial password setup for verified-email accounts.
+- Email delivery supports `disabled`, `console`, and `smtp` modes, with
+  Testcontainers Mailpit coverage for SMTP message capture.
+- OIDC UserInfo includes `email_verified` when the `email` scope is granted.
+- Existing sessions are not revoked on password reset in this MVP; future
+  session invalidation remains a hardening follow-up.
