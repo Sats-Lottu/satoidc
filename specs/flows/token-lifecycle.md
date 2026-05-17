@@ -2,7 +2,7 @@
 
 Status: draft
 Area: OAuth/OIDC
-Last Updated: 2026-05-15
+Last Updated: 2026-05-17
 
 ## Intent
 
@@ -114,3 +114,6 @@ external signing backend.
 - Given a public PKCE or confidential `client_secret_post` browser flow
   completes, then the authorization code is exchanged for tokens and UserInfo
   succeeds with the issued access token.
+- Given the integration load smoke runs with Docker available, then concurrent
+  PostgreSQL-backed authorization-code token exchanges complete without token
+  endpoint errors.

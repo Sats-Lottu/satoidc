@@ -65,21 +65,7 @@ Expected outcome:
 - Move account, wallet, client-management, and permission-request mutations out
   of NiceGUI route closures into focused service helpers with unit coverage.
 
-### 4. Add Lightweight Load/Concurrency Checks For Token Issuance
-
-Status: backlog.
-
-Specs:
-
-- `specs/contracts/authlib-adapter.md`
-- `specs/flows/token-lifecycle.md`
-
-Expected outcome:
-
-- Add a lightweight smoke benchmark for `/oauth/token` against PostgreSQL to
-  establish a local latency/error/threadpool baseline.
-
-### 5. Implement Email Verification And Account Recovery
+### 4. Implement Email Verification And Account Recovery
 
 Status: draft.
 
@@ -94,7 +80,7 @@ Expected outcome:
 - Include Testcontainers-backed email-server integration coverage for SMTP
   delivery and captured verification/recovery messages.
 
-### 6. Refactor Test Layer For Quality Specs
+### 5. Refactor Test Layer For Quality Specs
 
 Status: in progress.
 
@@ -125,5 +111,3 @@ Progress:
 Remaining:
 
 - Add Tavern YAML coverage for API security contracts.
-- Extend load smoke coverage to seeded token issuance once PostgreSQL setup
-  helpers exist.

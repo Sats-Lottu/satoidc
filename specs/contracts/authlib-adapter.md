@@ -2,7 +2,7 @@
 
 Status: draft
 Area: OAuth/OIDC
-Last Updated: 2026-05-13
+Last Updated: 2026-05-17
 
 ## Intent
 
@@ -77,3 +77,6 @@ Current wrappers do this in `finally` blocks for:
   HTTP responses.
 - Given OAuth route threadpool work completes, then the sync scoped session is
   removed.
+- Given concurrent token endpoint requests run against PostgreSQL, then the
+  Authlib threadpool path issues tokens without sharing one process-global
+  SQLAlchemy session.

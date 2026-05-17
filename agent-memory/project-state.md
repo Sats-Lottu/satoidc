@@ -50,9 +50,12 @@ Current test structure:
 - `test_integration` includes Testcontainers-backed PostgreSQL 16 coverage that
   applies Alembic migrations to `head` and verifies sync/async access to the
   same migrated database.
+- `test_integration` also includes a PostgreSQL-backed token issuance
+  concurrency smoke that starts SatOIDC locally and exchanges seeded PKCE
+  authorization codes through `/oauth/token`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
 - As of 2026-05-17, `poetry run task test` passes with
-  `207 passed, 18 deselected`.
+  `207 passed, 19 deselected`.
 - As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to
   NiceGUI visual rendering helpers/pages, QR UI classes, and defensive parse
@@ -73,8 +76,7 @@ Recent implementation state:
 - OAuth client management is integrated in the developer dashboard with edit, delete, disable/enable, identifier copy, and secret rotation actions.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
 - Open work includes OpenBao/Vault-compatible signing, service extraction,
-  token load checks, email verification/account recovery, and deeper
-  quality-testing coverage.
+  email verification/account recovery, and deeper quality-testing coverage.
 
 UI design support:
 
