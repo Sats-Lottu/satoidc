@@ -43,10 +43,14 @@ Current test structure:
 
 - `poetry run task test` runs unit/integration tests with browser e2e tests deselected by default.
 - `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
-- Planned quality-testing commands are specified in `specs/features/quality-testing/` but are not implemented yet: `test_unit`, `test_property`, `test_api_security`, `test_integration`, `test_load`, and `test_all`.
+- Quality-testing commands are available for `test_unit`, `test_property`,
+  `test_api_security`, `test_integration`, `test_load`, `test_load_ui`, and
+  `test_all`. The remaining quality-testing work is deeper Tavern coverage,
+  Testcontainers-backed PostgreSQL migration/startup coverage, and seeded token
+  issuance load smoke coverage.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
 - As of 2026-05-17, `poetry run task test` passes with
-  `200 passed, 17 deselected`.
+  `207 passed, 18 deselected`.
 - As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to
   NiceGUI visual rendering helpers/pages, QR UI classes, and defensive parse
@@ -66,7 +70,9 @@ Recent implementation state:
 - Full OAuth authorization-code browser e2e coverage now exercises login, consent, redirect, token exchange, ID Token, refresh token issuance, and UserInfo for public PKCE and confidential `client_secret_post` clients.
 - OAuth client management is integrated in the developer dashboard with edit, delete, disable/enable, identifier copy, and secret rotation actions.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
-- Open work includes OpenBao/Vault-compatible signing, SQLite/PostgreSQL matrix validation, service extraction, operational observability, token load checks, email verification/account recovery, and test-layer refactoring for the quality-testing specs.
+- Open work includes OpenBao/Vault-compatible signing, SQLite/PostgreSQL matrix
+  validation, service extraction, token load checks, email verification/account
+  recovery, and deeper quality-testing coverage.
 
 UI design support:
 

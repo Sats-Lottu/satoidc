@@ -53,6 +53,14 @@ main_file = "satoidc/main.py"
 markers = [
     "e2e: end-to-end browser tests",
     "setup: setup wizard focused tests",
+    "integration: tests that require Docker, Testcontainers, or external services",
+    "container: Testcontainers-backed integration tests",
+    "property: Hypothesis property-based tests with bounded runtime",
+    "property_slow: slower property tests excluded from the property smoke task",
+    "api_security: API security regression tests",
+    "api_contract: broader API contract tests",
+    "load: load or performance smoke tests",
+    "slow: tests too expensive for the default local suite",
 ]
 filterwarnings = [
     "ignore::authlib.deprecate.AuthlibDeprecationWarning",
@@ -87,7 +95,14 @@ quote-style = "double"
 [tool.taskipy.tasks]
 run = "fastapi dev satoidc/main.py"
 setup_wizard = "python -m setup_wizard"
-test = "pytest -m \"not e2e\""
+test = "pytest -m \"not e2e and not integration and not container and not load and not slow\""
+test_unit = "pytest -m \"not e2e and not integration and not container and not load and not slow\""
+test_property = "pytest -m property"
+test_api_security = "pytest -m api_security tests/api"
+test_integration = "pytest -m \"integration or container\""
+test_load = "locust -f tests/load/locustfile.py --headless --users 5 --spawn-rate 1 --run-time 1m --host http://127.0.0.1:8000"
+test_load_ui = "locust -f tests/load/locustfile.py --host http://127.0.0.1:8000"
+test_all = "pytest -m \"not load and not slow\""
 test_setup = "pytest -m setup tests/setup"
 test_e2e = "pytest -m e2e tests/e2e"
 lint = "ruff check"

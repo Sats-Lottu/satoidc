@@ -242,7 +242,10 @@ cd satoidc
 poetry run task test
 ```
 
-The default test task excludes tests marked `e2e`. Time-sensitive behavior such as authorization-code expiration, refresh-token windows and LNURL challenge expiration is covered with `freezegun`.
+The default test task excludes browser e2e, container-backed, load and slow
+tests. Time-sensitive behavior such as authorization-code expiration,
+refresh-token windows and LNURL challenge expiration is covered with
+`freezegun`.
 
 Browser e2e tests are separate from the default test task:
 
@@ -252,7 +255,7 @@ poetry run task playwright_install
 poetry run task test_e2e
 ```
 
-The quality-testing specs define the next test-layer commands to implement:
+Additional test-layer commands are available for focused verification:
 
 - `poetry run task test_unit`
 - `poetry run task test_property`
@@ -309,7 +312,8 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [x] Normalize text encoding in README/examples/legal docs where mojibake appears.
 - [ ] Implement verified-email account recovery and password reset.
 - [ ] Refactor persistence-heavy NiceGUI actions into service helpers.
-- [ ] Refactor the test layer to match the quality-testing specs.
+- [ ] Expand the quality-testing baseline with container-backed API and
+  PostgreSQL coverage.
 
 ### Future Protocol Work
 

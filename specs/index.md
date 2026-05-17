@@ -15,13 +15,13 @@ Use this index to track active and historical specs.
 | [External OIDC Signing Backend](features/external-signing-backend/spec.md) | draft | OAuth/OIDC Security | 2026-05-16 |
 | [Route Service Extraction](features/route-service-extraction/spec.md) | draft | Auth/UI/Persistence | 2026-05-16 |
 | [Operational Observability Baseline](features/operational-observability/spec.md) | draft | Operations/Security | 2026-05-16 |
-| [Automated Testing Baseline](features/quality-testing/spec.md) | draft | Testing/Quality | 2026-05-16 |
-| [Pytest And Test Extensions](features/quality-testing/pytest-extensions.md) | draft | Testing/Quality | 2026-05-16 |
-| [Hypothesis Property Tests](features/quality-testing/hypothesis-property.md) | draft | Testing/Quality | 2026-05-16 |
-| [Tavern API Security Tests](features/quality-testing/tavern-api-security.md) | draft | Testing/Security | 2026-05-16 |
-| [Playwright UI Tests](features/quality-testing/playwright-ui.md) | draft | Testing/UI | 2026-05-16 |
-| [Locust Load Tests](features/quality-testing/locust-load.md) | draft | Testing/Performance | 2026-05-16 |
-| [Testcontainers Integration Tests](features/quality-testing/testcontainers-integration.md) | draft | Testing/Integration | 2026-05-16 |
+| [Automated Testing Baseline](features/quality-testing/spec.md) | draft | Testing/Quality | 2026-05-17 |
+| [Pytest And Test Extensions](features/quality-testing/pytest-extensions.md) | draft | Testing/Quality | 2026-05-17 |
+| [Hypothesis Property Tests](features/quality-testing/hypothesis-property.md) | draft | Testing/Quality | 2026-05-17 |
+| [Tavern API Security Tests](features/quality-testing/tavern-api-security.md) | draft | Testing/Security | 2026-05-17 |
+| [Playwright UI Tests](features/quality-testing/playwright-ui.md) | draft | Testing/UI | 2026-05-17 |
+| [Locust Load Tests](features/quality-testing/locust-load.md) | draft | Testing/Performance | 2026-05-17 |
+| [Testcontainers Integration Tests](features/quality-testing/testcontainers-integration.md) | draft | Testing/Integration | 2026-05-17 |
 | [OIDC Key Rotation](features/oidc-key-rotation/spec.md) | implemented | OAuth/OIDC Security | 2026-05-16 |
 | [OIDC Contract](contracts/oidc.md) | draft | OAuth/OIDC | 2026-05-06 |
 | [Authorization Code Flow](flows/authorization-code.md) | implemented | OAuth/OIDC | 2026-05-15 |

@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-16
+- Updated: 2026-05-17
 - Related code:
   - `satoidc/pyproject.toml`
   - `satoidc/tests/`
@@ -121,6 +121,16 @@ Optional helper commands:
   scenarios against a selected base URL.
 - Given a new feature affects auth, OIDC, LNURL, persistence, or UI, then at
   least one relevant automated test tier is updated.
+
+## Implementation Progress
+
+- Pytest markers and taskipy commands exist for unit, property, API security,
+  integration, e2e, load, and non-load suites.
+- The first bounded property tests cover redirect safety and validators.
+- API security smoke coverage currently exercises public route lookalike
+  boundaries through Python tests; Tavern YAML coverage remains follow-up work.
+- The first Locust smoke scenario covers public metadata and auth pages against
+  a configured base URL.
 
 ## Traceability
 

@@ -122,7 +122,7 @@ Expected outcome:
 
 ### 7. Refactor Test Layer For Quality Specs
 
-Status: draft.
+Status: in progress.
 
 Specs:
 
@@ -138,3 +138,20 @@ Expected outcome:
 
 - Implement the test markers, task commands, fixtures, dependencies, and test
   directory structure needed by the quality-testing specs.
+
+Progress:
+
+- Added pytest markers and taskipy commands for unit, property, API security,
+  integration, e2e, load, and non-load suites.
+- Added bounded Hypothesis property tests for redirect safety and validators.
+- Added API security smoke coverage for public route lookalikes.
+- Added a selectable integration marker smoke and a bounded Locust public-route
+  smoke scenario.
+
+Remaining:
+
+- Replace the integration marker smoke with Testcontainers-backed PostgreSQL
+  migration/startup coverage.
+- Add Tavern YAML coverage for API security contracts.
+- Extend load smoke coverage to seeded token issuance once PostgreSQL setup
+  helpers exist.
