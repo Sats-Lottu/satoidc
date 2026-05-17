@@ -1,9 +1,9 @@
+import asyncio
 import json
 import time
-import urllib.error
-import urllib.request
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 
+import httpx
 import pytest
 from docker.errors import DockerException
 from testcontainers.core.container import DockerContainer
@@ -20,24 +20,26 @@ pytestmark = [pytest.mark.integration, pytest.mark.container]
 MAILPIT_IMAGE = "axllent/mailpit:v1.27"
 
 
-def _get_json(url: str) -> dict:
-    with urllib.request.urlopen(url, timeout=5) as response:  # noqa: S310
-        return json.loads(response.read())
+async def _get_json(url: str) -> dict:
+    async with httpx.AsyncClient(timeout=5) as client:
+        response = await client.get(url)
+    response.raise_for_status()
+    return response.json()
 
 
-def _wait_for_mailpit(api_base: str) -> None:
+async def _wait_for_mailpit(api_base: str) -> None:
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         try:
-            _get_json(f"{api_base}/api/v1/messages")
+            await _get_json(f"{api_base}/api/v1/messages")
             return
-        except (urllib.error.URLError, TimeoutError):
-            time.sleep(0.2)
+        except (httpx.HTTPError, json.JSONDecodeError):
+            await asyncio.sleep(0.2)
     pytest.fail("Timed out waiting for Mailpit test server")
 
 
 @pytest.fixture
-def mailpit() -> Iterator[tuple[str, int, str]]:
+async def mailpit() -> AsyncIterator[tuple[str, int, str]]:
     try:
         container = DockerContainer(MAILPIT_IMAGE).with_exposed_ports(
             1025, 8025
@@ -50,7 +52,7 @@ def mailpit() -> Iterator[tuple[str, int, str]]:
         smtp_port = int(container.get_exposed_port(1025))
         http_port = int(container.get_exposed_port(8025))
         api_base = f"http://{host}:{http_port}"
-        _wait_for_mailpit(api_base)
+        await _wait_for_mailpit(api_base)
         yield host, smtp_port, api_base
     finally:
         container.stop()
@@ -83,7 +85,7 @@ async def test_smtp_sender_delivers_verification_and_recovery(
         "https://id.example/reset-password?token=reset-token",
     )
 
-    messages = _get_json(f"{api_base}/api/v1/messages")["messages"]
+    messages = (await _get_json(f"{api_base}/api/v1/messages"))["messages"]
     subjects = {message["Subject"] for message in messages}
     recipients = {
         address["Address"]

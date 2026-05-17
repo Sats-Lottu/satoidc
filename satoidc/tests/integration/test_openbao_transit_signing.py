@@ -1,11 +1,10 @@
-import http.client
+import asyncio
 import json
 import time
-import urllib.error
-import urllib.request
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from docker.errors import DockerException
 from joserfc import jwk, jwt
@@ -29,47 +28,42 @@ class Client:
         return "client-1"
 
 
-def _request(
+async def _request(
     method: str,
     url: str,
     token: str,
     payload: dict | None = None,
 ) -> dict:
-    body = None if payload is None else json.dumps(payload).encode()
-    request = urllib.request.Request(
-        url,
-        data=body,
-        method=method,
-        headers={
-            "Content-Type": "application/json",
-            "X-Vault-Token": token,
-        },
-    )
-    with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310
-        raw_response = response.read()
-    if not raw_response:
+    async with httpx.AsyncClient(timeout=5) as client:
+        response = await client.request(
+            method,
+            url,
+            json=payload,
+            headers={"X-Vault-Token": token},
+        )
+    response.raise_for_status()
+    if not response.content:
         return {}
-    return json.loads(raw_response)
+    return response.json()
 
 
-def _wait_for_openbao(addr: str) -> None:
+async def _wait_for_openbao(addr: str) -> None:
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         try:
-            _request("GET", f"{addr}/v1/sys/health", OPENBAO_TOKEN)
+            await _request("GET", f"{addr}/v1/sys/health", OPENBAO_TOKEN)
             return
         except (
-            http.client.RemoteDisconnected,
-            urllib.error.HTTPError,
-            urllib.error.URLError,
+            httpx.HTTPError,
+            json.JSONDecodeError,
             TimeoutError,
         ):
-            time.sleep(0.2)
+            await asyncio.sleep(0.2)
     pytest.fail("Timed out waiting for OpenBao test server")
 
 
 @pytest.fixture
-def openbao_addr() -> Iterator[str]:
+async def openbao_addr() -> AsyncIterator[str]:
     try:
         container = (
             DockerContainer(OPENBAO_IMAGE)
@@ -89,16 +83,16 @@ def openbao_addr() -> Iterator[str]:
                 f"http://{openbao.get_container_host_ip()}:"
                 f"{openbao.get_exposed_port(8200)}"
             )
-            _wait_for_openbao(addr)
+            await _wait_for_openbao(addr)
             try:
-                _request(
+                await _request(
                     "POST",
                     f"{addr}/v1/sys/mounts/transit",
                     OPENBAO_TOKEN,
                     {"type": "transit"},
                 )
-            except urllib.error.HTTPError as exc:
-                if exc.code != MOUNT_EXISTS_STATUS:
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code != MOUNT_EXISTS_STATUS:
                     raise
             yield addr
     except (ContainerStartException, DockerException) as exc:
