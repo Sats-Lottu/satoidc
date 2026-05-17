@@ -31,6 +31,7 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | `OAUTH2_JWT_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Configured but current ID token signing uses generated RSA key material. |
 | `OAUTH2_JWT_ALG` | `RS256` | ID token signing algorithm advertised and used. |
 | `OAUTH2_TOKEN_EXPIRES_IN` | `300` | Authorization-code token expiration value. |
+| `OIDC_SIGNING_BACKEND` | `database` | OIDC signing backend selector; supported values are `database` and `transit`. |
 | `SESSION_MIDDLEWARE_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Starlette session signing secret. |
 | `SESSION_COOKIE_HTTPS_ONLY` | unset | Optional explicit secure-cookie override; defaults to enabled in production and disabled in development. |
 | `SETUP_GENERATED_SECRETS_PATH` | unset | Optional absolute shell env file path where bootstrap can persist generated-owned secrets before app startup. |
@@ -56,8 +57,10 @@ SatOIDC must be usable with or without OpenBao.
 
 - Without OpenBao, SatOIDC uses its internal OIDC key lifecycle and encrypted
   database-backed private JWK storage.
-- With OpenBao, SatOIDC should use a Vault-compatible Transit backend so private
-  signing keys do not need to be stored by SatOIDC.
+- `OIDC_SIGNING_BACKEND=database` preserves the internal encrypted
+  database-backed signer.
+- `OIDC_SIGNING_BACKEND=transit` is reserved for the Vault-compatible Transit
+  backend and currently fails closed until the Transit client is implemented.
 - OpenBao support is a production-hardening capability, not a prerequisite for
   running the app locally.
 

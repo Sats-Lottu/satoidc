@@ -1,15 +1,12 @@
-import base64
-import hashlib
 import json
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from cryptography.fernet import Fernet
-from joserfc import jwk
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from satoidc.auth.oidc_signing_backends import get_signing_backend
 from satoidc.models import OidcSigningKey, OidcSigningKeyAuditEvent
 from satoidc.models import database as database_module
 from satoidc.settings import ENV
@@ -21,21 +18,6 @@ PUBLISHABLE_KEY_STATUSES = {"active", "validating"}
 
 def _now() -> datetime:
     return datetime.now(UTC)
-
-
-def _fernet() -> Fernet:
-    digest = hashlib.sha256(ENV.OAUTH2_JWT_SECRET_KEY.encode()).digest()
-    return Fernet(base64.urlsafe_b64encode(digest))
-
-
-def _encrypt_private_jwk(private_jwk: dict[str, Any]) -> str:
-    payload = json.dumps(private_jwk, sort_keys=True).encode()
-    return _fernet().encrypt(payload).decode()
-
-
-def _decrypt_private_jwk(encrypted_private_jwk: str) -> dict[str, Any]:
-    payload = _fernet().decrypt(encrypted_private_jwk.encode())
-    return json.loads(payload)
 
 
 def _retired_after(rotated_at: datetime) -> datetime:
@@ -59,21 +41,7 @@ def _audit(
 
 
 def _generate_key_row(status: str = "validating") -> OidcSigningKey:
-    key = jwk.generate_key("RSA", 2048, private=True, auto_kid=True)
-    private_jwk = key.as_dict(private=True)
-    public_jwk = key.as_dict(private=False)
-    public_jwk["alg"] = ENV.OAUTH2_JWT_ALG
-    public_jwk["use"] = "sig"
-    kid = public_jwk["kid"]
-    return OidcSigningKey(
-        kid=kid,
-        alg=ENV.OAUTH2_JWT_ALG,
-        kty="RSA",
-        use="sig",
-        status=status,
-        public_jwk=json.dumps(public_jwk, sort_keys=True),
-        private_jwk_encrypted=_encrypt_private_jwk(private_jwk),
-    )
+    return get_signing_backend().create_key_row(status=status)
 
 
 def _session() -> Session:
@@ -111,7 +79,7 @@ def ensure_active_signing_key() -> OidcSigningKey:
 def get_active_jwt_config() -> dict[str, Any]:
     key_row = ensure_active_signing_key()
     try:
-        private_jwk = _decrypt_private_jwk(key_row.private_jwk_encrypted)
+        return get_signing_backend().jwt_config(key_row)
     except Exception as exc:
         log.error(
             "OIDC signing configuration failed",
@@ -124,13 +92,6 @@ def get_active_jwt_config() -> dict[str, Any]:
             },
         )
         raise
-    return {
-        "key": jwk.import_key(private_jwk),
-        "kid": key_row.kid,
-        "alg": key_row.alg,
-        "iss": ENV.OAUTH2_JWT_ISS,
-        "exp": ENV.OAUTH2_TOKEN_EXPIRES_IN,
-    }
 
 
 def audit_token_signed(kid: str) -> None:

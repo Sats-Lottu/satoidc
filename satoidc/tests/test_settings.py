@@ -124,3 +124,11 @@ def test_database_url_validation_accepts_postgresql_pair():
     )
 
     assert settings.SYNC_DATABASE_URL.endswith("/app_db")
+
+
+def test_oidc_signing_backend_must_be_supported():
+    Settings(_env_file=None, OIDC_SIGNING_BACKEND="database")
+    Settings(_env_file=None, OIDC_SIGNING_BACKEND="transit")
+
+    with pytest.raises(ValueError, match="OIDC_SIGNING_BACKEND"):
+        Settings(_env_file=None, OIDC_SIGNING_BACKEND="unsupported")

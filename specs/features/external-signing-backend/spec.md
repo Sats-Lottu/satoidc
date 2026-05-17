@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: TBD
 - Created: 2026-05-16
-- Updated: 2026-05-16
+- Updated: 2026-05-17
 - Related code:
   - `satoidc/satoidc/auth/oidc_keys.py`
   - `satoidc/satoidc/auth/oauth2.py`
@@ -155,6 +155,15 @@ Rationale:
 - OIDC output:
   - JWT `kid` remains stable.
   - JWKS remains standards-compatible.
+
+## Implementation Progress
+
+- The `database` signer is now selected through an OIDC signing backend
+  boundary.
+- `OIDC_SIGNING_BACKEND` validates `database` and `transit` as supported
+  choices.
+- `transit` currently fails closed with structured logging during token
+  configuration instead of falling back to database signing.
 
 ## Acceptance Criteria
 

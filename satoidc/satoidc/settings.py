@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     OAUTH2_TOKEN_EXPIRES_IN: int = 300
     OIDC_JWKS_CACHE_TTL_SECONDS: int = 300
     OIDC_KEY_RETENTION_MARGIN_SECONDS: int = 900
+    OIDC_SIGNING_BACKEND: str = "database"
 
     SESSION_MIDDLEWARE_SECRET_KEY: str = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
     SESSION_COOKIE_HTTPS_ONLY: bool | None = None
@@ -49,6 +50,10 @@ class Settings(BaseSettings):
 
     def model_post_init(self, __context: Any) -> None:
         validate_database_url_pair(self.DATABASE_URL, self.SYNC_DATABASE_URL)
+        if self.OIDC_SIGNING_BACKEND not in {"database", "transit"}:
+            raise ValueError(
+                "OIDC_SIGNING_BACKEND must be either 'database' or 'transit'"
+            )
 
         if not self.is_production:
             return

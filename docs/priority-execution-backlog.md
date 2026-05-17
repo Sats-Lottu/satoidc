@@ -9,7 +9,7 @@ be removed from this file and summarized in `docs/priority-execution-history.md`
 
 ### 1. Add OpenBao-Compatible External Signing Backend
 
-Status: draft.
+Status: in progress.
 
 Spec:
 
@@ -21,6 +21,20 @@ Expected outcome:
   production deployments can keep OIDC private signing material outside SatOIDC.
 - Include Testcontainers-backed OpenBao integration coverage for the real
   Transit path.
+
+Progress:
+
+- `OIDC_SIGNING_BACKEND` now accepts `database` and `transit`.
+- The current encrypted database-backed signer is behind a narrow backend
+  boundary.
+- Selecting `transit` fails closed during signing instead of silently falling
+  back to database signing.
+
+Remaining:
+
+- Implement the Vault-compatible Transit client.
+- Persist Transit key references and versions for generated signing metadata.
+- Add Testcontainers-backed OpenBao coverage for the real Transit path.
 
 ### 2. Extract Persistence-Heavy UI Actions Into Services
 
