@@ -33,6 +33,7 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | `OAUTH2_TOKEN_EXPIRES_IN` | `300` | Authorization-code token expiration value. |
 | `SESSION_MIDDLEWARE_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Starlette session signing secret. |
 | `SESSION_COOKIE_HTTPS_ONLY` | unset | Optional explicit secure-cookie override; defaults to enabled in production and disabled in development. |
+| `SETUP_GENERATED_SECRETS_PATH` | unset | Optional absolute shell env file path where bootstrap can persist generated-owned secrets before app startup. |
 
 ## Database Configuration
 
@@ -93,6 +94,10 @@ Production behavior:
 - Production mode rejects missing or local-development OIDC issuer values.
 - Production mode requires HTTPS-only session cookies.
 - Production mode rejects mismatched async/sync database URLs.
+- If production starts with placeholder generated-owned secrets and
+  `SETUP_GENERATED_SECRETS_PATH` is an absolute path, bootstrap writes an
+  idempotent shell env file and the container entrypoint sources it before
+  importing the application.
 
 ## OAuth App Configuration
 

@@ -74,6 +74,10 @@ Recent implementation state:
 - Authenticated Playwright e2e coverage now covers signed-in home/profile rendering, profile wallet-link QR dialog smoke behavior, developer dashboard empty/populated states, create-client validation/success, and admin approval of permission requests.
 - Full OAuth authorization-code browser e2e coverage now exercises login, consent, redirect, token exchange, ID Token, refresh token issuance, and UserInfo for public PKCE and confidential `client_secret_post` clients.
 - OAuth client management is integrated in the developer dashboard with edit, delete, disable/enable, identifier copy, and secret rotation actions.
+- Application bootstrap now validates runtime configuration before migrations,
+  can persist generated-owned secrets through `SETUP_GENERATED_SECRETS_PATH`,
+  and checks database-backed root permission plus OIDC signing readiness before
+  the main app starts.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
 - Open work includes OpenBao/Vault-compatible signing, service extraction, and
   email verification/account recovery.

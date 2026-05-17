@@ -10,7 +10,7 @@ Use this index to track active and historical specs.
 | [Security And Session Contract](contracts/security-session.md) | draft | Auth/Security | 2026-05-13 |
 | [Permission Requests](features/permission-requests/spec.md) | implemented | Auth/UI/Admin | 2026-05-13 |
 | [Email Verification And Account Recovery](features/email-verification/spec.md) | draft | Auth/Security | 2026-05-16 |
-| [Application Setup Bootstrap](features/application-setup/spec.md) | draft | Bootstrap/Operations | 2026-05-16 |
+| [Application Setup Bootstrap](features/application-setup/spec.md) | implemented | Bootstrap/Operations | 2026-05-17 |
 | [Public Route Boundary Hardening](features/public-route-boundary/spec.md) | implemented | Auth/Security | 2026-05-16 |
 | [External OIDC Signing Backend](features/external-signing-backend/spec.md) | draft | OAuth/OIDC Security | 2026-05-16 |
 | [Route Service Extraction](features/route-service-extraction/spec.md) | draft | Auth/UI/Persistence | 2026-05-16 |

@@ -27,6 +27,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    volumes:
+      - generated-secrets:/app/generated
     environment:
       APP_ENV: ${APP_ENV:-development}
       DOMAIN: ${DOMAIN:-}
@@ -37,6 +39,8 @@ services:
       OAUTH2_TOKEN_EXPIRES_IN: ${OAUTH2_TOKEN_EXPIRES_IN:-300}
       SESSION_MIDDLEWARE_SECRET_KEY: ${SESSION_MIDDLEWARE_SECRET_KEY:-CHANGE_ME_TO_A_LONG_RANDOM_SECRET}
       SESSION_COOKIE_HTTPS_ONLY: ${SESSION_COOKIE_HTTPS_ONLY:-false}
+      SETUP_GENERATED_SECRETS_PATH: ${SETUP_GENERATED_SECRETS_PATH:-/app/generated/secrets.env}
 
 volumes:
   pgdata:
+  generated-secrets:
