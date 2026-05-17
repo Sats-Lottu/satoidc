@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import json
-import urllib.error
-import urllib.parse
-import urllib.request
+import threading
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+import httpx
 from cryptography.fernet import Fernet
 from joserfc import jwk, jwt
 
@@ -120,6 +121,28 @@ def _decode_vault_signature(signature: str) -> bytes:
     return base64.b64decode(encoded_signature)
 
 
+def _run_async_http(coro_factory: Callable[[], Coroutine[Any, Any, Any]]):
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro_factory())
+
+    result: dict[str, Any] = {}
+
+    def runner():
+        try:
+            result["value"] = asyncio.run(coro_factory())
+        except Exception as exc:  # pragma: no cover - re-raised below
+            result["error"] = exc
+
+    thread = threading.Thread(target=runner)
+    thread.start()
+    thread.join()
+    if "error" in result:
+        raise result["error"]
+    return result.get("value")
+
+
 @dataclass(frozen=True)
 class TransitClient:
     addr: str
@@ -129,12 +152,9 @@ class TransitClient:
 
     def _url(self, path: str) -> str:
         mount = self.mount.strip("/")
-        return urllib.parse.urljoin(
-            self.addr.rstrip("/") + "/",
-            f"v1/{mount}/{path.lstrip('/')}",
-        )
+        return f"{self.addr.rstrip('/')}/v1/{mount}/{path.lstrip('/')}"
 
-    def request(
+    async def request_async(
         self,
         method: str,
         path: str,
@@ -145,34 +165,37 @@ class TransitClient:
                 "OIDC Transit signing requires OIDC_TRANSIT_ADDR and "
                 "OIDC_TRANSIT_TOKEN."
             )
-        body = None if payload is None else json.dumps(payload).encode()
-        request = urllib.request.Request(
-            self._url(path),
-            data=body,
-            method=method,
-            headers={
-                "Content-Type": "application/json",
-                "X-Vault-Token": self.token,
-            },
-        )
         try:
-            with urllib.request.urlopen(  # noqa: S310
-                request,
-                timeout=self.timeout_seconds,
-            ) as response:
-                raw_response = response.read()
-        except urllib.error.HTTPError as exc:
-            raw_error = exc.read().decode("utf-8", errors="replace")
+            async with httpx.AsyncClient(
+                timeout=self.timeout_seconds
+            ) as client:
+                response = await client.request(
+                    method,
+                    self._url(path),
+                    json=payload,
+                    headers={"X-Vault-Token": self.token},
+                )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
             raise RuntimeError(
-                f"Transit request failed with HTTP {exc.code}: {raw_error}"
+                "Transit request failed with HTTP "
+                f"{exc.response.status_code}: {exc.response.text}"
             ) from exc
-        except urllib.error.URLError as exc:
-            raise RuntimeError(
-                f"Transit request failed: {exc.reason}"
-            ) from exc
-        if not raw_response:
+        except httpx.HTTPError as exc:
+            raise RuntimeError(f"Transit request failed: {exc}") from exc
+        if not response.content:
             return {}
-        return json.loads(raw_response)
+        return response.json()
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return _run_async_http(
+            lambda: self.request_async(method, path, payload)
+        )
 
     def read_key(self, key_name: str) -> dict[str, Any] | None:
         try:
