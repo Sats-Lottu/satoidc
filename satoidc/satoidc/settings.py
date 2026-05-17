@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     OIDC_JWKS_CACHE_TTL_SECONDS: int = 300
     OIDC_KEY_RETENTION_MARGIN_SECONDS: int = 900
     OIDC_SIGNING_BACKEND: str = "database"
+    OIDC_TRANSIT_ADDR: str = ""
+    OIDC_TRANSIT_TOKEN: str = ""
+    OIDC_TRANSIT_MOUNT: str = "transit"
+    OIDC_TRANSIT_KEY_NAME: str = "satoidc-id-token"
 
     SESSION_MIDDLEWARE_SECRET_KEY: str = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
     SESSION_COOKIE_HTTPS_ONLY: bool | None = None

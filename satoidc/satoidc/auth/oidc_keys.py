@@ -40,21 +40,40 @@ def _audit(
     )
 
 
-def _generate_key_row(status: str = "validating") -> OidcSigningKey:
-    return get_signing_backend().create_key_row(status=status)
+def _generate_key_row(
+    status: str = "validating",
+    *,
+    rotate_backend_key: bool = False,
+) -> OidcSigningKey:
+    return get_signing_backend().create_key_row(
+        status=status,
+        rotate_backend_key=rotate_backend_key,
+    )
 
 
 def _session() -> Session:
     return database_module.db()
 
 
+def _matches_current_backend(key: OidcSigningKey) -> bool:
+    backend_reference = key.backend_reference or "database"
+    backend = get_signing_backend()
+    if backend.backend_reference == "database":
+        return backend_reference == "database"
+    return backend_reference.startswith(f"{backend.backend_reference}:")
+
+
 def create_signing_key(
     *,
     status: str = "validating",
     actor: str = "system",
+    rotate_backend_key: bool = False,
 ) -> OidcSigningKey:
     session = _session()
-    key = _generate_key_row(status=status)
+    key = _generate_key_row(
+        status=status,
+        rotate_backend_key=rotate_backend_key,
+    )
     if status == "active":
         key.activated_at = _now()
     session.add(key)
@@ -68,17 +87,26 @@ def create_signing_key(
 
 def ensure_active_signing_key() -> OidcSigningKey:
     session = _session()
-    active = session.scalar(
+    active_keys = session.scalars(
         select(OidcSigningKey).where(OidcSigningKey.status == "active")
-    )
-    if active:
-        return active
+    ).all()
+    for active in active_keys:
+        if _matches_current_backend(active):
+            return active
+    if active_keys:
+        for active in active_keys:
+            active.status = "validating"
+            active.validating_since = _now()
+            active.retired_after = _retired_after(active.validating_since)
+            _audit(session, "key.demoted_to_validating", active.kid)
+        session.commit()
     return create_signing_key(status="active")
 
 
 def get_active_jwt_config() -> dict[str, Any]:
-    key_row = ensure_active_signing_key()
+    key_row: OidcSigningKey | None = None
     try:
+        key_row = ensure_active_signing_key()
         return get_signing_backend().jwt_config(key_row)
     except Exception as exc:
         log.error(
@@ -88,7 +116,7 @@ def get_active_jwt_config() -> dict[str, Any]:
                 "component": "oidc_keys",
                 "outcome": "failed",
                 "reason": exc.__class__.__name__,
-                "kid": key_row.kid,
+                "kid": key_row.kid if key_row else None,
             },
         )
         raise
@@ -146,7 +174,7 @@ def activate_signing_key(kid: str, *, actor: str = "system") -> OidcSigningKey:
 
 
 def rotate_signing_key(*, actor: str = "system") -> OidcSigningKey:
-    new_key = create_signing_key(actor=actor)
+    new_key = create_signing_key(actor=actor, rotate_backend_key=True)
     return activate_signing_key(new_key.kid, actor=actor)
 
 

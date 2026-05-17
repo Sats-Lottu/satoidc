@@ -78,9 +78,9 @@ Recent implementation state:
   can persist generated-owned secrets through `SETUP_GENERATED_SECRETS_PATH`,
   and checks database-backed root permission plus OIDC signing readiness before
   the main app starts.
-- OIDC signing now has a backend boundary. `OIDC_SIGNING_BACKEND=database`
-  preserves encrypted database-backed signing, while `transit` fails closed
-  until the Vault-compatible backend is implemented.
+- OIDC signing now supports `OIDC_SIGNING_BACKEND=database` and
+  `OIDC_SIGNING_BACKEND=transit`; the Transit backend uses a Vault-compatible
+  API and is covered by a Testcontainers OpenBao integration test.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
 - Open work includes OpenBao/Vault-compatible signing, service extraction, and
   email verification/account recovery.

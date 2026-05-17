@@ -5,6 +5,9 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from joserfc import jwk, jwt
 from sqlalchemy import select
 
 from satoidc.auth.oauth2 import OpenIDCode
@@ -17,6 +20,7 @@ from satoidc.auth.oidc_keys import (
     retire_expired_signing_keys,
     rotate_signing_key,
 )
+from satoidc.auth.oidc_signing_backends import TransitSigningBackend
 from satoidc.models import OidcSigningKey, OidcSigningKeyAuditEvent
 
 
@@ -192,7 +196,7 @@ def test_transit_backend_fails_closed(monkeypatch, caplog):
         "transit",
     )
 
-    with pytest.raises(RuntimeError, match="Transit backend client"):
+    with pytest.raises(RuntimeError, match="OIDC_TRANSIT_ADDR"):
         get_active_jwt_config()
 
     assert any(
@@ -201,6 +205,110 @@ def test_transit_backend_fails_closed(monkeypatch, caplog):
         and record.reason == "RuntimeError"
         for record in caplog.records
     )
+
+
+class FakeTransitClient:
+    def __init__(self):
+        self.addr = "http://transit.example"
+        self.token = "test-token"
+        self.private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        self.version = 1
+
+    def ensure_rsa_key(self, key_name):
+        return {
+            "type": "rsa-2048",
+            "supports_signing": True,
+            "keys": {str(self.version): 1},
+        }
+
+    def rotate_key(self, key_name):
+        self.version += 1
+        return self.ensure_rsa_key(key_name)
+
+    def export_public_key(self, key_name, version):
+        public_key = self.private_key.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        return public_key.decode()
+
+    def sign(self, key_name, version, signing_input):
+        return self.private_key.sign(
+            signing_input,
+            padding.PKCS1v15(),
+            hashes.SHA256(),
+        )
+
+
+def test_transit_backend_signs_jwt_without_private_material():
+    fake_client = FakeTransitClient()
+    backend = TransitSigningBackend(
+        client=fake_client,
+        key_name="satoidc-test",
+    )
+    key_row = backend.create_key_row(status="active")
+
+    token = backend.encode_jwt(
+        {"alg": "RS256", "kid": key_row.kid},
+        {"iss": "issuer", "sub": "user-1"},
+        key_row,
+    )
+    decoded = jwt.decode(
+        token,
+        jwk.import_key(json.loads(key_row.public_jwk)),
+        ["RS256"],
+    )
+
+    assert not key_row.private_jwk_encrypted
+    assert key_row.backend_reference == "transit:satoidc-test:1"
+    assert decoded.header["kid"] == "satoidc-test-v1"
+    assert decoded.claims["sub"] == "user-1"
+
+
+def test_transit_backend_rotation_tracks_key_version():
+    fake_client = FakeTransitClient()
+    backend = TransitSigningBackend(
+        client=fake_client,
+        key_name="satoidc-test",
+    )
+
+    rotated = backend.create_key_row(
+        status="validating",
+        rotate_backend_key=True,
+    )
+
+    assert rotated.kid == "satoidc-test-v2"
+    assert rotated.backend_reference == "transit:satoidc-test:2"
+
+
+async def test_backend_switch_demotes_previous_active_key(
+    monkeypatch, db_session
+):
+    database_key = get_jwks()["keys"][0]
+    fake_client = FakeTransitClient()
+    backend = TransitSigningBackend(
+        client=fake_client,
+        key_name="satoidc-test",
+    )
+    monkeypatch.setattr(
+        "satoidc.auth.oidc_signing_backends.get_signing_backend",
+        lambda: backend,
+    )
+    monkeypatch.setattr(
+        "satoidc.auth.oidc_keys.get_signing_backend",
+        lambda: backend,
+    )
+
+    transit_key = get_jwks()["keys"][0]
+    database_row = await db_session.scalar(
+        select(OidcSigningKey).where(OidcSigningKey.kid == database_key["kid"])
+    )
+
+    assert transit_key["kid"] == "satoidc-test-v1"
+    assert database_row.status == "validating"
 
 
 async def test_id_token_uses_active_kid_and_audits_signature(

@@ -60,10 +60,25 @@ OAUTH2_JWT_SECRET_KEY=change-to-a-long-random-secret
 OAUTH2_TOKEN_EXPIRES_IN=300
 SESSION_MIDDLEWARE_SECRET_KEY=change-to-another-long-random-secret
 SESSION_COOKIE_HTTPS_ONLY=true
+OIDC_SIGNING_BACKEND=database
 ```
 
 Use HTTPS through Coolify's proxy. `OAUTH2_JWT_ISS` must match the public issuer
 URL clients will use.
+
+For hardened deployments with OpenBao or another Vault-compatible Transit
+service, set:
+
+```env
+OIDC_SIGNING_BACKEND=transit
+OIDC_TRANSIT_ADDR=https://openbao.example.com
+OIDC_TRANSIT_TOKEN=change-to-a-scoped-transit-token
+OIDC_TRANSIT_MOUNT=transit
+OIDC_TRANSIT_KEY_NAME=satoidc-id-token
+```
+
+The Transit token must be allowed to create/read/rotate the configured key,
+export public key material, and sign with `pkcs1v15` through the Transit API.
 
 ## Manual Deployment
 
