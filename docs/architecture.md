@@ -1,6 +1,6 @@
 # Architecture
 
-Updated: 2026-05-08
+Updated: 2026-05-17
 
 ## System Context
 
@@ -75,8 +75,6 @@ Current schema modules:
 - `lnurl.py`: LNURL callback query schema.
 - `login.py`: password login form schema.
 - `register.py`: password registration form schema.
-
-The old `auth/lnurl_schemas.py` path remains as a compatibility re-export.
 
 ### LNURL-auth
 

@@ -5,7 +5,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-16
+updated: 2026-05-17
 ---
 
 # Project State
@@ -45,15 +45,19 @@ Current test structure:
 - `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
 - Planned quality-testing commands are specified in `specs/features/quality-testing/` but are not implemented yet: `test_unit`, `test_property`, `test_api_security`, `test_integration`, `test_load`, and `test_all`.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
-- As of 2026-05-15, `poetry run task test` passes with `113 passed, 17 deselected`.
+- As of 2026-05-17, `poetry run task test` passes with
+  `200 passed, 17 deselected`.
 - As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
-- Coverage-related `pragma: no cover` annotations are intentionally limited to NiceGUI visual rendering helpers/pages, QR UI classes, the LNURL schema compatibility shim, and a defensive parse branch. Browser e2e smoke tests cover the visual page rendering surface.
+- Coverage-related `pragma: no cover` annotations are intentionally limited to
+  NiceGUI visual rendering helpers/pages, QR UI classes, and defensive parse
+  branches. Browser e2e smoke tests cover the visual page rendering surface.
 
 Recent implementation state:
 
 - `POST /register` now handles password registration, terms acceptance, validation, duplicate login/email checks, user creation, session login, and sanitized redirects.
 - `/register` remains the NiceGUI page and posts a standard HTML form to `POST /register`.
-- `auth/lnurl_schemas.py` is now compatibility-only; new imports should use `satoidc.schemas.lnurl`.
+- `auth/lnurl_schemas.py` was removed after validating that no imports depend
+  on it; LNURL schemas live in `satoidc.schemas.lnurl`.
 - `fastapi_oauth2/authorization_server.py` uses `json.load()` for metadata files.
 - `page_security` now delegates to testable helpers for permission loading and page authorization; invalid session UUIDs redirect to `/login`, and protected page return values are preserved.
 - OIDC signing keys are persisted in `oidc_signing_keys`, private JWKs are encrypted with a key derived from `OAUTH2_JWT_SECRET_KEY`, JWKS publishes only `active` and `validating` public keys, and ID Tokens include the active `kid`.

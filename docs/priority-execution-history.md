@@ -1,11 +1,18 @@
 # Priority Execution History
 
-Updated: 2026-05-16
+Updated: 2026-05-17
 
 This file summarizes completed execution backlog items. Keep active work in
 `docs/priority-execution-backlog.md`.
 
-## Completed On Or Before 2026-05-16
+## Completed On Or Before 2026-05-17
+
+- Remove LNURL schema compatibility shim and archive legacy report.
+  - Reference: `docs/changes-2026-05-08.md`
+  - Outcome: no code or tests import
+    `satoidc.satoidc.auth.lnurl_schemas`; the compatibility re-export was
+    removed, and the legacy root `relatorio.md` was normalized to UTF-8 and
+    archived as `docs/archive/legacy-analysis-report.md`.
 
 - Add operational observability baseline.
   - Spec: `specs/features/operational-observability/spec.md`

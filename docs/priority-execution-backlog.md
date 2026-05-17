@@ -1,6 +1,6 @@
 # Priority Execution Backlog
 
-Updated: 2026-05-16
+Updated: 2026-05-17
 
 This backlog is a temporary queue for open execution work. Completed items must
 be removed from this file and summarized in `docs/priority-execution-history.md`.
@@ -105,29 +105,7 @@ Expected outcome:
 - Add a lightweight smoke benchmark for `/oauth/token` against PostgreSQL to
   establish a local latency/error/threadpool baseline.
 
-### 6. Remove LNURL Schema Compatibility Shim When Safe
-
-Status: backlog.
-
-Reference:
-
-- `docs/changes-2026-05-08.md`
-
-Expected outcome:
-
-- Confirm no imports depend on `satoidc/satoidc/auth/lnurl_schemas.py`, then
-  remove the compatibility re-export.
-
-### 7. Normalize Or Archive `relatorio.md`
-
-Status: backlog.
-
-Expected outcome:
-
-- Fix the encoding and link it as an analysis artifact, or archive/remove it
-  after actionable tasks are tracked elsewhere.
-
-### 8. Implement Email Verification And Account Recovery
+### 6. Implement Email Verification And Account Recovery
 
 Status: draft.
 
@@ -142,7 +120,7 @@ Expected outcome:
 - Include Testcontainers-backed email-server integration coverage for SMTP
   delivery and captured verification/recovery messages.
 
-### 9. Refactor Test Layer For Quality Specs
+### 7. Refactor Test Layer For Quality Specs
 
 Status: draft.
 
