@@ -217,6 +217,15 @@ The compose stack starts:
 
 The stack reads optional overrides from `.env`; use `.env.example` as the baseline for ports, database credentials and secrets. PostgreSQL has a healthcheck, so the application waits for the database before running migrations.
 
+For self-hosted operations, follow the [operator runbook](docs/operations/runbook.md)
+for backup, restore, upgrade, migration failure handling, health checks and
+incident response. Use [reverse proxy operations](docs/operations/reverse-proxy.md)
+for TLS, forwarded headers and delegated auth rate limiting. Use
+[email operations](docs/operations/email.md) for SMTP/console/disabled delivery
+modes and recovery token troubleshooting, and
+[Transit signing operations](docs/operations/transit.md) for OpenBao/Vault
+Transit setup and signing failure handling.
+
 ## CI/CD
 
 GitHub Actions workflows live in `.github/workflows/`:

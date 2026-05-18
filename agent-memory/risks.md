@@ -6,7 +6,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-16
+updated: 2026-05-18
 ---
 
 # Risks And Pitfalls
@@ -17,11 +17,10 @@ High priority:
 
 Medium priority:
 - LNURL callback intentionally consumes a challenge before signature validation as a replay-defense measure, including invalid signatures. The model field is now named `consumed` to avoid implying successful signature verification.
-- LNURL registration can create a user with nullable identity fields and `nickname=None` despite non-null model expectation.
 - Refresh grant has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
 - Keep an eye on README/examples encoding when editing from non-UTF-8 shell sessions.
 - Prefer a Vault-compatible external signing boundary for hardened production. OpenBao is the better philosophical/default self-hosted fit; HashiCorp Vault remains a compatibility target for managed/vendor-supported environments.
-- NiceGUI route files still contain persistence-heavy actions that should be extracted gradually into service/use-case helpers.
+- Profile and OAuth client persistence-heavy NiceGUI actions have been extracted into services; admin dashboard query/commit logic still needs gradual service/use-case cleanup.
 - Add sanitized operational logging for auth, OIDC, LNURL, and UI mutation failures before production hardening.
 
 Resolved/reduced on 2026-05-08:
@@ -51,3 +50,9 @@ Resolved/reduced on 2026-05-16:
 - `AuthMiddleware` public path checks now require exact matches or segment
   boundaries, so lookalike paths such as `/oauth-settings`, `/api-admin`, and
   `/.well-knownness` remain protected.
+
+Resolved/reduced on 2026-05-18:
+
+- LNURL registration now uses the default nickname `satoshi` instead of
+  attempting to persist `User(nickname=None)`; keep the regression coverage, but
+  do not track the nullable nickname path as an active risk.

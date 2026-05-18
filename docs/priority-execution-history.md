@@ -1,9 +1,61 @@
 # Priority Execution History
 
-Updated: 2026-05-17
+Updated: 2026-05-18
 
 This file summarizes completed execution backlog items. Keep active work in
 `docs/priority-execution-backlog.md`.
+
+## Completed On 2026-05-18
+
+- Establish multiagent production-readiness execution plan.
+  - Source: `docs/priority-execution-tasks/`
+  - Outcome: production-readiness work was split into temporary task files for
+    later subagent execution, with a multiagent execution strategy covering
+    agent roles, model tiers, coordination, review, integration, branching,
+    checkpoints, and anti-chaos controls.
+
+- Complete Phase 0 contracts and CI foundation.
+  - Source: `docs/priority-execution-tasks/phase-0-contracts-and-ci.md`
+  - Outcome: runtime configuration docs now define current and future
+    `SATOIDC_*` variable compatibility, precedence, `_FILE` expectations,
+    secret flags, and migration notes; production deploy docs clarify that the
+    current environment variable names remain the implemented interface today;
+    PRD/spec/risk/backlog tracking was synchronized so resolved LNURL nickname
+    work is no longer listed as active risk; quality task commands and markers
+    were audited.
+  - Validation: `cd satoidc; poetry run task test` passed with 242 selected
+    tests, 21 deselected tests, and 5 warnings.
+
+- Complete Phase 1 operator runbooks.
+  - Source: `docs/priority-execution-tasks/phase-1-operations-runbooks.md`
+  - Outcome: the operator runbook now covers PostgreSQL backup/restore, SQLite
+    caveats, upgrades, Alembic failure handling, rollback expectations, health
+    checks, and incident response; reverse-proxy operations now include TLS,
+    forwarded-header, real-client-IP, NGINX, Traefik, path coverage, and manual
+    burst-validation guidance; email and Transit operation docs now cover
+    supported modes, required settings, troubleshooting, failure behavior, and
+    production safety notes.
+  - Validation: documentation links were checked by the execution agents, and
+    `git diff --check` reported no whitespace errors for the changed operation
+    docs.
+
+- Retire duplicate Phase 1 observability task.
+  - Source: `docs/priority-execution-tasks/phase-1-observability.md`
+  - Outcome: the generated task file was removed from the active queue because
+    `docs/priority-execution-history.md` already records the operational
+    observability baseline as completed on or before 2026-05-17.
+
+- Complete typed confirmation for OAuth client deletion.
+  - Source: `docs/priority-execution-tasks/phase-2-admin-safety-scale.md`
+  - Outcome: the developer dashboard delete dialog now requires typing the
+    client display name before the destructive delete button becomes enabled.
+    Focused browser coverage verifies disabled, wrong-text, enabled, deletion,
+    and empty-state behavior.
+  - Validation: `cd satoidc; poetry run ruff check satoidc/routes/dashboard.py
+    tests/e2e/test_authenticated_ui_e2e.py` passed; `cd satoidc; poetry run
+    pytest -m e2e
+    tests/e2e/test_authenticated_ui_e2e.py::test_developer_dashboard_renders_client_actions
+    -vv` passed.
 
 ## Completed On Or Before 2026-05-17
 

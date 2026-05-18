@@ -45,6 +45,28 @@ Use this index to track active and historical specs.
 | [Setup Wizard Spec Consolidation](decisions/2026-05-18-setup-wizard-spec-consolidation.md) | implemented | Decision/Specs | 2026-05-18 |
 | [Repository Language Policy](decisions/2026-05-18-documentation-language-policy.md) | implemented | Decision/Docs | 2026-05-18 |
 
+## Product Backlog Traceability
+
+Resolved PRD backlog items that remain documented for history:
+
+- `P0-01` maps to
+  [LNURL Registration Valid User Creation](features/lnurl-registration-valid-user/spec.md),
+  which is implemented. Keep future work limited to regression coverage unless a
+  new LNURL registration bug is found.
+
+Open PRD backlog items with active specs:
+
+- `P0-02` maps to
+  [Reverse Proxy Authentication Rate Limiting](features/auth-rate-limiting/spec.md).
+- `P1-01` and the pagination part of `P2-01` map to
+  [Admin Dashboard Safety And Scale](features/admin-dashboard-safety-scale/spec.md).
+- `P1-02` maps to
+  [Operational Observability Baseline](features/operational-observability/spec.md).
+- `P1-03` maps to [Operator Runbooks](features/operator-runbooks/spec.md).
+- `P2-02` maps to [Locust Load Tests](features/quality-testing/locust-load.md)
+  and [OAuth Token Lifecycle Flow](flows/token-lifecycle.md).
+- `P3-01` maps to [OIDC Conformance Evidence](features/oidc-conformance/spec.md).
+
 ## Status Values
 
 - `draft`: being shaped; not ready for implementation.

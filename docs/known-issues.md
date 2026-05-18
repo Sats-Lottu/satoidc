@@ -27,6 +27,8 @@ split into specs or backlog items.
   superseded specs.
 - Completed backlog items are summarized in
   `docs/priority-execution-history.md`.
+- The LNURL default nickname issue is historical/resolved; it should remain in
+  completed-history sections only, not as an active risk.
 
 ## Recently Resolved Or Reduced
 

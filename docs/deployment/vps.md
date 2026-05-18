@@ -46,6 +46,12 @@ In Coolify:
 
 ## Production Environment
 
+SatOIDC currently reads the runtime variable names shown below. The future
+Setup Wizard will introduce `SATOIDC_*` aliases such as
+`SATOIDC_ISSUER`, `SATOIDC_DATABASE_URL`, and `SATOIDC_SECRET_KEY`, but those
+aliases are contract targets until runtime support is implemented. Use current
+names for production deployments today.
+
 Minimum production environment values:
 
 ```env
@@ -65,6 +71,13 @@ OIDC_SIGNING_BACKEND=database
 
 Use HTTPS through Coolify's proxy. `OAUTH2_JWT_ISS` must match the public issuer
 URL clients will use.
+
+Current precedence is process environment, then `.env`, then code defaults.
+Future setup-wizard-compatible precedence is documented in
+`specs/contracts/runtime-config.md`: `SATOIDC_*` direct values, then
+`SATOIDC_*_FILE` values for supported secrets, then current direct names, then
+current `_FILE` aliases, then persisted wizard-owned settings, then safe
+defaults. Direct values win over `_FILE` values, and secrets must not be logged.
 
 For hardened deployments with OpenBao or another Vault-compatible Transit
 service, set:

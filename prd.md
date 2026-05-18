@@ -60,8 +60,8 @@ Remaining product gaps:
 - Rate limiting is delegated to the reverse proxy layer for production, so
   direct exposure without NGINX, Traefik, or equivalent throttling is not a
   supported hardened deployment shape.
-- LNURL registration uses the default nickname `satoshi` when no nickname is
-  supplied, and this behavior needs regression coverage.
+- LNURL registration now uses the default nickname `satoshi` when no nickname is
+  supplied; this is a resolved regression risk that should keep coverage.
 - Operators lack production runbooks for backup, restore, upgrade, reverse proxy
   setup, and incident response.
 - Logs and metrics are not yet packaged as an operator-facing observability
@@ -96,7 +96,7 @@ Remaining product gaps:
 | Alembic migrations | Implemented | `satoidc/migrations/versions/` | Migration troubleshooting exists for local SQLite; production runbook missing. |
 | OIDC authorization code + PKCE | Implemented | `satoidc/satoidc/routes/oauth2.py`, tests | Needs OpenID Foundation conformance evidence. |
 | Refresh, introspection, revocation | Implemented | `satoidc/satoidc/routes/oauth2.py`, tests | Refresh-token revocation needs broader e2e coverage. |
-| LNURL-auth | Implemented | `satoidc/satoidc/routes/lnurl_auth.py` | Uses default nickname `satoshi` for wallet-created users. |
+| LNURL-auth | Implemented | `satoidc/satoidc/routes/lnurl_auth.py`, `specs/features/lnurl-registration-valid-user/spec.md` | Default nickname risk is resolved; keep regression coverage for wallet-created users. |
 | Email verification/recovery | Implemented | `satoidc/satoidc/services/email_tokens.py`, `satoidc/satoidc/services/email_delivery.py` | Operator docs for SMTP modes should be expanded. |
 | OIDC signing keys | Implemented | `satoidc/satoidc/auth/oidc_keys.py` | Transit deployment docs should be operator-focused. |
 | OpenBao/Vault Transit signing | Implemented | `satoidc/satoidc/auth/oidc_signing_backends.py`, integration tests | Needs deployment runbook and failure-mode docs. |
@@ -221,7 +221,7 @@ Production 1.0:
 
 ### Phase 0: Immediate Risk Reduction
 
-- Keep LNURL default nickname regression coverage.
+- Keep LNURL default nickname regression coverage after the completed fix.
 - Document and verify reverse-proxy rate limiting for public auth surfaces.
 - Add text confirmation for OAuth client deletion.
 
@@ -251,16 +251,16 @@ Production 1.0:
 
 ## 15. Prioritized Product Backlog
 
-| ID | Title | Type | Priority | Effort | Impact | Acceptance Criteria |
-| --- | --- | --- | --- | --- | --- | --- |
-| P0-01 | Keep LNURL default nickname valid | bugfix | P0 | S | High | LNURL registration uses `satoshi` and regression tests pass. |
-| P0-02 | Document reverse-proxy auth rate limiting | security | P0 | S | High | NGINX and Traefik examples cover login/register/recovery/LNURL throttling. |
-| P1-01 | Add destructive action confirmation | uiux | P1 | S | Medium | Client deletion requires typing the client identifier/name. |
-| P1-02 | Add structured logging baseline | ops | P1 | M | High | Auth failures and admin mutations emit structured JSON logs. |
-| P1-03 | Write operator runbook | docs | P1 | M | High | Backup/restore/upgrade/reverse-proxy procedures are documented and linked. |
-| P2-01 | Add dashboard pagination | uiux | P2 | M | Medium | Admin lists expose server-side pagination controls. |
-| P2-02 | Publish load baseline | tests | P2 | M | Medium | `test_load` or equivalent produces documented capacity guidance. |
-| P3-01 | Run OIDC conformance | compliance | P3 | L | High | Basic OP results are captured in `docs/conformance.md`. |
+| ID | Title | Type | Priority | Status | Effort | Impact | Acceptance Criteria |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P0-01 | Keep LNURL default nickname valid | bugfix | P0 | Completed | S | High | LNURL registration uses `satoshi` and regression tests pass. Historical context is kept here because it was a prior P0 production-readiness risk. |
+| P0-02 | Document reverse-proxy auth rate limiting | security | P0 | Open | S | High | NGINX and Traefik examples cover login/register/recovery/LNURL throttling. |
+| P1-01 | Add destructive action confirmation | uiux | P1 | Open | S | Medium | Client deletion requires typing the client identifier/name. |
+| P1-02 | Add structured logging baseline | ops | P1 | Open | M | High | Auth failures and admin mutations emit structured JSON logs. |
+| P1-03 | Write operator runbook | docs | P1 | Open | M | High | Backup/restore/upgrade/reverse-proxy procedures are documented and linked. |
+| P2-01 | Add dashboard pagination | uiux | P2 | Open | M | Medium | Admin lists expose server-side pagination controls. |
+| P2-02 | Publish load baseline | tests | P2 | Open | M | Medium | `test_load` or equivalent produces documented capacity guidance. |
+| P3-01 | Run OIDC conformance | compliance | P3 | Open | L | High | Basic OP results are captured in `docs/conformance.md`. |
 
 ## 16. Out Of Scope
 

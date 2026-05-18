@@ -8,6 +8,12 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
 - [Project Analysis](project-analysis.md): broad repository map, runtime stack, protocol surface, examples, validation, and risks.
 - [Known Issues](known-issues.md): prioritized technical debt and production hardening items.
 - [VPS Deployment](deployment/vps.md): GitHub Actions CI/CD and VPS runbook.
+- [Operator Runbook](operations/runbook.md): backup, restore, upgrade,
+  migration failure handling, health checks, and incident response.
+- [Email Operations](operations/email.md): SMTP, console, and disabled email
+  sender modes, token TTLs, validation, troubleshooting, and fallback.
+- [Transit Signing Operations](operations/transit.md): OpenBao/Vault-compatible
+  Transit setup, required variables, failure modes, and fallback.
 - [Database Support Matrix](database-support-matrix.md): SQLite/PostgreSQL
   support scope, URL pairing rules, and verification commands.
 - [Local Development Troubleshooting](local-development-troubleshooting.md):
@@ -15,6 +21,9 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
 - [Reverse Proxy Operations](operations/reverse-proxy.md): TLS, forwarded
   headers, and reverse-proxy rate limiting guidance for self-hosted production.
 - [Priority Execution Backlog](priority-execution-backlog.md): temporary active queue for open execution work.
+- [Priority Execution Tasks](priority-execution-tasks/README.md): temporary
+  multiagent task files for production-readiness execution; remove task files
+  after completion and summarize outcomes in the history.
 - [Priority Execution History](priority-execution-history.md): summary of completed backlog items removed from the active queue.
 - [Backlog Priority Plan](backlog-priority-plan.md): branch-level sequencing, grouped work, commit plan, and approval questions for active backlog implementation.
 - [Changes On 2026-05-08](changes-2026-05-08.md): schema package, registration endpoint, test coverage, and related bug fix.
