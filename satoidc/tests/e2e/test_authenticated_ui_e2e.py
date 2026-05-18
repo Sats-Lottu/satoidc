@@ -160,6 +160,28 @@ async def test_developer_dashboard_renders_client_actions(
     await expect(page.get_by_role("button", name="Disable")).to_be_visible()
     await expect(page.get_by_role("button", name="Delete")).to_be_visible()
 
+    await page.get_by_role("button", name="Delete").click()
+    dialog = page.locator(".q-dialog")
+    await expect(dialog.get_by_text("Delete OAuth2 client")).to_be_visible()
+    delete_button = dialog.get_by_role("button", name="Delete")
+    await expect(delete_button).to_be_disabled()
+
+    await dialog.get_by_label('Type "E2E Client" to confirm').fill("wrong")
+    await expect(delete_button).to_be_disabled()
+
+    await dialog.get_by_label('Type "E2E Client" to confirm').fill(
+        "E2E Client"
+    )
+    await expect(delete_button).to_be_enabled()
+    await delete_button.click()
+
+    await expect(page.get_by_text("No clients registered")).to_be_visible()
+    db_session.expire_all()
+    deleted_client = await db_session.scalar(
+        select(OAuth2Client).where(OAuth2Client.client_id == "client-e2e")
+    )
+    assert deleted_client is None
+
 
 @pytest.mark.e2e
 async def test_create_client_validation_and_success(

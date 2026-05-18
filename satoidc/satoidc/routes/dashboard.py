@@ -531,8 +531,12 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
         with ui.dialog() as dialog, ui.card().classes(DIALOG_CLASSES):
             ui.label("Delete OAuth2 client").classes("text-xl font-semibold")
             ui.label(
-                f"Delete {client_name}? This removes the registration."
+                f"Delete {client_name}? This removes the registration and "
+                "cannot be undone."
             ).classes(MUTED_TEXT)
+            confirmation = ui.input(
+                f'Type "{client_name}" to confirm'
+            ).classes(INPUT_CLASSES)
 
             async def delete():
                 await delete_oauth_client(session, client)
@@ -543,9 +547,14 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
                 ui.button("Cancel", on_click=dialog.close).classes(
                     SECONDARY_BUTTON_CLASSES
                 )
-                ui.button("Delete", icon="delete", on_click=delete).props(
-                    "color=negative"
-                ).classes(SECONDARY_BUTTON_CLASSES)
+                delete_button = ui.button(
+                    "Delete", icon="delete", on_click=delete
+                ).props("color=negative").classes(SECONDARY_BUTTON_CLASSES)
+                delete_button.bind_enabled_from(
+                    confirmation,
+                    "value",
+                    backward=lambda value: value == client_name,
+                )
         dialog.open()
 
     app_header(
