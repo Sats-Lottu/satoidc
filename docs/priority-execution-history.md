@@ -74,6 +74,23 @@ This file summarizes completed execution backlog items. Keep active work in
     `cd satoidc; poetry run task test` passed with 257 selected tests, 21
     deselected tests, and 5 warnings.
 
+- Complete admin dashboard safety and pagination.
+  - Source: `docs/priority-execution-tasks/phase-2-admin-safety-scale.md`
+  - Outcome: Phase 2 was removed from the active queue after the admin
+    dashboard gained NiceGUI-native pagination controls for pending
+    permission requests, users, OAuth clients, and inactive permissions. The
+    UI now shows total counts, page-size controls, previous/next controls,
+    inline empty states, and service-reported errors while preserving mobile
+    layout constraints.
+  - Validation: `cd satoidc; poetry run ruff check
+    satoidc/models/__init__.py satoidc/routes/dashboard.py
+    satoidc/routes/ui_components.py tests/test_setup_state.py
+    tests/integration/test_postgres_migrations.py
+    tests/e2e/test_authenticated_ui_e2e.py` passed; `cd satoidc; poetry run
+    pytest tests/e2e/test_authenticated_ui_e2e.py -k "admin_dashboard"
+    --no-cov -vv` passed; `cd satoidc; poetry run task test_e2e` passed with
+    18 e2e tests.
+
 - Complete runtime alias and `_FILE` configuration support.
   - Source: `docs/priority-execution-tasks/phase-3-setup-config-bootstrap.md`
   - Outcome: runtime settings now resolve documented `SATOIDC_*` aliases,
@@ -90,6 +107,19 @@ This file summarizes completed execution backlog items. Keep active work in
     tests/test_admin_dashboard_services.py tests/test_settings.py` passed;
     `cd satoidc; poetry run task test` passed with 257 selected tests, 21
     deselected tests, and 5 warnings.
+
+- Complete setup state persistence.
+  - Source: `docs/priority-execution-tasks/phase-3-setup-config-bootstrap.md`
+  - Outcome: setup lifecycle state now has a canonical database table and
+    SQLAlchemy model with state/version constraints, timestamps, completed
+    actor, config hash, and recoverable error diagnostics. The database
+    contract documents the table, and PostgreSQL migration smoke expectations
+    include `setup_state`. Root bootstrap and setup locking remain open.
+  - Validation: `cd satoidc; poetry run pytest tests/test_setup_state.py
+    --no-cov -vv` passed; `cd satoidc; poetry run task test` passed with 260
+    selected tests, 22 deselected tests, and 5 warnings; `cd satoidc; poetry
+    run alembic heads` reported `561b924be9e7 (head)`. PostgreSQL migration
+    smoke was collected but skipped because local Docker access was denied.
 
 ## Completed On Or Before 2026-05-17
 

@@ -78,7 +78,8 @@ remaining phase tasks are completed.
 
 ## Task 3.3: Add Persistent Setup State Model
 
-Status: open.
+Status: completed on 2026-05-18. Keep this section for traceability until the
+remaining phase tasks are completed.
 
 1. Clear task name: Add setup state persistence.
 2. Technical objective: store canonical setup state in the database.
@@ -102,10 +103,10 @@ Status: open.
 
 ### Subtasks
 
-- Add model.
-- Generate migration with autogenerate.
-- Review constraints and indexes.
-- Add SQLite/PostgreSQL compatible tests.
+- [x] Add model.
+- [x] Generate migration with autogenerate.
+- [x] Review constraints and indexes.
+- [x] Add SQLite/PostgreSQL compatible tests.
 
 ## Task 3.4: Implement Non-Interactive Root Bootstrap
 
