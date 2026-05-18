@@ -57,6 +57,40 @@ This file summarizes completed execution backlog items. Keep active work in
     tests/e2e/test_authenticated_ui_e2e.py::test_developer_dashboard_renders_client_actions
     -vv` passed.
 
+- Complete admin dashboard pagination services.
+  - Source: `docs/priority-execution-tasks/phase-2-admin-safety-scale.md`
+  - Outcome: admin dashboard list queries for users, OAuth clients, permission
+    requests, and inactive permissions now go through service helpers that
+    return a stable `Page[T]` DTO with page metadata, total counts, boundary
+    normalization, and optional filters. The admin route consumes these helpers
+    with the current fixed defaults; responsive pagination controls remain a
+    separate open UI task.
+  - Validation: `cd satoidc; poetry run pytest
+    tests/test_admin_dashboard_services.py tests/test_settings.py --no-cov -vv`
+    passed; `cd satoidc; poetry run ruff check
+    satoidc/services/admin_dashboard.py satoidc/routes/dashboard.py
+    satoidc/runtime_config.py satoidc/settings.py
+    tests/test_admin_dashboard_services.py tests/test_settings.py` passed;
+    `cd satoidc; poetry run task test` passed with 257 selected tests, 21
+    deselected tests, and 5 warnings.
+
+- Complete runtime alias and `_FILE` configuration support.
+  - Source: `docs/priority-execution-tasks/phase-3-setup-config-bootstrap.md`
+  - Outcome: runtime settings now resolve documented `SATOIDC_*` aliases,
+    support direct-over-file precedence for supported secret variables, support
+    current `_FILE` names for compatible secrets, centralize URL and production
+    secret validation, and provide a secret masking helper for setup and
+    diagnostics. Setup state, non-interactive root bootstrap, and setup locking
+    remain open.
+  - Validation: `cd satoidc; poetry run pytest
+    tests/test_admin_dashboard_services.py tests/test_settings.py --no-cov -vv`
+    passed; `cd satoidc; poetry run ruff check
+    satoidc/services/admin_dashboard.py satoidc/routes/dashboard.py
+    satoidc/runtime_config.py satoidc/settings.py
+    tests/test_admin_dashboard_services.py tests/test_settings.py` passed;
+    `cd satoidc; poetry run task test` passed with 257 selected tests, 21
+    deselected tests, and 5 warnings.
+
 ## Completed On Or Before 2026-05-17
 
 - Implement email verification and account recovery.

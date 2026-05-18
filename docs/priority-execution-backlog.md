@@ -14,8 +14,8 @@ summarized in `docs/priority-execution-history.md`.
 
 | Task File | Priority | Area |
 | --- | --- | --- |
-| [phase-2-admin-safety-scale.md](priority-execution-tasks/phase-2-admin-safety-scale.md) | P2 | Admin UI; delete confirmation complete, pagination remains open |
-| [phase-3-setup-config-bootstrap.md](priority-execution-tasks/phase-3-setup-config-bootstrap.md) | P1/P2 | Setup/bootstrap |
+| [phase-2-admin-safety-scale.md](priority-execution-tasks/phase-2-admin-safety-scale.md) | P2 | Admin UI; delete confirmation and pagination services complete, pagination UI remains open |
+| [phase-3-setup-config-bootstrap.md](priority-execution-tasks/phase-3-setup-config-bootstrap.md) | P1/P2 | Setup/bootstrap; config resolver and validation complete, setup state/bootstrap/lock remain open |
 | [phase-3-setup-wizard-ui.md](priority-execution-tasks/phase-3-setup-wizard-ui.md) | P2/P3 | Setup UI |
 | [phase-4-token-conformance-performance.md](priority-execution-tasks/phase-4-token-conformance-performance.md) | P1/P3 | OIDC/performance |
 | [phase-5-compatibility-metrics.md](priority-execution-tasks/phase-5-compatibility-metrics.md) | P3 | Compatibility/metrics |
