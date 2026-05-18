@@ -164,6 +164,22 @@ This file summarizes completed execution backlog items. Keep active work in
     -vv` passed with 30 tests; `cd satoidc; poetry run task test` passed with
     280 selected tests, 22 deselected tests, and 5 warnings.
 
+- Wire setup root form to the interactive apply service.
+  - Source: `docs/priority-execution-tasks/phase-3-setup-wizard-ui.md`
+  - Outcome: the initial root form now delegates account creation to
+    `apply_interactive_setup_admin`, shows sanitized inline validation, lock,
+    and apply errors, and renders a completion state after setup is applied.
+    The legacy direct `User`/`Permission` creation path was removed from the
+    NiceGUI route. LNURL bootstrap remains on its existing path and still needs
+    a dedicated transactional follow-up if it must mark setup completed.
+  - Validation: `cd satoidc; poetry run ruff check setup_wizard/routes.py
+    tests/setup/test_wizard_root_access.py
+    tests/test_interactive_setup_apply.py` passed; `cd satoidc; poetry run
+    pytest tests/setup/test_wizard_root_access.py tests/setup
+    tests/test_interactive_setup_apply.py --no-cov -vv` passed with 39 tests;
+    `cd satoidc; poetry run task test` passed with 284 selected tests, 22
+    deselected tests, and 5 warnings.
+
 ## Completed On Or Before 2026-05-17
 
 - Implement email verification and account recovery.
