@@ -1,6 +1,13 @@
+from sqlalchemy import func, select
+
+from satoidc.auth.security import verify_password
+from satoidc.enums import PermissionsEnum
+from satoidc.models import Permission, User
 from setup_wizard.bootstrap import (
     BootstrapStatus,
+    RootBootstrapStatus,
     RuntimeValueKind,
+    bootstrap_root_user_from_env,
     check_database_ready,
     check_oidc_signing_ready,
     check_root_user_ready,
@@ -217,3 +224,113 @@ def test_oidc_signing_readiness_creates_active_key(db_session):
 
     assert check.name == "oidc_signing_key"
     assert check.status == BootstrapStatus.OK
+
+
+async def test_root_bootstrap_creates_first_root_from_env(
+    db_session, caplog, assert_no_sensitive_log_values
+):
+    result = await bootstrap_root_user_from_env(
+        {
+            "SATOIDC_ADMIN_USERNAME": "rootadm",
+            "SATOIDC_ADMIN_EMAIL": "root@example.com",
+            "SATOIDC_ADMIN_PASSWORD": "StrongPass1!",
+        }
+    )
+
+    user = await db_session.scalar(
+        select(User).where(User.login == "rootadm")
+    )
+    permission = await db_session.scalar(
+        select(Permission).where(
+            Permission.user_id == user.id,
+            Permission.permission_type == PermissionsEnum.ROOT,
+        )
+    )
+
+    assert result.status == RootBootstrapStatus.CREATED
+    assert result.user_id == str(user.id)
+    assert user.email == "root@example.com"
+    assert user.email_verified is True
+    assert verify_password("StrongPass1!", user.password_hash)
+    assert user.password_hash != "StrongPass1!"
+    assert permission is not None
+    assert permission.granted_by is None
+    assert_no_sensitive_log_values("StrongPass1!")
+    assert "StrongPass1!" not in result.message
+
+
+async def test_root_bootstrap_skips_when_root_or_admin_exists(
+    db_session, make_user
+):
+    existing_admin = await make_user(login="admin1", email="admin@example.com")
+    db_session.add(
+        Permission(
+            user_id=existing_admin.id,
+            granted_by=None,
+            permission_type=PermissionsEnum.ADMIN,
+            expiration_date=None,
+            reason="existing admin",
+        )
+    )
+    await db_session.commit()
+
+    result = await bootstrap_root_user_from_env(
+        {
+            "SATOIDC_ADMIN_USERNAME": "rootadm",
+            "SATOIDC_ADMIN_EMAIL": "root@example.com",
+            "SATOIDC_ADMIN_PASSWORD": "StrongPass1!",
+        }
+    )
+    user_count = await db_session.scalar(select(func.count(User.id)))
+
+    assert result.status == RootBootstrapStatus.SKIPPED_EXISTING_ADMIN
+    assert user_count == 1
+
+
+async def test_root_bootstrap_blocks_missing_env_vars(db_session):
+    result = await bootstrap_root_user_from_env(
+        {"SATOIDC_ADMIN_USERNAME": "rootadm"}
+    )
+    user_count = await db_session.scalar(select(func.count(User.id)))
+
+    assert result.status == RootBootstrapStatus.BLOCKED
+    assert "SATOIDC_ADMIN_PASSWORD" in result.message
+    assert user_count == 0
+
+
+async def test_root_bootstrap_blocks_weak_password(db_session):
+    result = await bootstrap_root_user_from_env(
+        {
+            "SATOIDC_ADMIN_USERNAME": "rootadm",
+            "SATOIDC_ADMIN_EMAIL": "root@example.com",
+            "SATOIDC_ADMIN_PASSWORD": "weak",
+        }
+    )
+    user_count = await db_session.scalar(select(func.count(User.id)))
+
+    assert result.status == RootBootstrapStatus.BLOCKED
+    assert "password policy" in result.message
+    assert "weak" not in result.message
+    assert user_count == 0
+
+
+async def test_root_bootstrap_accepts_password_file(
+    db_session, tmp_path, assert_no_sensitive_log_values
+):
+    password_file = tmp_path / "admin-password"
+    password_file.write_text("FileStrong1!\n", encoding="utf-8")
+
+    result = await bootstrap_root_user_from_env(
+        {
+            "SATOIDC_ADMIN_USERNAME": "rootfile",
+            "SATOIDC_ADMIN_EMAIL": "rootfile@example.com",
+            "SATOIDC_ADMIN_PASSWORD_FILE": str(password_file),
+        }
+    )
+    user = await db_session.scalar(
+        select(User).where(User.login == "rootfile")
+    )
+
+    assert result.status == RootBootstrapStatus.CREATED
+    assert verify_password("FileStrong1!", user.password_hash)
+    assert_no_sensitive_log_values("FileStrong1!")

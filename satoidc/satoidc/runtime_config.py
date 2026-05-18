@@ -165,6 +165,23 @@ RUNTIME_ENV_VARS: tuple[RuntimeEnvVar, ...] = (
     RuntimeEnvVar(
         "SMTP_START_TLS", "SMTP_START_TLS", "SATOIDC_SMTP_STARTTLS"
     ),
+    RuntimeEnvVar(
+        "SATOIDC_ADMIN_USERNAME",
+        "",
+        "SATOIDC_ADMIN_USERNAME",
+    ),
+    RuntimeEnvVar(
+        "SATOIDC_ADMIN_EMAIL",
+        "",
+        "SATOIDC_ADMIN_EMAIL",
+    ),
+    RuntimeEnvVar(
+        "SATOIDC_ADMIN_PASSWORD",
+        "",
+        "SATOIDC_ADMIN_PASSWORD",
+        supports_file=True,
+        secret=True,
+    ),
 )
 
 

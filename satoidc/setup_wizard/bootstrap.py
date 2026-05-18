@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import logging
 import os
 import secrets
 import shlex
@@ -11,14 +12,23 @@ from enum import Enum
 from pathlib import Path
 from typing import Mapping
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from satoidc.auth.security import hash_password
+from satoidc.enums import PermissionsEnum
+from satoidc.models import Permission, User
 from satoidc.runtime_config import (
     is_operator_issuer_missing,
     is_placeholder_secret,
     is_production_environment,
+    resolved_runtime_env_settings,
     validate_database_url_pair,
+)
+from satoidc.validators import (
+    is_valid_email,
+    is_valid_login,
+    is_valid_password,
 )
 
 DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///satoidc.db"
@@ -28,6 +38,10 @@ GENERATED_SECRET_NAMES = (
     "OAUTH2_JWT_SECRET_KEY",
     "SESSION_MIDDLEWARE_SECRET_KEY",
 )
+ADMIN_USERNAME_VAR = "SATOIDC_ADMIN_USERNAME"
+ADMIN_EMAIL_VAR = "SATOIDC_ADMIN_EMAIL"
+ADMIN_PASSWORD_VAR = "SATOIDC_ADMIN_PASSWORD"
+LOGGER = logging.getLogger(__name__)
 
 
 class RuntimeValueKind(str, Enum):
@@ -38,6 +52,12 @@ class RuntimeValueKind(str, Enum):
 
 class BootstrapStatus(str, Enum):
     OK = "ok"
+    BLOCKED = "blocked"
+
+
+class RootBootstrapStatus(str, Enum):
+    CREATED = "created"
+    SKIPPED_EXISTING_ADMIN = "skipped_existing_admin"
     BLOCKED = "blocked"
 
 
@@ -68,6 +88,24 @@ class BootstrapReport:
         ]
 
 
+@dataclass(frozen=True)
+class RootBootstrapResult:
+    status: RootBootstrapStatus
+    message: str
+    user_id: str | None = None
+
+    @property
+    def created(self) -> bool:
+        return self.status == RootBootstrapStatus.CREATED
+
+    @property
+    def can_start(self) -> bool:
+        return self.status in {
+            RootBootstrapStatus.CREATED,
+            RootBootstrapStatus.SKIPPED_EXISTING_ADMIN,
+        }
+
+
 def _combine_reports(*reports: BootstrapReport) -> BootstrapReport:
     checks: list[BootstrapCheck] = []
     for report in reports:
@@ -82,6 +120,10 @@ def _env_value(
     return value.strip() if value is not None else None
 
 
+def _normalized_env(env: Mapping[str, str]) -> dict[str, str]:
+    return {name.upper(): value for name, value in env.items()}
+
+
 def _check(
     name: str,
     kind: RuntimeValueKind,
@@ -94,6 +136,66 @@ def _check(
         status=BootstrapStatus.BLOCKED if blocked else BootstrapStatus.OK,
         message=message,
     )
+
+
+def _root_bootstrap_check(result: RootBootstrapResult) -> BootstrapCheck:
+    return _check(
+        "root_bootstrap",
+        RuntimeValueKind.OPERATOR_MANAGED,
+        not result.can_start,
+        result.message,
+    )
+
+
+def _admin_bootstrap_values(
+    env: Mapping[str, str],
+) -> tuple[str, str, str] | RootBootstrapResult:
+    try:
+        resolved = resolved_runtime_env_settings(env)
+    except ValueError as exc:
+        return RootBootstrapResult(
+            RootBootstrapStatus.BLOCKED,
+            str(exc),
+        )
+
+    missing = [
+        name
+        for name in (
+            ADMIN_USERNAME_VAR,
+            ADMIN_EMAIL_VAR,
+            ADMIN_PASSWORD_VAR,
+        )
+        if not resolved.get(name)
+    ]
+    if missing:
+        return RootBootstrapResult(
+            RootBootstrapStatus.BLOCKED,
+            "Admin bootstrap requires SATOIDC_ADMIN_USERNAME, "
+            "SATOIDC_ADMIN_EMAIL, and SATOIDC_ADMIN_PASSWORD.",
+        )
+
+    username = resolved[ADMIN_USERNAME_VAR].strip().lower()
+    email = resolved[ADMIN_EMAIL_VAR].strip().lower()
+    password = resolved[ADMIN_PASSWORD_VAR]
+
+    if not is_valid_login(username):
+        return RootBootstrapResult(
+            RootBootstrapStatus.BLOCKED,
+            "SATOIDC_ADMIN_USERNAME must be 6-30 lowercase letters and "
+            "digits.",
+        )
+    if not is_valid_email(email):
+        return RootBootstrapResult(
+            RootBootstrapStatus.BLOCKED,
+            "SATOIDC_ADMIN_EMAIL must be a valid email address.",
+        )
+    if not is_valid_password(password):
+        return RootBootstrapResult(
+            RootBootstrapStatus.BLOCKED,
+            "SATOIDC_ADMIN_PASSWORD does not meet the password policy.",
+        )
+
+    return username, email, password
 
 
 def _generated_secret_placeholders(env: Mapping[str, str]) -> list[str]:
@@ -288,6 +390,142 @@ async def check_root_user_ready() -> BootstrapCheck:
     )
 
 
+async def _root_or_admin_permission_exists(session) -> bool:
+    permission = await session.scalar(
+        select(Permission.id).where(
+            Permission.permission_type.in_(
+                (PermissionsEnum.ROOT, PermissionsEnum.ADMIN)
+            )
+        )
+    )
+    return permission is not None
+
+
+async def _bootstrap_identity_exists(
+    session, *, username: str, email: str
+) -> bool:
+    user = await session.scalar(
+        select(User.id).where((User.login == username) | (User.email == email))
+    )
+    return user is not None
+
+
+async def bootstrap_root_user_from_env(
+    env: Mapping[str, str] | None = None,
+) -> RootBootstrapResult:
+    from setup_wizard.get_root import setup_session  # noqa: PLC0415
+
+    values = os.environ if env is None else env
+    try:
+        async with setup_session() as session:
+            if await _root_or_admin_permission_exists(session):
+                result = RootBootstrapResult(
+                    RootBootstrapStatus.SKIPPED_EXISTING_ADMIN,
+                    "Root bootstrap skipped because a root/admin permission "
+                    "already exists.",
+                )
+                LOGGER.info(
+                    "Root bootstrap skipped",
+                    extra={
+                        "event_name": "setup.root_bootstrap_skipped",
+                        "component": "setup_bootstrap",
+                        "reason": "existing_admin",
+                    },
+                )
+                return result
+
+            bootstrap_values = _admin_bootstrap_values(values)
+            if isinstance(bootstrap_values, RootBootstrapResult):
+                LOGGER.info(
+                    "Root bootstrap blocked",
+                    extra={
+                        "event_name": "setup.root_bootstrap_blocked",
+                        "component": "setup_bootstrap",
+                        "reason": bootstrap_values.message,
+                    },
+                )
+                return bootstrap_values
+
+            username, email, password = bootstrap_values
+            if await _bootstrap_identity_exists(
+                session, username=username, email=email
+            ):
+                result = RootBootstrapResult(
+                    RootBootstrapStatus.BLOCKED,
+                    "Root bootstrap cannot reuse an existing username or "
+                    "email.",
+                )
+                LOGGER.info(
+                    "Root bootstrap blocked",
+                    extra={
+                        "event_name": "setup.root_bootstrap_blocked",
+                        "component": "setup_bootstrap",
+                        "reason": "identity_conflict",
+                    },
+                )
+                return result
+
+            user = User(
+                lnurl_pubkey=None,
+                email=email,
+                login=username,
+                password_hash=hash_password(password),
+                nickname=username,
+                is_active=True,
+                email_verified=True,
+            )
+            session.add(user)
+            await session.flush()
+            session.add(
+                Permission(
+                    user_id=user.id,
+                    granted_by=None,
+                    permission_type=PermissionsEnum.ROOT,
+                    expiration_date=None,
+                    reason="Initial root bootstrap from environment",
+                )
+            )
+            await session.commit()
+
+            result = RootBootstrapResult(
+                RootBootstrapStatus.CREATED,
+                "Root user bootstrapped from environment.",
+                user_id=str(user.id),
+            )
+            LOGGER.info(
+                "Root bootstrap created initial root user",
+                extra={
+                    "event_name": "setup.root_bootstrap_created",
+                    "component": "setup_bootstrap",
+                    "user_id": str(user.id),
+                    "username": username,
+                    "email": email,
+                    "password_source": (
+                        "_FILE"
+                        if f"{ADMIN_PASSWORD_VAR}_FILE"
+                        in _normalized_env(values)
+                        and ADMIN_PASSWORD_VAR not in _normalized_env(values)
+                        else "env"
+                    ),
+                },
+            )
+            return result
+    except Exception:
+        result = RootBootstrapResult(
+            RootBootstrapStatus.BLOCKED,
+            "Root bootstrap failed. Verify migrations and database "
+            "connectivity before starting SatOIDC.",
+        )
+        LOGGER.info(
+            "Root bootstrap failed",
+            extra={
+                "event_name": "setup.root_bootstrap_failed",
+                "component": "setup_bootstrap",
+            },
+        )
+        return result
+
+
 def check_oidc_signing_ready() -> BootstrapCheck:
     from satoidc.auth.oidc_keys import (  # noqa: PLC0415
         ensure_active_signing_key,
@@ -336,10 +574,29 @@ async def check_database_ready(database_url: str) -> BootstrapCheck:
     )
 
 
-async def build_database_state_report(database_url: str) -> BootstrapReport:
+async def build_database_state_report(
+    database_url: str, env: Mapping[str, str] | None = None
+) -> BootstrapReport:
+    database_check = await check_database_ready(database_url)
+    if database_check.status == BootstrapStatus.BLOCKED:
+        return BootstrapReport(
+            (
+                database_check,
+                _check(
+                    "root_bootstrap",
+                    RuntimeValueKind.OPERATOR_MANAGED,
+                    True,
+                    "Root bootstrap was not attempted because the database "
+                    "readiness check failed.",
+                ),
+            )
+        )
+
+    root_bootstrap = await bootstrap_root_user_from_env(env)
     return BootstrapReport(
         (
-            await check_database_ready(database_url),
+            database_check,
+            _root_bootstrap_check(root_bootstrap),
             await check_root_user_ready(),
             check_oidc_signing_ready(),
         )
@@ -374,7 +631,7 @@ def main() -> int:
                 os.environ[name] = env[name]
         database_url = env.get("DATABASE_URL", DEFAULT_DATABASE_URL)
         database_report = (
-            asyncio.run(build_database_state_report(database_url))
+            asyncio.run(build_database_state_report(database_url, env))
             if args.database_state
             else BootstrapReport(
                 (asyncio.run(check_database_ready(database_url)),)

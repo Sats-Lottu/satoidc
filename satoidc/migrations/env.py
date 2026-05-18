@@ -1,11 +1,10 @@
+import asyncio
 from logging.config import fileConfig
 
-import asyncio
-
-from sqlalchemy.ext.asyncio import async_engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import async_engine_from_config
+
 from satoidc.models import table_registry
 from satoidc.settings import ENV
 
@@ -17,7 +16,7 @@ config.set_main_option('sqlalchemy.url', ENV.DATABASE_URL)
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
