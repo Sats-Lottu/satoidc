@@ -44,6 +44,7 @@ Planned quality-testing commands are specified but not implemented yet:
 ## Git And Commit Conventions
 
 - When writing, reviewing, staging, committing, branching, pushing, or opening PRs, use the Codex skill `convencoes-git-commits`.
+- When defining, applying, or reviewing AI-assisted contribution policy, pull requests, contribution docs, or AI disclosure metadata, use the Codex skill `ai-contribution-governance`.
 - Write all Git-facing content in English, including commit messages, branch names, PR titles/descriptions, tags, releases, changelog entries, squash/rebase messages, and trailers.
 - Branch names must follow Git convention prefixes such as `feature/`, `bugfix/`, `docs/`, `test/`, `refactor/`, `chore/`, `perf/`, or `ci/`; do not use the default Codex app `codex/` branch prefix in this repository.
 - Use Conventional Commits, matching the existing history, for example `feat(auth): Add permission requests` or `docs(memory): Update project state`.
@@ -51,6 +52,17 @@ Planned quality-testing commands are specified but not implemented yet:
 - Before creating a commit, inspect `git status --short`, `git diff`, and `git diff --cached`; stage only related changes and keep commits atomic.
 - Do not include unrelated user changes, local reports, generated files, secrets, `.env` files, local databases, virtualenvs, coverage output, or NiceGUI local storage.
 - Run the relevant tests or checks before committing; if they are skipped, state why in the final response.
+
+## AI Contribution Governance
+
+- AI tools are assistants, not authors, reviewers, approvers, signers, or legal certifiers.
+- Meaningful AI assistance must be disclosed in PR metadata or with an `Assisted-by:` trailer such as `Assisted-by: Codex:GPT-5.5`.
+- AI agents must not add `Signed-off-by:` trailers. Only a human contributor can certify DCO-style responsibility.
+- A human must review, understand, validate, and take responsibility for every AI-assisted change before submission.
+- For substantial generated content, include a short prompt/tool summary and identify the generated or assisted areas.
+- Challenge oversized, under-tested, architecture-incoherent, security-sensitive, or unexplained generated patches.
+- Security-sensitive changes require extra scrutiny when they touch auth, authorization, OAuth2/OIDC, JWT, LNURL Auth, secrets, cryptography, sessions, migrations, deployment, CI/CD, or supply chain behavior.
+- Keep AI-assisted patches small, explainable, reproducible, testable, and traceable.
 
 ## Conventions
 

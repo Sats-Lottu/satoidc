@@ -92,6 +92,16 @@ For a deeper technical map, start from [docs/README.md](docs/README.md), especia
 
 ---
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes. SatOIDC
+accepts AI-assisted work only when a human contributor reviews, understands,
+validates, and discloses the assistance. Use the pull request template and
+include `Assisted-by:` metadata for meaningful AI-generated or AI-assisted
+content.
+
+---
+
 ## Protocol Support
 
 | Capability                | Status         | Notes                                                                        |

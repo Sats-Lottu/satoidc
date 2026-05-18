@@ -36,3 +36,4 @@ Specs and code coexist in the repository. Humans edit specs as the durable sourc
 - Specs must identify affected code areas.
 - Pull requests that change behavior should update the related spec or explicitly state why no spec update is needed.
 - Avoid vague intent such as "improve auth"; describe observable behavior and failure cases.
+- AI-assisted specs and implementation plans must be human-reviewed and disclosed in pull request metadata when the generated portion is meaningful.
