@@ -121,6 +121,32 @@ This file summarizes completed execution backlog items. Keep active work in
     run alembic heads` reported `561b924be9e7 (head)`. PostgreSQL migration
     smoke was collected but skipped because local Docker access was denied.
 
+- Complete non-interactive root bootstrap.
+  - Source: `docs/priority-execution-tasks/phase-3-setup-config-bootstrap.md`
+  - Outcome: `--database-state` can now create the first root user from
+    `SATOIDC_ADMIN_USERNAME`, `SATOIDC_ADMIN_EMAIL`, and
+    `SATOIDC_ADMIN_PASSWORD`/`SATOIDC_ADMIN_PASSWORD_FILE` after database
+    readiness succeeds. The path validates login, email, and password policy,
+    hashes the password with the existing security helper, grants root
+    permission once, skips safely when any root/admin permission exists, and
+    reports sanitized outcomes.
+  - Validation: `cd satoidc; poetry run ruff check migrations/env.py
+    satoidc/runtime_config.py setup_wizard/bootstrap.py
+    satoidc/services/setup_lock.py tests/test_bootstrap.py
+    tests/test_setup_state.py tests/test_settings.py` passed; `cd satoidc;
+    poetry run pytest tests/test_bootstrap.py tests/test_setup_state.py
+    tests/test_settings.py --no-cov -vv` passed with 45 tests.
+
+- Complete setup concurrency lock.
+  - Source: `docs/priority-execution-tasks/phase-3-setup-config-bootstrap.md`
+  - Outcome: setup execution now has a database-backed lock service over the
+    canonical `setup_state` row with acquire, release, fail, typed diagnostics,
+    recoverable failed state, and blocked completed/applying states. The
+    Alembic environment preserves existing application loggers during
+    in-process migrations so runtime alias diagnostics remain observable.
+  - Validation: `cd satoidc; poetry run task test` passed with 270 selected
+    tests, 22 deselected tests, and 5 warnings.
+
 ## Completed On Or Before 2026-05-17
 
 - Implement email verification and account recovery.

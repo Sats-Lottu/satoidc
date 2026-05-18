@@ -14,7 +14,6 @@ summarized in `docs/priority-execution-history.md`.
 
 | Task File | Priority | Area |
 | --- | --- | --- |
-| [phase-3-setup-config-bootstrap.md](priority-execution-tasks/phase-3-setup-config-bootstrap.md) | P1/P2 | Setup/bootstrap; config resolver, validation, and setup state persistence complete; root bootstrap and setup lock remain open |
 | [phase-3-setup-wizard-ui.md](priority-execution-tasks/phase-3-setup-wizard-ui.md) | P2/P3 | Setup UI |
 | [phase-4-token-conformance-performance.md](priority-execution-tasks/phase-4-token-conformance-performance.md) | P1/P3 | OIDC/performance |
 | [phase-5-compatibility-metrics.md](priority-execution-tasks/phase-5-compatibility-metrics.md) | P3 | Compatibility/metrics |
