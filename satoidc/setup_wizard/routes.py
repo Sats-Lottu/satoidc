@@ -43,6 +43,7 @@ from setup_wizard.get_root import (
     exists_root_user,
     has_active_root_permission,
     parse_root_user_id,
+    setup_completed,
     setup_session,
 )
 
@@ -223,6 +224,35 @@ def render_database_setup_required():
                 ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
                 ui.button(
                     "Retry",
+                    icon="refresh",
+                    on_click=ui.navigate.reload,
+                ).classes(PRIMARY_BUTTON_CLASSES)
+
+
+def render_completed_setup_locked():
+    with auth_shell("max-w-2xl"):
+        with ui.column().classes("gap-4"):
+            ui.label("Setup Locked").classes("text-2xl font-bold")
+            ui.label(
+                "This instance has already completed setup. Public root "
+                "creation is no longer available."
+            ).classes(MUTED_TEXT)
+        with card("w-full gap-4"):
+            ui.label("Next step").classes("text-xl font-semibold")
+            ui.label(
+                "Restart or open the main SatOIDC service and sign in with "
+                "an existing administrator. Reconfiguration must happen from "
+                "an authenticated admin context."
+            ).classes(MUTED_TEXT)
+
+            with ui.row().classes("gap-3 mt-4"):
+                ui.button(
+                    "Shut down wizard",
+                    icon="close",
+                    on_click=app.shutdown,
+                ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
+                ui.button(
+                    "Retry checks",
                     icon="refresh",
                     on_click=ui.navigate.reload,
                 ).classes(PRIMARY_BUTTON_CLASSES)
@@ -615,6 +645,13 @@ async def set_root(request: Request):
 
     if not await database_schema_ready():
         render_database_setup_required()
+        return
+
+    if await setup_completed():
+        if await exists_root_user():
+            await render_existing_root_setup(request)
+        else:
+            render_completed_setup_locked()
         return
 
     if await exists_root_user():

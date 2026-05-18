@@ -7,17 +7,23 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 import setup_wizard.get_root as get_root_module
+import setup_wizard.routes as routes_module
 from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
-from satoidc.models import Permission
+from satoidc.models import Permission, SetupState
 from setup_wizard.get_root import (
     authenticate_root_user,
     database_schema_ready,
     exists_root_user,
     has_active_root_permission,
     parse_root_user_id,
+    setup_completed,
 )
-from setup_wizard.routes import SETUP_ROOT_USER_ID_KEY, stored_root_has_access
+from setup_wizard.routes import (
+    SETUP_ROOT_USER_ID_KEY,
+    set_root,
+    stored_root_has_access,
+)
 
 pytestmark = pytest.mark.setup
 
@@ -38,6 +44,24 @@ async def test_setup_wizard_detects_missing_root_user(db_session):
 
 async def test_setup_wizard_detects_ready_database_schema(db_session):
     assert await database_schema_ready() is True
+
+
+async def test_setup_wizard_detects_missing_setup_state(db_session):
+    assert await setup_completed() is False
+
+
+async def test_setup_wizard_detects_incomplete_setup_state(db_session):
+    db_session.add(SetupState(state="failed", last_error="retryable"))
+    await db_session.commit()
+
+    assert await setup_completed() is False
+
+
+async def test_setup_wizard_detects_completed_setup_state(db_session):
+    db_session.add(SetupState(state="completed", completed_by="system"))
+    await db_session.commit()
+
+    assert await setup_completed() is True
 
 
 async def test_setup_wizard_handles_missing_database_schema(
@@ -209,3 +233,70 @@ async def test_setup_wizard_clears_invalid_root_session(db_session):
 
     assert await stored_root_has_access(db_session, request) is False
     assert SETUP_ROOT_USER_ID_KEY not in request.session
+
+
+async def test_setup_wizard_blocks_public_root_creation_when_completed(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    rendered = []
+
+    async def schema_ready():
+        return True
+
+    async def completed():
+        return True
+
+    async def no_root_user():
+        return False
+
+    monkeypatch.setattr(
+        routes_module.ui, "add_head_html", lambda *a, **k: None
+    )
+    monkeypatch.setattr(routes_module, "database_schema_ready", schema_ready)
+    monkeypatch.setattr(routes_module, "setup_completed", completed)
+    monkeypatch.setattr(routes_module, "exists_root_user", no_root_user)
+    monkeypatch.setattr(
+        routes_module,
+        "render_completed_setup_locked",
+        lambda: rendered.append("locked"),
+    )
+    monkeypatch.setattr(
+        routes_module,
+        "render_initial_root_setup",
+        lambda request: rendered.append("initial"),
+    )
+
+    await set_root(SimpleNamespace(session={}, query_params={}))
+
+    assert rendered == ["locked"]
+
+
+async def test_setup_wizard_allows_public_root_creation_when_not_completed(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    rendered = []
+
+    async def schema_ready():
+        return True
+
+    async def incomplete():
+        return False
+
+    async def no_root_user():
+        return False
+
+    monkeypatch.setattr(
+        routes_module.ui, "add_head_html", lambda *a, **k: None
+    )
+    monkeypatch.setattr(routes_module, "database_schema_ready", schema_ready)
+    monkeypatch.setattr(routes_module, "setup_completed", incomplete)
+    monkeypatch.setattr(routes_module, "exists_root_user", no_root_user)
+    monkeypatch.setattr(
+        routes_module,
+        "render_initial_root_setup",
+        lambda request: rendered.append("initial"),
+    )
+
+    await set_root(SimpleNamespace(session={}, query_params={}))
+
+    assert rendered == ["initial"]

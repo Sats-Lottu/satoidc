@@ -10,6 +10,7 @@ from satoidc.auth.security import verify_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission, User
 from satoidc.models.database import get_session
+from satoidc.services.setup_lock import get_setup_state
 
 
 @asynccontextmanager
@@ -48,7 +49,20 @@ async def database_schema_ready() -> bool:
                 sync_session.get_bind()
             ).get_table_names()
         )
-        return {"users", "permissions"}.issubset(set(table_names))
+        return {"users", "permissions", "setup_state"}.issubset(
+            set(table_names)
+        )
+
+
+async def setup_completed() -> bool:
+    async with setup_session() as session:
+        try:
+            setup_state = await get_setup_state(session)
+        except OperationalError as exc:
+            if is_missing_schema_error(exc):
+                return False
+            raise
+        return setup_state is not None and setup_state.state == "completed"
 
 
 async def exists_root_user() -> bool:
