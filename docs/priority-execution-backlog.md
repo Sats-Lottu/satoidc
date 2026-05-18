@@ -14,6 +14,6 @@ summarized in `docs/priority-execution-history.md`.
 
 | Task File | Priority | Area |
 | --- | --- | --- |
-| [phase-3-setup-wizard-ui.md](priority-execution-tasks/phase-3-setup-wizard-ui.md) | P2/P3 | Setup UI |
+| [phase-3-setup-wizard-ui.md](priority-execution-tasks/phase-3-setup-wizard-ui.md) | P2/P3 | Setup UI; public completion lock and apply service complete, full wizard UI and e2e remain open |
 | [phase-4-token-conformance-performance.md](priority-execution-tasks/phase-4-token-conformance-performance.md) | P1/P3 | OIDC/performance |
 | [phase-5-compatibility-metrics.md](priority-execution-tasks/phase-5-compatibility-metrics.md) | P3 | Compatibility/metrics |

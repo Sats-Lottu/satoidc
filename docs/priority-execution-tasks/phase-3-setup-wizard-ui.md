@@ -6,6 +6,9 @@ Recommended agents: NiceGUI frontend, backend security
 
 ## Task 3.6: Build Interactive Setup Wizard MVP
 
+Status: open. Public setup completion lock and interactive apply service were
+completed on 2026-05-18; full step UI and browser e2e remain open.
+
 1. Clear task name: Build the interactive setup wizard MVP.
 2. Technical objective: guide a fresh instance from incomplete setup to usable
    root/admin login.
@@ -33,12 +36,12 @@ Recommended agents: NiceGUI frontend, backend security
 
 ### Subtasks
 
-- Render diagnostics step.
-- Render instance/admin steps.
-- Implement final masked review.
-- Apply configuration atomically through setup services.
-- Block public setup after completion.
-- Add e2e coverage.
+- [ ] Render diagnostics step.
+- [ ] Render instance/admin steps.
+- [ ] Implement final masked review.
+- [x] Apply configuration atomically through setup services.
+- [x] Block public setup after completion.
+- [ ] Add e2e coverage.
 
 ## Task 3.7: Add Admin-Only Reconfiguration Mode
 
@@ -72,4 +75,3 @@ Recommended agents: NiceGUI frontend, backend security
 - Add confirmation for issuer/public URL/signing backend changes.
 - Add audit/log events.
 - Add e2e coverage.
-

@@ -147,6 +147,23 @@ This file summarizes completed execution backlog items. Keep active work in
   - Validation: `cd satoidc; poetry run task test` passed with 270 selected
     tests, 22 deselected tests, and 5 warnings.
 
+- Add setup wizard completion guard and apply service.
+  - Source: `docs/priority-execution-tasks/phase-3-setup-wizard-ui.md`
+  - Outcome: setup root detection now includes persisted `setup_state`;
+    completed setup state blocks public root creation before rendering the
+    initial setup form; and an interactive apply service can validate admin
+    input, acquire the setup lock, create the initial root user, mark setup as
+    completed, or fail with sanitized diagnostics. The full multi-step
+    NiceGUI wizard and e2e coverage remain open.
+  - Validation: `cd satoidc; poetry run ruff check setup_wizard/get_root.py
+    setup_wizard/routes.py setup_wizard/apply.py
+    tests/setup/test_wizard_root_access.py
+    tests/test_interactive_setup_apply.py` passed; `cd satoidc; poetry run
+    pytest tests/setup/test_wizard_root_access.py
+    tests/test_interactive_setup_apply.py tests/test_setup_state.py --no-cov
+    -vv` passed with 30 tests; `cd satoidc; poetry run task test` passed with
+    280 selected tests, 22 deselected tests, and 5 warnings.
+
 ## Completed On Or Before 2026-05-17
 
 - Implement email verification and account recovery.
