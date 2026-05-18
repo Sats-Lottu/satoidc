@@ -6,6 +6,9 @@ Recommended agents: backend configuration, security, database
 
 ## Task 3.1: Implement `VAR` And `VAR_FILE` Secret Resolution
 
+Status: completed on 2026-05-18. Keep this section for traceability until the
+remaining phase tasks are completed.
+
 1. Clear task name: Implement direct env and `_FILE` secret resolution.
 2. Technical objective: support Docker/Coolify mounted secrets safely.
 3. Detailed scope: direct value wins over file value; file values are UTF-8 and
@@ -32,12 +35,15 @@ Recommended agents: backend configuration, security, database
 
 ### Subtasks
 
-- Define supported `_FILE` variables.
-- Implement resolver.
-- Implement masking helper.
-- Add tests for all error cases.
+- [x] Define supported `_FILE` variables.
+- [x] Implement resolver.
+- [x] Implement masking helper.
+- [x] Add tests for all error cases.
 
 ## Task 3.2: Centralize Runtime Validation
+
+Status: completed on 2026-05-18. Keep this section for traceability until the
+remaining phase tasks are completed.
 
 1. Clear task name: Centralize issuer, public URL, secret, and database
    validation.
@@ -65,12 +71,14 @@ Recommended agents: backend configuration, security, database
 
 ### Subtasks
 
-- Add issuer/public URL validation.
-- Add production HTTPS checks.
-- Add database URL compatibility checks if gaps remain.
-- Add regression tests.
+- [x] Add issuer/public URL validation.
+- [x] Add production HTTPS checks.
+- [x] Add database URL compatibility checks if gaps remain.
+- [x] Add regression tests.
 
 ## Task 3.3: Add Persistent Setup State Model
+
+Status: open.
 
 1. Clear task name: Add setup state persistence.
 2. Technical objective: store canonical setup state in the database.
@@ -100,6 +108,8 @@ Recommended agents: backend configuration, security, database
 - Add SQLite/PostgreSQL compatible tests.
 
 ## Task 3.4: Implement Non-Interactive Root Bootstrap
+
+Status: open.
 
 1. Clear task name: Implement root user bootstrap from environment.
 2. Technical objective: allow headless deployments to create the first root
@@ -134,6 +144,8 @@ Recommended agents: backend configuration, security, database
 
 ## Task 3.5: Add Setup Concurrency Lock
 
+Status: open.
+
 1. Clear task name: Add setup execution lock.
 2. Technical objective: prevent concurrent setup sessions from applying
    conflicting configuration.
@@ -159,4 +171,3 @@ Recommended agents: backend configuration, security, database
 - Implement acquire/release/fail behavior.
 - Add stale lock handling if needed.
 - Add concurrency tests.
-

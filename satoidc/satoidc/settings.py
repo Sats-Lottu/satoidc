@@ -1,18 +1,21 @@
+import os
 from typing import Any
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from satoidc.runtime_config import (
-    PLACEHOLDER_SECRET,
-    is_operator_issuer_missing,
     is_production_environment,
+    resolved_runtime_env_settings,
     validate_database_url_pair,
+    validate_issuer_url,
+    validate_production_secret,
+    validate_public_url,
 )
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
     SERVICE_NAME: str = "SatOIDC"
     DOMAIN: str = ""
@@ -55,6 +58,31 @@ class Settings(BaseSettings):
     SESSION_MIDDLEWARE_SECRET_KEY: str = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
     SESSION_COOKIE_HTTPS_ONLY: bool | None = None
 
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls,
+        init_settings,
+        env_settings,
+        dotenv_settings,
+        file_secret_settings,
+    ):
+        def runtime_env_settings():
+            return resolved_runtime_env_settings(
+                {
+                    **getattr(dotenv_settings, "env_vars", {}),
+                    **os.environ,
+                }
+            )
+
+        return (
+            init_settings,
+            runtime_env_settings,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+        )
+
     @property
     def is_production(self) -> bool:
         return is_production_environment(self.APP_ENV)
@@ -76,22 +104,26 @@ class Settings(BaseSettings):
                 "EMAIL_SENDER_MODE must be 'disabled', 'console', or 'smtp'"
             )
 
+        validate_issuer_url(
+            self.OAUTH2_JWT_ISS, production=self.is_production
+        )
+        validate_public_url(
+            self.EMAIL_PUBLIC_BASE_URL,
+            name="EMAIL_PUBLIC_BASE_URL",
+            production=self.is_production,
+        )
+
         if not self.is_production:
             return
 
-        if is_operator_issuer_missing(self.OAUTH2_JWT_ISS):
-            raise ValueError(
-                "OAUTH2_JWT_ISS must be configured to the public issuer "
-                "URL in production"
-            )
-        if self.SESSION_MIDDLEWARE_SECRET_KEY == PLACEHOLDER_SECRET:
-            raise ValueError(
-                "SESSION_MIDDLEWARE_SECRET_KEY must be changed in production"
-            )
-        if self.OAUTH2_JWT_SECRET_KEY == PLACEHOLDER_SECRET:
-            raise ValueError(
-                "OAUTH2_JWT_SECRET_KEY must be changed in production"
-            )
+        validate_production_secret(
+            self.SESSION_MIDDLEWARE_SECRET_KEY,
+            name="SESSION_MIDDLEWARE_SECRET_KEY",
+        )
+        validate_production_secret(
+            self.OAUTH2_JWT_SECRET_KEY,
+            name="OAUTH2_JWT_SECRET_KEY",
+        )
         if not self.session_cookie_https_only:
             raise ValueError(
                 "SESSION_COOKIE_HTTPS_ONLY must be enabled in production"

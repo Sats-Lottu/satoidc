@@ -1,6 +1,10 @@
 import pytest
 
-from satoidc.settings import PLACEHOLDER_SECRET, Settings
+from satoidc.runtime_config import PLACEHOLDER_SECRET, mask_secret
+from satoidc.settings import Settings
+
+STRONG_SESSION_SECRET = "s" * 32
+STRONG_OIDC_SECRET = "o" * 32
 
 
 def test_session_cookie_https_only_defaults_to_environment():
@@ -9,8 +13,8 @@ def test_session_cookie_https_only_defaults_to_environment():
         _env_file=None,
         APP_ENV="production",
         OAUTH2_JWT_ISS="https://issuer.example",
-        SESSION_MIDDLEWARE_SECRET_KEY="session-secret",
-        OAUTH2_JWT_SECRET_KEY="jwt-secret",
+        SESSION_MIDDLEWARE_SECRET_KEY=STRONG_SESSION_SECRET,
+        OAUTH2_JWT_SECRET_KEY=STRONG_OIDC_SECRET,
     )
 
     assert dev_settings.session_cookie_https_only is False
@@ -30,7 +34,7 @@ def test_production_rejects_placeholder_secrets():
             APP_ENV="production",
             OAUTH2_JWT_ISS="https://issuer.example",
             SESSION_MIDDLEWARE_SECRET_KEY=PLACEHOLDER_SECRET,
-            OAUTH2_JWT_SECRET_KEY="jwt-secret",
+            OAUTH2_JWT_SECRET_KEY=STRONG_OIDC_SECRET,
         )
 
     with pytest.raises(ValueError, match="OAUTH2_JWT_SECRET_KEY"):
@@ -38,8 +42,28 @@ def test_production_rejects_placeholder_secrets():
             _env_file=None,
             APP_ENV="production",
             OAUTH2_JWT_ISS="https://issuer.example",
-            SESSION_MIDDLEWARE_SECRET_KEY="session-secret",
+            SESSION_MIDDLEWARE_SECRET_KEY=STRONG_SESSION_SECRET,
             OAUTH2_JWT_SECRET_KEY=PLACEHOLDER_SECRET,
+        )
+
+
+def test_production_rejects_short_secrets():
+    with pytest.raises(ValueError, match="SESSION_MIDDLEWARE_SECRET_KEY"):
+        Settings(
+            _env_file=None,
+            APP_ENV="production",
+            OAUTH2_JWT_ISS="https://issuer.example",
+            SESSION_MIDDLEWARE_SECRET_KEY="short",
+            OAUTH2_JWT_SECRET_KEY=STRONG_OIDC_SECRET,
+        )
+
+    with pytest.raises(ValueError, match="OAUTH2_JWT_SECRET_KEY"):
+        Settings(
+            _env_file=None,
+            APP_ENV="production",
+            OAUTH2_JWT_ISS="https://issuer.example",
+            SESSION_MIDDLEWARE_SECRET_KEY=STRONG_SESSION_SECRET,
+            OAUTH2_JWT_SECRET_KEY="short",
         )
 
 
@@ -49,8 +73,8 @@ def test_production_rejects_insecure_session_cookie_override():
             _env_file=None,
             APP_ENV="production",
             OAUTH2_JWT_ISS="https://issuer.example",
-            SESSION_MIDDLEWARE_SECRET_KEY="session-secret",
-            OAUTH2_JWT_SECRET_KEY="jwt-secret",
+            SESSION_MIDDLEWARE_SECRET_KEY=STRONG_SESSION_SECRET,
+            OAUTH2_JWT_SECRET_KEY=STRONG_OIDC_SECRET,
             SESSION_COOKIE_HTTPS_ONLY=False,
         )
 
@@ -60,8 +84,8 @@ def test_production_rejects_local_or_missing_issuer():
         Settings(
             _env_file=None,
             APP_ENV="production",
-            SESSION_MIDDLEWARE_SECRET_KEY="session-secret",
-            OAUTH2_JWT_SECRET_KEY="jwt-secret",
+            SESSION_MIDDLEWARE_SECRET_KEY=STRONG_SESSION_SECRET,
+            OAUTH2_JWT_SECRET_KEY=STRONG_OIDC_SECRET,
         )
 
     with pytest.raises(ValueError, match="OAUTH2_JWT_ISS"):
@@ -69,8 +93,28 @@ def test_production_rejects_local_or_missing_issuer():
             _env_file=None,
             APP_ENV="production",
             OAUTH2_JWT_ISS="",
-            SESSION_MIDDLEWARE_SECRET_KEY="session-secret",
-            OAUTH2_JWT_SECRET_KEY="jwt-secret",
+            SESSION_MIDDLEWARE_SECRET_KEY=STRONG_SESSION_SECRET,
+            OAUTH2_JWT_SECRET_KEY=STRONG_OIDC_SECRET,
+        )
+
+
+def test_issuer_rejects_query_and_fragment():
+    with pytest.raises(ValueError, match="query or fragment"):
+        Settings(_env_file=None, OAUTH2_JWT_ISS="https://issuer.example?a=b")
+
+    with pytest.raises(ValueError, match="query or fragment"):
+        Settings(_env_file=None, OAUTH2_JWT_ISS="https://issuer.example#frag")
+
+
+def test_production_rejects_insecure_public_base_url():
+    with pytest.raises(ValueError, match="EMAIL_PUBLIC_BASE_URL"):
+        Settings(
+            _env_file=None,
+            APP_ENV="production",
+            OAUTH2_JWT_ISS="https://issuer.example",
+            EMAIL_PUBLIC_BASE_URL="http://issuer.example",
+            SESSION_MIDDLEWARE_SECRET_KEY=STRONG_SESSION_SECRET,
+            OAUTH2_JWT_SECRET_KEY=STRONG_OIDC_SECRET,
         )
 
 
@@ -132,3 +176,89 @@ def test_oidc_signing_backend_must_be_supported():
 
     with pytest.raises(ValueError, match="OIDC_SIGNING_BACKEND"):
         Settings(_env_file=None, OIDC_SIGNING_BACKEND="unsupported")
+
+
+def test_satoidc_alias_wins_over_current_env(monkeypatch, caplog):
+    monkeypatch.setenv("OAUTH2_JWT_ISS", "https://legacy.example")
+    monkeypatch.setenv("SATOIDC_ISSUER", "https://issuer.example")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.OAUTH2_JWT_ISS == "https://issuer.example"
+    assert "https://issuer.example" not in caplog.text
+    assert "https://legacy.example" not in caplog.text
+    assert "ignoring legacy OAUTH2_JWT_ISS" in caplog.text
+
+
+def test_direct_secret_wins_over_file(monkeypatch, tmp_path, caplog):
+    secret_path = tmp_path / "secret"
+    secret_path.write_text("file-secret\n", encoding="utf-8")
+    direct_secret = "direct-secret"
+    monkeypatch.setenv("SATOIDC_SECRET_KEY", direct_secret)
+    monkeypatch.setenv("SATOIDC_SECRET_KEY_FILE", str(secret_path))
+
+    settings = Settings(_env_file=None)
+
+    assert settings.SESSION_MIDDLEWARE_SECRET_KEY == direct_secret
+    assert "file-secret" not in caplog.text
+    assert direct_secret not in caplog.text
+    assert "ignoring SATOIDC_SECRET_KEY_FILE" in caplog.text
+
+
+def test_secret_file_resolution_strips_trailing_newlines(
+    monkeypatch, tmp_path
+):
+    secret_path = tmp_path / "smtp-password"
+    secret_path.write_text("smtp-secret\r\n\n", encoding="utf-8")
+    monkeypatch.setenv("SATOIDC_SMTP_PASSWORD_FILE", str(secret_path))
+
+    settings = Settings(_env_file=None)
+
+    assert settings.SMTP_PASSWORD == "smtp-secret"
+
+
+def test_secret_file_resolution_supports_dotenv(tmp_path):
+    secret_path = tmp_path / "session-secret"
+    secret_path.write_text(f"{STRONG_SESSION_SECRET}\n", encoding="utf-8")
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        f"SATOIDC_SECRET_KEY_FILE={secret_path}\n",
+        encoding="utf-8",
+    )
+
+    settings = Settings(_env_file=env_path)
+
+    assert settings.SESSION_MIDDLEWARE_SECRET_KEY == STRONG_SESSION_SECRET
+
+
+def test_current_secret_file_name_is_supported(monkeypatch, tmp_path):
+    secret_path = tmp_path / "transit-token"
+    secret_path.write_text("transit-secret\n", encoding="utf-8")
+    monkeypatch.setenv("OIDC_TRANSIT_TOKEN_FILE", str(secret_path))
+
+    settings = Settings(_env_file=None)
+
+    assert settings.OIDC_TRANSIT_TOKEN == "transit-secret"
+
+
+def test_missing_secret_file_fails_clearly(monkeypatch, tmp_path):
+    missing_path = tmp_path / "missing"
+    monkeypatch.setenv("SATOIDC_SECRET_KEY_FILE", str(missing_path))
+
+    with pytest.raises(ValueError, match="SATOIDC_SECRET_KEY_FILE"):
+        Settings(_env_file=None)
+
+
+def test_empty_secret_file_fails_clearly(monkeypatch, tmp_path):
+    secret_path = tmp_path / "empty"
+    secret_path.write_text("\n", encoding="utf-8")
+    monkeypatch.setenv("SATOIDC_SECRET_KEY_FILE", str(secret_path))
+
+    with pytest.raises(ValueError, match="empty secret file"):
+        Settings(_env_file=None)
+
+
+def test_mask_secret_never_returns_secret_value():
+    assert mask_secret("super-secret") == "********"
+    assert not mask_secret("")
+    assert not mask_secret(None)
