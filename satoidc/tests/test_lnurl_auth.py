@@ -161,6 +161,7 @@ async def test_lnurl_register_callback_creates_wallet_user(db_session):
 
     assert response == {"status": "OK"}
     assert user.lnurl_pubkey == key
+    assert user.nickname == "satoshi"
 
 
 async def test_lnurl_login_rejects_unlinked_wallet(db_session):

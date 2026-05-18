@@ -17,7 +17,7 @@ def url_encode(url: str) -> str:
     return lnurl.upper()
 
 
-def verify(k1: str, key: str, sig: str) -> True:
+def verify(k1: str, key: str, sig: str) -> bool:
     k1 = bytes.fromhex(k1)
     key = bytes.fromhex(key)
     sig = bytes.fromhex(sig)

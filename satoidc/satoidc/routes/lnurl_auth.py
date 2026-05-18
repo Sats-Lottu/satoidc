@@ -90,7 +90,7 @@ async def lnurl_auth_callback(  # noqa: PLR0911, PLR0912
                 db_user = User(
                     password_hash=None,
                     email=None,
-                    nickname=None,
+                    nickname="satoshi",
                     lnurl_pubkey=query.key,
                     login=None,
                 )

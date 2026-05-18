@@ -1,7 +1,7 @@
 # LNURL-auth Flow
 
 Status: draft
-Updated: 2026-05-06
+Updated: 2026-05-18
 
 ## Actors
 
@@ -46,5 +46,17 @@ Current validation:
 ## Risks To Resolve
 
 - Callback attempts intentionally consume the challenge before signature verification as a replay-defense measure, even when the signature is invalid.
-- `register` can create a user without email, login, password, and possibly without nickname.
+- `register` can create a user without email, login, or password, but must use
+  `satoshi` as the default nickname when no nickname is supplied.
 - `auth` action needs a documented meaning before production use.
+
+## Product Hardening Requirement
+
+LNURL `register` must satisfy the database contract for `User.nickname`.
+
+- New LNURL-only users must receive `satoshi` as the default display nickname.
+- The fallback nickname must not expose a full wallet public key.
+- A regression test must cover successful LNURL registration against the
+  non-null nickname constraint.
+
+See `specs/features/lnurl-registration-valid-user/spec.md`.
