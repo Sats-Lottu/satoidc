@@ -43,7 +43,8 @@ remaining phase tasks are completed.
 
 ## Task 2.2: Add Server-Side Dashboard Pagination Services
 
-Status: open.
+Status: completed on 2026-05-18. Keep this section for traceability until the
+remaining phase task is completed.
 
 1. Clear task name: Add server-side pagination services for admin dashboard.
 2. Technical objective: replace fixed query limits with paginated service
@@ -71,11 +72,11 @@ Status: open.
 
 ### Subtasks
 
-- Define pagination DTO.
-- Add user list query.
-- Add OAuth client list query.
-- Add permission request list query.
-- Add tests for counts and boundaries.
+- [x] Define pagination DTO.
+- [x] Add user list query.
+- [x] Add OAuth client list query.
+- [x] Add permission request list query.
+- [x] Add tests for counts and boundaries.
 
 ## Task 2.3: Add Responsive Pagination UI
 

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import Depends, Request
 from nicegui import APIRouter, ui
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -17,12 +17,11 @@ from satoidc.auth.permissions import (
     approve_permission_request,
     deny_permission_request,
     get_admin_dashboard_metrics,
-    list_permission_requests,
     permission_request_events,
 )
 from satoidc.auth.security import page_security
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
-from satoidc.models import OAuth2Client, Permission, User
+from satoidc.models import OAuth2Client, Permission
 from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
     CONTENT,
@@ -39,6 +38,13 @@ from satoidc.routes.ui_components import (
     card,
     empty_state,
     responsive_grid,
+)
+from satoidc.services.admin_dashboard import (
+    PermissionRequestPageFilters,
+    list_admin_users_page,
+    list_inactive_permissions_page,
+    list_oauth_clients_page,
+    list_permission_requests_page,
 )
 from satoidc.services.oauth_clients import (
     delete_oauth_client,
@@ -119,12 +125,17 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
         dialog.open()
 
     @ui.refreshable
-    async def admin_dashboard_content():  # noqa: PLR0912, PLR0915
+    async def admin_dashboard_content():  # noqa: PLR0912, PLR0914, PLR0915
         session.expire_all()
         metrics = await get_admin_dashboard_metrics(session)
-        pending_requests = await list_permission_requests(
-            session, status=PermissionRequestStatusEnum.PENDING, limit=25
+        pending_requests_page = await list_permission_requests_page(
+            session,
+            filters=PermissionRequestPageFilters(
+                status=PermissionRequestStatusEnum.PENDING
+            ),
+            page_size=25,
         )
+        pending_requests = pending_requests_page.items
         recent_decisions = await session.scalars(
             select(Permission)
             .options(selectinload(Permission.user))
@@ -133,36 +144,14 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
             .limit(5)
         )
         recent_permissions = list(recent_decisions.all())
-        users = list(
-            (
-                await session.scalars(
-                    select(User).order_by(User.created_at.desc()).limit(10)
-                )
-            ).all()
+        users_page = await list_admin_users_page(session)
+        clients_page = await list_oauth_clients_page(session)
+        inactive_permissions_page = await list_inactive_permissions_page(
+            session
         )
-        clients = list(
-            (
-                await session.scalars(
-                    select(OAuth2Client)
-                    .order_by(OAuth2Client.client_id_issued_at.desc())
-                    .limit(10)
-                )
-            ).all()
-        )
-        inactive_permissions = list(
-            (
-                await session.scalars(
-                    select(Permission)
-                    .options(selectinload(Permission.user))
-                    .where(
-                        (Permission.disabled.is_(True))
-                        | (Permission.expiration_date <= func.now())
-                    )
-                    .order_by(Permission.created_at.desc())
-                    .limit(10)
-                )
-            ).all()
-        )
+        users = users_page.items
+        clients = clients_page.items
+        inactive_permissions = inactive_permissions_page.items
 
         with ui.column().classes(f"{CONTENT} gap-6"):
             with ui.row().classes(
