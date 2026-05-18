@@ -5,9 +5,17 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 import satoidc.settings as settings_module
 from satoidc.models import SetupState
+from satoidc.services.setup_lock import (
+    SetupLockUnavailableError,
+    acquire_setup_lock,
+    fail_setup_lock,
+    release_setup_lock,
+)
 from satoidc.settings import Settings
 
 
@@ -40,6 +48,97 @@ async def test_setup_state_rejects_invalid_state(db_session):
 
     with pytest.raises(IntegrityError):
         await db_session.commit()
+
+
+async def test_setup_lock_blocks_second_setup_attempt(db_session):
+    first_lock = await acquire_setup_lock(db_session, actor="setup-a")
+
+    with pytest.raises(SetupLockUnavailableError) as exc_info:
+        await acquire_setup_lock(db_session, actor="setup-b")
+
+    stored_state = await db_session.scalar(select(SetupState))
+
+    assert first_lock.state_id == 1
+    assert stored_state is not None
+    assert stored_state.state == "applying"
+    assert exc_info.value.diagnostics.current_state == "applying"
+    assert (
+        exc_info.value.diagnostics.message
+        == "Setup is locked by another setup attempt."
+    )
+
+
+async def test_setup_lock_blocks_second_database_session(db_session):
+    session_factory = sessionmaker(
+        db_session.bind, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async with session_factory() as setup_a, session_factory() as setup_b:
+        await acquire_setup_lock(setup_a, actor="setup-a")
+
+        with pytest.raises(SetupLockUnavailableError) as exc_info:
+            await acquire_setup_lock(setup_b, actor="setup-b")
+
+        stored_state = await setup_b.get(SetupState, 1)
+
+    assert stored_state is not None
+    assert stored_state.state == "applying"
+    assert exc_info.value.diagnostics.current_state == "applying"
+
+
+async def test_setup_lock_release_marks_setup_completed(db_session):
+    lock = await acquire_setup_lock(db_session, actor="setup-runner")
+
+    completed_state = await release_setup_lock(
+        db_session,
+        lock,
+        completed_by="system",
+        config_hash="sha256:setup",
+    )
+
+    assert completed_state.state == "completed"
+    assert completed_state.completed_by == "system"
+    assert completed_state.config_hash == "sha256:setup"
+    assert completed_state.last_error is None
+    assert completed_state.completed_at is not None
+
+    with pytest.raises(SetupLockUnavailableError) as exc_info:
+        await acquire_setup_lock(db_session, actor="setup-b")
+
+    assert exc_info.value.diagnostics.current_state == "completed"
+    assert exc_info.value.diagnostics.message == "Setup has already completed."
+
+
+async def test_setup_lock_fail_is_recoverable(db_session):
+    failed_lock = await acquire_setup_lock(db_session, actor="setup-runner")
+
+    failed_state = await fail_setup_lock(
+        db_session,
+        failed_lock,
+        error="database write failed",
+    )
+
+    assert failed_state.state == "failed"
+    assert failed_state.last_error == "database write failed"
+    assert failed_state.completed_at is None
+
+    recovered_lock = await acquire_setup_lock(db_session, actor="setup-retry")
+    recovered_state = await db_session.scalar(select(SetupState))
+
+    assert recovered_lock.state_id == 1
+    assert recovered_state is not None
+    assert recovered_state.state == "applying"
+    assert recovered_state.last_error is None
+
+
+async def test_setup_lock_release_requires_active_lock(db_session):
+    lock = await acquire_setup_lock(db_session, actor="setup-runner")
+    await fail_setup_lock(db_session, lock, error="recoverable failure")
+
+    with pytest.raises(SetupLockUnavailableError) as exc_info:
+        await release_setup_lock(db_session, lock)
+
+    assert exc_info.value.diagnostics.current_state == "failed"
 
 
 def test_setup_state_migration_creates_sqlite_table(
