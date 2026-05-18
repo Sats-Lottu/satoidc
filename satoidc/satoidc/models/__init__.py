@@ -10,6 +10,7 @@ from authlib.integrations.sqla_oauth2 import (
     OAuth2TokenMixin,
 )
 from sqlalchemy import (
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -301,6 +302,55 @@ class OidcSigningKeyAuditEvent:
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), init=False, server_default=func.now()
+    )
+
+
+@table_registry.mapped_as_dataclass
+class SetupState:
+    __tablename__ = "setup_state"
+
+    id: Mapped[int] = mapped_column(
+        init=False, primary_key=True, default=1
+    )
+    state: Mapped[str] = mapped_column(default="not_started", index=True)
+    version: Mapped[int] = mapped_column(default=1)
+    completed_by: Mapped[Optional[str]] = mapped_column(
+        nullable=True, default=None
+    )
+    config_hash: Mapped[Optional[str]] = mapped_column(
+        nullable=True, default=None
+    )
+    last_error: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, default=None
+    )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), init=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "state in ("
+            "'not_started', "
+            "'in_progress', "
+            "'ready_to_apply', "
+            "'applying', "
+            "'completed', "
+            "'failed', "
+            "'locked', "
+            "'reconfigure_mode'"
+            ")",
+            name="ck_setup_state_state",
+        ),
+        CheckConstraint("version >= 1", name="ck_setup_state_version"),
     )
 
 

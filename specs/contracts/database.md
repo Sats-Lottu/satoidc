@@ -110,6 +110,28 @@ Current local behavior:
 - `OAuth2Token.is_refresh_token_active()` accepts refresh tokens until
   `issued_at + expires_in * 2` unless revoked.
 
+### `setup_state`
+
+Fields:
+
+- `id`: integer primary key for the canonical setup state row.
+- `state`: non-null setup lifecycle state.
+- `version`: non-null schema/semantic version for setup state payloads,
+  starting at `1`.
+- `completed_by`: nullable actor identifier such as `system` or a user/admin
+  identifier.
+- `config_hash`: nullable hash of the applied non-secret setup configuration.
+- `last_error`: nullable text with recoverable setup diagnostics.
+- `completed_at`: nullable timestamp for successful completion.
+- `created_at`: database timestamp.
+- `updated_at`: database timestamp updated on mutation.
+
+Constraints:
+
+- `state` must be one of `not_started`, `in_progress`, `ready_to_apply`,
+  `applying`, `completed`, `failed`, `locked`, or `reconfigure_mode`.
+- `version` must be greater than or equal to `1`.
+
 ## Migration Baseline
 
 Current migration baseline:
