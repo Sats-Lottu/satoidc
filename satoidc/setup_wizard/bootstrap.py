@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 import asyncio
 import logging
@@ -8,7 +6,7 @@ import secrets
 import shlex
 import sys
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Mapping
 
@@ -44,18 +42,18 @@ ADMIN_PASSWORD_VAR = "SATOIDC_ADMIN_PASSWORD"
 LOGGER = logging.getLogger(__name__)
 
 
-class RuntimeValueKind(str, Enum):
+class RuntimeValueKind(StrEnum):
     GENERATED = "generated"
     OPERATOR_MANAGED = "operator-managed"
     OPTIONAL = "optional"
 
 
-class BootstrapStatus(str, Enum):
+class BootstrapStatus(StrEnum):
     OK = "ok"
     BLOCKED = "blocked"
 
 
-class RootBootstrapStatus(str, Enum):
+class RootBootstrapStatus(StrEnum):
     CREATED = "created"
     SKIPPED_EXISTING_ADMIN = "skipped_existing_admin"
     BLOCKED = "blocked"

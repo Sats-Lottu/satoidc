@@ -65,6 +65,10 @@ markers = [
 ]
 filterwarnings = [
     "ignore::authlib.deprecate.AuthlibDeprecationWarning",
+    "ignore:websockets\\.legacy is deprecated.*:DeprecationWarning",
+    "ignore:websockets\\.server\\.WebSocketServerProtocol is deprecated.*:DeprecationWarning",
+    "ignore:remove second argument of ws_handler:DeprecationWarning",
+    "ignore:Using implicit key type is not recommended.:joserfc.jwk.SecurityWarning",
 ]
 
 [tool.coverage.run]

@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 import hashlib
 import json
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +23,7 @@ from satoidc.validators import (
 )
 
 
-class InteractiveSetupApplyStatus(str, Enum):
+class InteractiveSetupApplyStatus(StrEnum):
     APPLIED = "applied"
     VALIDATION_ERROR = "validation_error"
     ADMIN_EXISTS = "admin_exists"
