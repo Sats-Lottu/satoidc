@@ -54,7 +54,7 @@ def _parse_cached_json(request: Request) -> Dict[str, Any]:
         return {}
     try:
         obj = json.loads(body.decode("utf-8"))
-    except Exception:
+    except json.JSONDecodeError:
         return {}
     return obj if isinstance(obj, dict) else {}
 
@@ -89,13 +89,13 @@ class FastAPIOAuth2Payload(OAuth2Payload):
                 data[k] = values[0]
                 datalist[k].extend(values)
 
-        # body cacheado (se houver)
+        # cached body (if any)
         if self._request.method.upper() != "GET":
             body_data = _parse_cached_form(self._request)
             if not body_data:
                 body_data = _parse_cached_json(self._request)
 
-            # body "ganha" da query
+            # body overrides query
             for k, v in body_data.items():
                 if isinstance(v, list):
                     datalist[k] = list(v)
@@ -117,16 +117,19 @@ class FastAPIOAuth2Payload(OAuth2Payload):
 
 
 class FastAPIOAuth2Request(OAuth2Request):
-    """Equivalente ao FlaskOAuth2Request, 100% sync."""
+    """Equivalent to FlaskOAuth2Request, 100% sync."""
 
     def __init__(self, request: Request):
+        # authlib expects a standard dict. Starlette's Headers are case-insensitive,
+        # but dict(request.headers) creates a case-sensitive dict with lowercase keys.
+        # We need to ensure the 'Authorization' header is present with that exact
+        # casing for authlib to find it.
         headers = dict(request.headers)
-        if "authorization" in headers and "Authorization" not in headers:
-            headers["Authorization"] = headers["authorization"]
+        auth_header = request.headers.get("Authorization")
+        if auth_header:
+            headers["Authorization"] = auth_header
         super().__init__(
-            method=request.method,
-            uri=str(request.url),
-            headers=headers,
+            method=request.method, uri=str(request.url), headers=headers
         )
         self._request = request
         self.payload = FastAPIOAuth2Payload(request)
@@ -141,7 +144,7 @@ class FastAPIOAuth2Request(OAuth2Request):
 
     @property
     def data(self):
-        # algumas partes antigas do authlib usam request.data
+        # some old parts of authlib use request.data
         return self.payload.data
 
     @property
@@ -150,7 +153,7 @@ class FastAPIOAuth2Request(OAuth2Request):
 
 
 class FastAPIJsonPayload(JsonPayload):
-    """Payload JSON 100% sync baseado no body cacheado (request._body)."""
+    """100% sync JSON payload based on cached body (request._body)."""
 
     def __init__(self, request: Request):
         self._request = request
@@ -162,7 +165,7 @@ class FastAPIJsonPayload(JsonPayload):
 
 
 class FastAPIJsonRequest(JsonRequest):
-    """Equivalente ao FlaskJsonRequest, 100% sync."""
+    """Equivalent to FlaskJsonRequest, 100% sync."""
 
     def __init__(self, request: Request):
         super().__init__(
