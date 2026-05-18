@@ -298,7 +298,8 @@ Run on 2026-05-15 after priority backlog completion:
 
 - OIDC signing key persistence and rotation are implemented in the database. A future production deployment may still move private-key operations to Vault Transit or another external signing backend.
 - `LnurlAuthChallenge.consumed` intentionally records callback consumption before signature validation as a replay-defense measure.
-- `User.nickname` is non-null in the model, but LNURL registration creates a user with `nickname=None`.
+- LNURL registration now uses the default nickname `satoshi` for wallet-created
+  users when no nickname is supplied.
 - Refresh Token Grant has focused unit/integration coverage and browser coverage for refresh issuance, but still needs broader end-to-end revocation and reuse coverage.
 
 ### UX And Maintenance

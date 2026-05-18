@@ -2,12 +2,16 @@
 
 Status: draft
 Area: Bootstrap/Auth/UI
-Last Updated: 2026-05-17
+Last Updated: 2026-05-18
 
 ## Intent
 
 Describe the current first-root-user setup flow used by local and container
 deployments.
+
+Canonical future Setup Wizard requirements live in
+`specs/features/setup-wizard/spec.md`. This flow document describes the current
+runtime sequence and should not duplicate the complete feature requirements.
 
 ## Entry Point
 
@@ -113,11 +117,15 @@ LNURL-auth wallet for a root account.
 ## Current Gaps
 
 - The setup wizard uses older visual styling than the main NiceGUI app.
-- The setup wizard creates `nickname=None` when the optional nickname is empty,
-  while the model expects a non-null nickname.
+- LNURL root creation depends on the shared LNURL registration callback; new
+  wallet-created users receive the default nickname `satoshi`.
 - The wizard and main app share port 8000 during container startup.
 
-Related feature spec: `specs/features/application-setup/spec.md`.
+Related feature specs:
+
+- Canonical future spec: `specs/features/setup-wizard/spec.md`
+- Historical bootstrap slice:
+  `specs/features/application-setup/spec.md`
 
 ## Acceptance Criteria
 

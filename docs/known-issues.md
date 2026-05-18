@@ -1,6 +1,6 @@
 # Known Issues And Technical Debt
 
-Updated: 2026-05-17
+Updated: 2026-05-18
 
 ## High Priority
 
@@ -10,11 +10,11 @@ split into specs or backlog items.
 
 ## Medium Priority
 
-1. LNURL registration can create `User(nickname=None)` even though `nickname` is non-nullable.
-2. Refresh token revocation has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
-3. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
-4. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
-5. `/oauth/token` has a container-backed PostgreSQL concurrency smoke, but still needs a clearer load-testing threshold before production sizing decisions.
+1. Refresh token revocation has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
+2. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
+3. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
+4. `/oauth/token` has a container-backed PostgreSQL concurrency smoke, but still needs a clearer load-testing threshold before production sizing decisions.
+5. Production deployments must configure reverse-proxy rate limiting for public auth, recovery, and LNURL callback routes; direct public exposure is not hardened.
 
 ## Lower Priority
 
@@ -61,3 +61,5 @@ split into specs or backlog items.
   matrix and PostgreSQL Testcontainers migration checks.
 - The quality-testing task layer now includes unit, property, API security,
   integration, load, and aggregate commands.
+- LNURL registration now uses the default nickname `satoshi` instead of
+  attempting to create `User(nickname=None)`.

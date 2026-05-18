@@ -5,7 +5,7 @@
 - Status: implemented
 - Owner: TBD
 - Created: 2026-05-16
-- Updated: 2026-05-17
+- Updated: 2026-05-18
 - Related code:
   - `satoidc/satoidc/routes/profile.py`
   - `satoidc/satoidc/routes/dashboard.py`
@@ -100,6 +100,15 @@ Implemented on 2026-05-17:
   remain the source of truth for developer-access requests and decisions.
 - Focused unit tests cover profile services and OAuth client service
   persistence behavior.
+
+Known remaining product hardening outside this implemented spec:
+
+- `satoidc/satoidc/routes/dashboard.py` still owns admin dashboard queries and
+  some permission request commit logic.
+- Dashboard pagination and destructive action confirmation are tracked by
+  `specs/features/admin-dashboard-safety-scale/spec.md`.
+- Do not reopen this spec for broad UI rewrites; create focused specs for new
+  service extractions when they have product value.
 
 ## Traceability
 

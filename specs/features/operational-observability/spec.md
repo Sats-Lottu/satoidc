@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: TBD
 - Created: 2026-05-16
-- Updated: 2026-05-16
+- Updated: 2026-05-18
 - Related code:
   - `satoidc/satoidc/auth/`
   - `satoidc/satoidc/routes/`
@@ -13,7 +13,9 @@
 - Related specs:
   - `specs/flows/deployment.md`
   - `specs/features/oidc-key-rotation/spec.md`
+  - `specs/features/auth-rate-limiting/spec.md`
   - `specs/contracts/security-session.md`
+  - `specs/features/operator-runbooks/spec.md`
 
 ## Intent
 
@@ -23,9 +25,18 @@ telemetry platform.
 
 ## Context
 
-SatOIDC already audits OIDC key lifecycle events in the database. Some UI and
-business failures are currently surfaced only through `ui.notify`, which is not
-enough for production operations, incident review, or container log ingestion.
+SatOIDC already audits OIDC key lifecycle events in the database and uses
+standard Python logging in several auth and route modules. Some UI and business
+failures are currently surfaced only through `ui.notify`, which is not enough
+for production operations, incident review, or container log ingestion.
+
+The PRD and technical readiness report separate observability into four
+concerns:
+
+- database audit events for durable product history;
+- structured application logs for container stdout ingestion;
+- metrics for Prometheus-compatible systems if/when implemented;
+- tracing as future optional OpenTelemetry work.
 
 ## Scope
 
@@ -34,6 +45,8 @@ In scope:
 - Standardize Python logging for important authentication, authorization,
   token, LNURL, and key-management events.
 - Ensure logs are useful from stdout in container deployments.
+- Define an event taxonomy for auth failures, admin mutations, token failures,
+  email delivery failures, Transit failures, and rate-limit decisions.
 - Avoid logging secrets, tokens, private keys, passwords, or full sensitive
   payloads.
 - Keep database audit events where they are part of product behavior.
@@ -42,12 +55,17 @@ Out of scope:
 
 - Mandatory OpenTelemetry tracing in the first pass.
 - External SaaS log vendor integration.
+- Prometheus metrics exporter implementation.
 - Logging every UI notification.
 
 ## Rules
 
 - Logs must be structured enough to filter by event name, component, outcome,
   and correlation fields where available.
+- JSON logs are a product requirement for self-hosted operations, but
+  implementation may use standard `logging` with a JSON formatter, `structlog`,
+  or another narrow adapter.
+- Prometheus must be treated as a metrics target, not as a log ingestion target.
 - Security failures should log the reason class without leaking credentials or
   token contents.
 - User-facing notifications remain concise and do not replace server logs.
@@ -62,6 +80,8 @@ Out of scope:
 - LNURL callback invalid signature, expired challenge, or consumed challenge.
 - Profile and dashboard mutation failures.
 - Admin key rotation and permission approval failures.
+- Rate-limit allow/deny decisions at an aggregate event level.
+- Email token delivery or send failures.
 
 ## Acceptance Criteria
 
@@ -75,6 +95,8 @@ Out of scope:
   log entry in addition to the UI notification.
 - Given tests capture logs, then sensitive fields such as passwords, tokens,
   private JWKs, and client secrets are absent.
+- Given the app runs in Docker, then selected auth and admin events are visible
+  as structured stdout records.
 
 ## Test Plan
 
@@ -86,8 +108,9 @@ Out of scope:
 
 ## Implementation Notes
 
-Start with standard-library `logging` and consistent event fields. Introduce
-`structlog` or OpenTelemetry only after there are concrete ingestion needs.
+Start with standard-library `logging` and consistent event fields unless a JSON
+logging dependency materially reduces complexity. `structlog` is acceptable but
+not required. OpenTelemetry tracing remains future work.
 
 ## Traceability
 

@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Runtime/Configuration
-Last Updated: 2026-05-17
+Last Updated: 2026-05-18
 
 ## Intent
 
@@ -28,7 +28,7 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | `LNURL_K1_TTL_SECONDS` | `60` | LNURL challenge lifetime and QR refresh cadence. |
 | `OAUTH2_JWT_ISS` | `http://localhost:8000` | OIDC issuer and endpoint base. |
 | `OAUTH2_JWT_AUDIENCE` | `SatOIDC-clients` | Configured audience value. |
-| `OAUTH2_JWT_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Configured but current ID token signing uses generated RSA key material. |
+| `OAUTH2_JWT_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Runtime secret used by internal OIDC signing support for encryption/key protection and rejected as a placeholder in production. |
 | `OAUTH2_JWT_ALG` | `RS256` | ID token signing algorithm advertised and used. |
 | `OAUTH2_TOKEN_EXPIRES_IN` | `300` | Authorization-code token expiration value. |
 | `OIDC_SIGNING_BACKEND` | `database` | OIDC signing backend selector; supported values are `database` and `transit`. |
@@ -51,6 +51,24 @@ The app reads `.env` from the current working directory with UTF-8 encoding.
 | `SESSION_MIDDLEWARE_SECRET_KEY` | `CHANGE_ME_TO_A_LONG_RANDOM_SECRET` | Starlette session signing secret. |
 | `SESSION_COOKIE_HTTPS_ONLY` | unset | Optional explicit secure-cookie override; defaults to enabled in production and disabled in development. |
 | `SETUP_GENERATED_SECRETS_PATH` | unset | Optional absolute shell env file path where bootstrap can persist generated-owned secrets before app startup. |
+
+## Future Setup Wizard Interface
+
+`specs/features/setup-wizard/spec.md` defines the preferred future
+operator-facing environment variable namespace with `SATOIDC_*` names, including
+`SATOIDC_PUBLIC_BASE_URL`, `SATOIDC_ISSUER`, `SATOIDC_DATABASE_URL`,
+`SATOIDC_SECRET_KEY`, and bootstrap admin variables.
+
+This contract documents the current runtime settings. During implementation of
+the complete Setup Wizard, the project should either:
+
+- map `SATOIDC_*` names onto the current settings for backwards compatibility;
+  or
+- introduce a migration window where both current and `SATOIDC_*` names are
+  accepted with clear precedence.
+
+The intended long-term operator interface is the `SATOIDC_*` namespace because
+it is explicit, product-scoped, and works better for self-hosted documentation.
 
 ## Database Configuration
 

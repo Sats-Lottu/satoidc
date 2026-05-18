@@ -2,7 +2,7 @@
 
 Status: implemented
 Area: OAuth/UI
-Last Updated: 2026-05-15
+Last Updated: 2026-05-18
 
 ## Intent
 
@@ -129,3 +129,11 @@ The developer dashboard:
   treats it as unavailable.
 - Given a client owner deletes a client, when confirmed, then that registration
   is removed from the dashboard.
+
+## Product Hardening Gap
+
+The current deletion flow requires confirmation, but the PRD raises a stronger
+self-hosted product requirement: destructive client deletion should require
+typed confirmation using a stable client-facing identifier.
+
+See `specs/features/admin-dashboard-safety-scale/spec.md`.

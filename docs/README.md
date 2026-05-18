@@ -12,11 +12,13 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
   support scope, URL pairing rules, and verification commands.
 - [Local Development Troubleshooting](local-development-troubleshooting.md):
   known local setup failures and repair workflows.
+- [Reverse Proxy Operations](operations/reverse-proxy.md): TLS, forwarded
+  headers, and reverse-proxy rate limiting guidance for self-hosted production.
 - [Priority Execution Backlog](priority-execution-backlog.md): temporary active queue for open execution work.
 - [Priority Execution History](priority-execution-history.md): summary of completed backlog items removed from the active queue.
 - [Backlog Priority Plan](backlog-priority-plan.md): branch-level sequencing, grouped work, commit plan, and approval questions for active backlog implementation.
 - [Changes On 2026-05-08](changes-2026-05-08.md): schema package, registration endpoint, test coverage, and related bug fix.
-- [Legacy Analysis Report](archive/legacy-analysis-report.md): archived external analysis whose actionable items were promoted into backlog/specs.
+- [Legacy Analysis Report](archive/legacy-analysis-report.md): historical external analysis snapshot; actionable items were promoted into backlog/specs and may already be implemented or superseded.
 
 ## Related Indexes
 
