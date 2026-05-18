@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,6 +12,11 @@ import setup_wizard.routes as routes_module
 from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
 from satoidc.models import Permission, SetupState
+from setup_wizard.apply import (
+    InteractiveSetupAdminPayload,
+    InteractiveSetupApplyResult,
+    InteractiveSetupApplyStatus,
+)
 from setup_wizard.get_root import (
     authenticate_root_user,
     database_schema_ready,
@@ -21,6 +27,8 @@ from setup_wizard.get_root import (
 )
 from setup_wizard.routes import (
     SETUP_ROOT_USER_ID_KEY,
+    apply_initial_root_setup_form,
+    initial_root_form_state_from_result,
     set_root,
     stored_root_has_access,
 )
@@ -300,3 +308,101 @@ async def test_setup_wizard_allows_public_root_creation_when_not_completed(
     await set_root(SimpleNamespace(session={}, query_params={}))
 
     assert rendered == ["initial"]
+
+
+async def test_initial_root_form_calls_interactive_apply_service(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    captured = {}
+    fake_session = object()
+
+    @asynccontextmanager
+    async def fake_setup_session():
+        yield fake_session
+
+    async def fake_apply_service(session, payload, *, actor):
+        captured["session"] = session
+        captured["payload"] = payload
+        captured["actor"] = actor
+        return InteractiveSetupApplyResult(
+            status=InteractiveSetupApplyStatus.APPLIED,
+            message="Interactive setup applied successfully.",
+            errors={},
+            user_id=str(uuid4()),
+            setup_state="completed",
+        )
+
+    monkeypatch.setattr(routes_module, "setup_session", fake_setup_session)
+    monkeypatch.setattr(
+        routes_module,
+        "apply_interactive_setup_admin",
+        fake_apply_service,
+    )
+
+    result = await apply_initial_root_setup_form(
+        username="rootadm",
+        email="root@example.com",
+        password="StrongPass1!",
+        password_confirmation="StrongPass1!",
+    )
+
+    assert result.status == InteractiveSetupApplyStatus.APPLIED
+    assert captured["session"] is fake_session
+    assert captured["actor"] == "interactive-setup"
+    assert captured["payload"] == InteractiveSetupAdminPayload(
+        username="rootadm",
+        email="root@example.com",
+        password="StrongPass1!",
+        password_confirmation="StrongPass1!",
+    )
+
+
+def test_initial_root_form_state_marks_success_as_completed():
+    result = InteractiveSetupApplyResult(
+        status=InteractiveSetupApplyStatus.APPLIED,
+        message="Interactive setup applied successfully.",
+        errors={},
+        user_id=str(uuid4()),
+        setup_state="completed",
+    )
+
+    state = initial_root_form_state_from_result(result)
+
+    assert state == {"errors": {}, "completed": True, "message": ""}
+
+
+def test_initial_root_form_state_preserves_validation_errors_without_secret():
+    result = InteractiveSetupApplyResult(
+        status=InteractiveSetupApplyStatus.VALIDATION_ERROR,
+        message="Interactive setup admin payload is invalid.",
+        errors={
+            "password": (
+                "Password must be 8-128 chars, with upper/lowercase, digit, "
+                "and special char."
+            )
+        },
+    )
+
+    state = initial_root_form_state_from_result(result)
+
+    assert state["completed"] is False
+    assert state["message"] == "Interactive setup admin payload is invalid."
+    assert "StrongPass1!" not in repr(state)
+    assert "password" in state["errors"]
+
+
+def test_initial_root_form_state_shows_lock_error():
+    result = InteractiveSetupApplyResult(
+        status=InteractiveSetupApplyStatus.LOCK_UNAVAILABLE,
+        message="Setup is locked by another setup attempt.",
+        errors={"setup_lock": "Setup is locked by another setup attempt."},
+        setup_state="applying",
+    )
+
+    state = initial_root_form_state_from_result(result)
+
+    assert state["completed"] is False
+    assert state["message"] == "Setup is locked by another setup attempt."
+    assert state["errors"] == {
+        "setup_lock": "Setup is locked by another setup attempt."
+    }

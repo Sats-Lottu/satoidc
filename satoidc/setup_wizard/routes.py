@@ -9,9 +9,8 @@ from starlette.responses import RedirectResponse
 from starlette.status import HTTP_303_SEE_OTHER
 
 from satoidc.auth.lnurl import lnurl_auth_events, url_encode
-from satoidc.auth.security import hash_password
 from satoidc.enums import PermissionsEnum
-from satoidc.models import LnurlAuthChallenge, Permission, User
+from satoidc.models import LnurlAuthChallenge, Permission
 from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
     DIALOG_CLASSES,
@@ -31,7 +30,12 @@ from satoidc.validators import (
     is_valid_email,
     is_valid_login,
     is_valid_password,
-    validate_registration_form,
+)
+from setup_wizard.apply import (
+    InteractiveSetupAdminPayload,
+    InteractiveSetupApplyResult,
+    InteractiveSetupApplyStatus,
+    apply_interactive_setup_admin,
 )
 from setup_wizard.bootstrap import (
     BootstrapStatus,
@@ -258,6 +262,72 @@ def render_completed_setup_locked():
                 ).classes(PRIMARY_BUTTON_CLASSES)
 
 
+async def apply_initial_root_setup_form(
+    *,
+    username: str | None,
+    email: str | None,
+    password: str | None,
+    password_confirmation: str | None,
+) -> InteractiveSetupApplyResult:
+    payload = InteractiveSetupAdminPayload(
+        username=username or "",
+        email=email or "",
+        password=password or "",
+        password_confirmation=password_confirmation or "",
+    )
+    async with setup_session() as db_session:
+        return await apply_interactive_setup_admin(
+            db_session,
+            payload,
+            actor="interactive-setup",
+        )
+
+
+def render_setup_completion_panel():
+    with ui.column().classes("gap-1"):
+        ui.label("Setup Complete").classes("text-2xl font-bold")
+        ui.label(
+            "The initial root account was created and public setup is now "
+            "locked."
+        ).classes(MUTED_TEXT)
+    with ui.row().classes(
+        "items-start gap-3 rounded-lg border border-emerald-500/30 "
+        "bg-emerald-500/10 p-3"
+    ):
+        ui.icon("verified").classes("text-emerald-500 text-2xl")
+        with ui.column().classes("gap-1"):
+            ui.label("Root bootstrap finished.").classes(
+                "font-semibold text-emerald-700 dark:text-emerald-300"
+            )
+            ui.label(
+                "Restart or open the main SatOIDC service and sign in with "
+                "the account you just created."
+            ).classes(f"text-sm {MUTED_TEXT}")
+    with ui.row().classes("gap-3 mt-2 w-full justify-end max-sm:flex-col"):
+        ui.button(
+            "Retry checks",
+            icon="refresh",
+            on_click=ui.navigate.reload,
+        ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
+        ui.button(
+            "Shut down wizard",
+            icon="close",
+            on_click=app.shutdown,
+        ).classes(PRIMARY_BUTTON_CLASSES)
+
+
+def initial_root_form_state_from_result(
+    result: InteractiveSetupApplyResult,
+) -> dict[str, object]:
+    if result.status == InteractiveSetupApplyStatus.APPLIED:
+        return {"errors": {}, "completed": True, "message": ""}
+    return {
+        "errors": result.errors,
+        "completed": False,
+        "message": result.message,
+    }
+
+
 def render_root_login(request: Request):
     setup_error = request.query_params.get("setup_error")
     with auth_shell():
@@ -456,6 +526,116 @@ class LNURLAuthQRLoginRoot:
         ).tooltip("Click to copy")
 
 
+def render_initial_root_admin_form():
+    form_state: dict[str, object] = {
+        "errors": {},
+        "completed": False,
+        "message": "",
+    }
+
+    @ui.refreshable
+    def root_form():
+        if form_state["completed"]:
+            render_setup_completion_panel()
+            return
+
+        with ui.column().classes("gap-1"):
+            ui.label("Create Root").classes("text-2xl font-bold")
+            ui.label("Register the initial administrator account.").classes(
+                MUTED_TEXT
+            )
+
+        errors = form_state["errors"]
+        if form_state["message"]:
+            ui.label(str(form_state["message"])).classes(ERROR_TEXT)
+
+        login_field = (
+            ui.input("Login", validation={"Invalid login!": is_valid_login})
+            .classes(INPUT_CLASSES)
+            .tooltip("Lowercase letters and numbers, 6-30 characters")
+        )
+        render_initial_root_field_error(errors, "username")
+
+        email_field = (
+            ui.input("Email", validation={"Invalid email!": is_valid_email})
+            .props("type=email")
+            .classes(INPUT_CLASSES)
+        ).tooltip("Enter a valid email address")
+        render_initial_root_field_error(errors, "email")
+
+        password_field = (
+            ui.input(
+                "Password",
+                password=True,
+                password_toggle_button=True,
+                validation={
+                    "Weak password!": lambda value: is_valid_password(
+                        value or ""
+                    ),
+                },
+            )
+            .classes(INPUT_CLASSES)
+            .tooltip(
+                "Password requirements:\n"
+                "- 8-128 characters\n"
+                "- At least one uppercase letter (A-Z)\n"
+                "- At least one lowercase letter (a-z)\n"
+                "- At least one number (0-9)\n"
+                "- At least one special character (!@#$...)"
+            )
+        )
+        render_initial_root_field_error(errors, "password")
+
+        confirm_field = ui.input(
+            "Confirm password",
+            password=True,
+            password_toggle_button=True,
+            validation={
+                "Not same password!": lambda value: (
+                    password_field.value == value
+                )
+            },
+        ).classes(INPUT_CLASSES)
+        for field in (
+            "password_confirmation",
+            "admin",
+            "setup_lock",
+            "apply",
+        ):
+            render_initial_root_field_error(errors, field)
+
+        async def submit():
+            result = await apply_initial_root_setup_form(
+                username=login_field.value,
+                email=email_field.value,
+                password=password_field.value,
+                password_confirmation=confirm_field.value,
+            )
+            form_state.update(initial_root_form_state_from_result(result))
+            if form_state["completed"]:
+                ui.notify("Root user created.", type="positive")
+            else:
+                ui.notify("Setup could not be applied.", type="negative")
+            root_form.refresh()
+
+        with ui.row().classes(
+            "gap-3 mt-2 w-full justify-end max-sm:flex-col"
+        ):
+            ui.button(
+                "Create account",
+                icon="admin_panel_settings",
+                on_click=submit,
+            ).classes(f"w-full {PRIMARY_BUTTON_CLASSES}")
+
+    root_form()
+
+
+def render_initial_root_field_error(errors: object, field: str):
+    if not isinstance(errors, dict) or field not in errors:
+        return
+    ui.label(str(errors[field])).classes(f"text-sm {ERROR_TEXT}")
+
+
 def render_initial_root_setup(request: Request):
     lnurl_auth_register_root = LNURLAuthQRRegisterRoot(
         base_url=str(request.base_url)
@@ -516,119 +696,7 @@ def render_initial_root_setup(request: Request):
                 ],
             )
             with card("max-w-lg w-full mx-auto items-stretch gap-4"):
-                with ui.column().classes("gap-1"):
-                    ui.label("Create Root").classes("text-2xl font-bold")
-                    ui.label(
-                        "Register the initial administrator account."
-                    ).classes(MUTED_TEXT)
-
-                login_field = (
-                    ui.input(
-                        "Login",
-                        validation={"Invalid login!": is_valid_login},
-                    )
-                    .classes(INPUT_CLASSES)
-                    .tooltip(
-                        "Lowercase letters and numbers, 6-30 characters"
-                    )
-                )
-                email_field = (
-                    ui.input(
-                        "Email",
-                        validation={"Invalid email!": is_valid_email},
-                    )
-                    .props("type=email")
-                    .classes(INPUT_CLASSES)
-                ).tooltip("Enter a valid email address")
-                nickname_field = (
-                    ui.input("Nickname (optional)", value="Satoshi")
-                    .classes(INPUT_CLASSES)
-                    .tooltip(
-                        "Letters, numbers, dots, underscores or hyphens, "
-                        "2-80 characters"
-                    )
-                )
-
-                password_field = (
-                    ui.input(
-                        "Password",
-                        password=True,
-                        password_toggle_button=True,
-                        validation={
-                            "Weak password!": lambda v: (
-                                is_valid_password(v)
-                                if len(v) >= 0
-                                else True
-                            ),
-                        },
-                    )
-                    .classes(INPUT_CLASSES)
-                    .tooltip(
-                        "Password requirements:\n"
-                        "- 8-128 characters\n"
-                        "- At least one uppercase letter (A-Z)\n"
-                        "- At least one lowercase letter (a-z)\n"
-                        "- At least one number (0-9)\n"
-                        "- At least one special character (!@#$...)"
-                    )
-                )
-                _confirm = ui.input(
-                    "Confirm password",
-                    password=True,
-                    password_toggle_button=True,
-                    validation={
-                        "Not same password!": lambda value: (
-                            password_field.value == value
-                        )
-                    },
-                ).classes(INPUT_CLASSES)
-
-                async def submit():
-                    validation_errors = validate_registration_form(
-                        login_field.value,
-                        nickname_field.value,
-                        password_field.value,
-                        email_field.value,
-                    ).values()
-                    if validation_errors:
-                        ui.notify(
-                            "\n".join(validation_errors), type="negative"
-                        )
-                        return
-                    login = login_field.value.strip()
-                    email = email_field.value.strip().lower()
-                    nickname = (nickname_field.value or "").strip() or None
-                    pw_hash = hash_password(password_field.value)
-
-                    user = User(
-                        lnurl_pubkey=None,
-                        login=login,
-                        email=email,
-                        nickname=nickname,
-                        password_hash=pw_hash,
-                    )
-                    permission = Permission(
-                        permission_type=PermissionsEnum.ROOT,
-                        granted_by=None,
-                        reason="Initial root user created via setup wizard",
-                        expiration_date=None,
-                        user_id=user.id,
-                    )
-                    async with setup_session() as db_session:
-                        db_session.add(user)
-                        db_session.add(permission)
-                        await db_session.commit()
-                        await db_session.refresh(user)
-                    finalizing_setup()
-
-                with ui.row().classes(
-                    "gap-3 mt-2 w-full justify-end max-sm:flex-col"
-                ):
-                    ui.button(
-                        "Create account",
-                        icon="admin_panel_settings",
-                        on_click=submit,
-                    ).classes(f"w-full {PRIMARY_BUTTON_CLASSES}")
+                render_initial_root_admin_form()
     with ui.page_sticky(x_offset=18, y_offset=18):
         ui.button(icon="qr_code", on_click=dialog.open).props("fab").classes(
             PRIMARY_BUTTON_CLASSES
