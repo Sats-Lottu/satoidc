@@ -31,6 +31,14 @@ async def _make_password_user(make_user, **kwargs):
     )
 
 
+async def _assert_no_horizontal_overflow(page: Page) -> None:
+    overflow = await page.evaluate(
+        "() => document.documentElement.scrollWidth > "
+        "document.documentElement.clientWidth"
+    )
+    assert overflow is False
+
+
 @pytest.mark.e2e
 async def test_authenticated_home_and_profile_render(
     page: Page,
@@ -289,3 +297,104 @@ async def test_admin_dashboard_approves_permission_request(
         )
     )
     assert granted_permission is not None
+
+
+@pytest.mark.e2e
+async def test_admin_dashboard_pagination_desktop_and_mobile(
+    page: Page,
+    live_server: str,
+    db_session: AsyncSession,
+    make_user,
+):
+    admin = await _make_password_user(
+        make_user,
+        login="pagination_admin",
+        email="pagination_admin@example.com",
+        nickname="Pagination Admin",
+    )
+    owner = await _make_password_user(
+        make_user,
+        login="pagination_owner",
+        email="pagination_owner@example.com",
+        nickname="Pagination Owner",
+    )
+    requesters = []
+    for index in range(6):
+        requesters.append(
+            await _make_password_user(
+                make_user,
+                login=f"requester_page_{index}",
+                email=f"requester_page_{index}@example.com",
+                nickname=f"Requester Page {index}",
+            )
+        )
+
+    clients = []
+    for index in range(6):
+        client = OAuth2Client(
+            user_id=owner.id,
+            client_id=f"page-client-{index}",
+            client_secret="secret",
+            client_id_issued_at=index,
+        )
+        client.set_client_metadata(
+            {
+                "client_name": f"Page Client {index}",
+                "client_uri": "https://client.example",
+                "scope": "openid profile",
+                "redirect_uris": ["https://client.example/callback"],
+                "grant_types": ["authorization_code"],
+                "response_types": ["code"],
+                "token_endpoint_auth_method": "client_secret_post",
+            }
+        )
+        clients.append(client)
+
+    db_session.add_all(
+        [
+            Permission(
+                user_id=admin.id,
+                granted_by=None,
+                permission_type=PermissionsEnum.ADMIN,
+                expiration_date=None,
+                reason="e2e admin access",
+            ),
+            *[
+                PermissionRequest(
+                    requester_id=requester.id,
+                    permission_type=PermissionsEnum.DEVELOPER,
+                    reason=f"Pagination request {index}",
+                )
+                for index, requester in enumerate(requesters)
+            ],
+            *clients,
+        ]
+    )
+    await db_session.commit()
+
+    await page.set_viewport_size({"width": 1280, "height": 900})
+    await _login(page, live_server, "pagination_admin")
+    await page.goto(
+        f"{live_server}/dashboard/admin", wait_until="domcontentloaded"
+    )
+
+    await expect(
+        page.get_by_text("Pending Permission Requests")
+    ).to_be_visible()
+    await expect(page.get_by_text("Page 1 of 2").first).to_be_visible()
+    await expect(page.get_by_role("button", name="Approve")).to_have_count(5)
+
+    await page.get_by_label("Pending requests next page").click()
+    await expect(page.get_by_text("Page 2 of 2").first).to_be_visible()
+    await expect(page.get_by_role("button", name="Approve")).to_have_count(1)
+    await expect(
+        page.get_by_label("Pending requests previous page")
+    ).to_be_enabled()
+    await _assert_no_horizontal_overflow(page)
+
+    await page.set_viewport_size({"width": 390, "height": 844})
+    await page.reload(wait_until="domcontentloaded")
+    await page.get_by_label("OAuth clients next page").click()
+    await expect(page.get_by_text("Page Client 0").first).to_be_visible()
+    await expect(page.get_by_text("Page Client 5").first).to_have_count(0)
+    await _assert_no_horizontal_overflow(page)

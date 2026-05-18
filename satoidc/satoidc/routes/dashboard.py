@@ -26,6 +26,7 @@ from satoidc.models.database import get_session
 from satoidc.routes.ui_components import (
     CONTENT,
     DIALOG_CLASSES,
+    ERROR_TEXT,
     INPUT_CLASSES,
     MUTED_TEXT,
     PAGE,
@@ -37,6 +38,7 @@ from satoidc.routes.ui_components import (
     app_header,
     card,
     empty_state,
+    pagination_controls,
     responsive_grid,
 )
 from satoidc.services.admin_dashboard import (
@@ -64,6 +66,38 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
     session: Session, request: Request
 ):  # pragma: no cover
     actor_id = UUID(request.session.get("user_id"))
+    page_state = {
+        "pending": {"page": 1, "page_size": 5},
+        "users": {"page": 1, "page_size": 5},
+        "clients": {"page": 1, "page_size": 5},
+        "inactive": {"page": 1, "page_size": 5},
+    }
+
+    async def change_dashboard_page(
+        section: str, page: int, page_size: int
+    ) -> None:
+        page_state[section] = {"page": page, "page_size": page_size}
+        await admin_dashboard_content.refresh()
+
+    def inline_empty_state(icon: str, title: str, body: str):
+        with ui.column().classes(
+            "w-full items-center gap-2 rounded-lg border border-dashed "
+            "border-slate-300/80 bg-white/45 p-4 text-center "
+            "dark:border-white/10 dark:bg-slate-950/30"
+        ):
+            ui.icon(icon).classes("text-3xl text-sky-500 dark:text-sky-300")
+            ui.label(title).classes("font-semibold")
+            ui.label(body).classes(f"text-sm {MUTED_TEXT}")
+
+    def page_errors(errors: tuple[str, ...]):
+        if errors:
+            with ui.column().classes(
+                "w-full gap-1 rounded-lg border border-red-200/80 "
+                "bg-red-50/80 p-3 dark:border-red-900/50 "
+                "dark:bg-red-950/30"
+            ):
+                for error in errors:
+                    ui.label(error).classes(f"text-sm {ERROR_TEXT}")
 
     async def approve_request(permission_request_id: int):
         permission_request = await approve_permission_request(
@@ -128,12 +162,14 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
     async def admin_dashboard_content():  # noqa: PLR0912, PLR0914, PLR0915
         session.expire_all()
         metrics = await get_admin_dashboard_metrics(session)
+        pending_state = page_state["pending"]
         pending_requests_page = await list_permission_requests_page(
             session,
             filters=PermissionRequestPageFilters(
                 status=PermissionRequestStatusEnum.PENDING
             ),
-            page_size=25,
+            page=pending_state["page"],
+            page_size=pending_state["page_size"],
         )
         pending_requests = pending_requests_page.items
         recent_decisions = await session.scalars(
@@ -144,10 +180,23 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
             .limit(5)
         )
         recent_permissions = list(recent_decisions.all())
-        users_page = await list_admin_users_page(session)
-        clients_page = await list_oauth_clients_page(session)
+        users_state = page_state["users"]
+        clients_state = page_state["clients"]
+        inactive_state = page_state["inactive"]
+        users_page = await list_admin_users_page(
+            session,
+            page=users_state["page"],
+            page_size=users_state["page_size"],
+        )
+        clients_page = await list_oauth_clients_page(
+            session,
+            page=clients_state["page"],
+            page_size=clients_state["page_size"],
+        )
         inactive_permissions_page = await list_inactive_permissions_page(
-            session
+            session,
+            page=inactive_state["page"],
+            page_size=inactive_state["page_size"],
         )
         users = users_page.items
         clients = clients_page.items
@@ -213,7 +262,11 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                     ui.label("Pending Permission Requests").classes(
                         "text-lg font-semibold"
                     )
-                    ui.chip(str(len(pending_requests)), icon="notifications")
+                    ui.chip(
+                        str(pending_requests_page.total),
+                        icon="notifications",
+                    )
+                page_errors(pending_requests_page.errors)
                 if pending_requests:
                     with ui.list().classes("w-full"):
                         for permission_request in pending_requests:
@@ -273,7 +326,7 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                                             on_click=deny_current,
                                         ).classes(SECONDARY_BUTTON_CLASSES)
                 else:
-                    empty_state(
+                    inline_empty_state(
                         icon="task_alt",
                         title="No pending requests",
                         body=(
@@ -281,6 +334,13 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                             "users submit them from profile."
                         ),
                     )
+                pagination_controls(
+                    pending_requests_page,
+                    label="Pending requests",
+                    on_change=lambda page, page_size: change_dashboard_page(
+                        "pending", page, page_size
+                    ),
+                )
 
             with responsive_grid(2, "gap-6"):
                 with card("gap-4"):
@@ -306,7 +366,12 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                         )
 
                 with card("gap-4"):
-                    ui.label("Users").classes("text-lg font-semibold")
+                    with ui.row().classes(
+                        "w-full items-center justify-between gap-3"
+                    ):
+                        ui.label("Users").classes("text-lg font-semibold")
+                        ui.chip(str(users_page.total), icon="group")
+                    page_errors(users_page.errors)
                     if users:
                         with ui.list().classes("w-full"):
                             for user in users:
@@ -320,10 +385,33 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                                     "active" if user.is_active else "inactive"
                                 ).props("caption")
                     else:
-                        ui.label("No users registered.").classes(MUTED_TEXT)
+                        inline_empty_state(
+                            icon="group",
+                            title="No users registered",
+                            body="Registered accounts will appear here.",
+                        )
+                    pagination_controls(
+                        users_page,
+                        label="Users",
+                        on_change=lambda page, page_size: (
+                            change_dashboard_page(
+                                "users", page, page_size
+                            )
+                        ),
+                    )
 
                 with card("gap-4"):
-                    ui.label("OAuth Clients").classes("text-lg font-semibold")
+                    with ui.row().classes(
+                        "w-full items-center justify-between gap-3"
+                    ):
+                        ui.label("OAuth Clients").classes(
+                            "text-lg font-semibold"
+                        )
+                        ui.chip(
+                            str(clients_page.total),
+                            icon="app_registration",
+                        )
+                    page_errors(clients_page.errors)
                     if clients:
                         with ui.list().classes("w-full"):
                             for client in clients:
@@ -336,12 +424,36 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                                     "caption"
                                 )
                     else:
-                        ui.label("No clients registered.").classes(MUTED_TEXT)
+                        inline_empty_state(
+                            icon="app_registration",
+                            title="No clients registered",
+                            body=(
+                                "OAuth2 client registrations will appear "
+                                "here."
+                            ),
+                        )
+                    pagination_controls(
+                        clients_page,
+                        label="OAuth clients",
+                        on_change=lambda page, page_size: (
+                            change_dashboard_page(
+                                "clients", page, page_size
+                            )
+                        ),
+                    )
 
                 with card("gap-4"):
-                    ui.label("Inactive Permissions").classes(
-                        "text-lg font-semibold"
-                    )
+                    with ui.row().classes(
+                        "w-full items-center justify-between gap-3"
+                    ):
+                        ui.label("Inactive Permissions").classes(
+                            "text-lg font-semibold"
+                        )
+                        ui.chip(
+                            str(inactive_permissions_page.total),
+                            icon="block",
+                        )
+                    page_errors(inactive_permissions_page.errors)
                     if inactive_permissions:
                         with ui.list().classes("w-full"):
                             for permission in inactive_permissions:
@@ -356,9 +468,20 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                                     f"{permission.permission_type}"
                                 ).props("caption")
                     else:
-                        ui.label(
-                            "No expired or disabled permissions."
-                        ).classes(SUCCESS_TEXT)
+                        inline_empty_state(
+                            icon="verified",
+                            title="No inactive permissions",
+                            body="No expired or disabled permissions.",
+                        )
+                    pagination_controls(
+                        inactive_permissions_page,
+                        label="Inactive permissions",
+                        on_change=lambda page, page_size: (
+                            change_dashboard_page(
+                                "inactive", page, page_size
+                            )
+                        ),
+                    )
 
     @permission_request_events.subscribe
     async def _refresh_admin_dashboard(_data: dict):

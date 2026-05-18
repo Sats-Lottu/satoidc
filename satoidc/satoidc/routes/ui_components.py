@@ -1,4 +1,6 @@
-from collections.abc import Callable, Iterable
+import inspect
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any
 
 from nicegui import context, ui
 
@@ -62,6 +64,7 @@ GRID_COLUMNS = {
     2: "md:grid-cols-2",
     3: "md:grid-cols-3",
 }
+PAGE_SIZE_OPTIONS = (5, 10, 25, 50)
 
 LOGO_ASSETS = {
     "dark": "statics/imgs/logo.png",
@@ -311,6 +314,62 @@ def responsive_grid(columns: int = 2, classes: str = ""):  # pragma: no cover
     return ui.element("div").classes(
         f"grid w-full grid-cols-1 {desktop_columns} {classes}".strip()
     )
+
+
+def pagination_controls(
+    page: Any,
+    *,
+    label: str,
+    on_change: Callable[[int, int], Awaitable[None] | None],
+    page_size_options: Iterable[int] = PAGE_SIZE_OPTIONS,
+):  # pragma: no cover
+    async def apply_change(page_number: int, page_size: int) -> None:
+        result = on_change(page_number, page_size)
+        if inspect.isawaitable(result):
+            await result
+
+    async def change_page_size(event) -> None:
+        await apply_change(1, int(event.value))
+
+    async def previous_page() -> None:
+        await apply_change(max(page.page - 1, 1), page.page_size)
+
+    async def next_page() -> None:
+        await apply_change(page.page + 1, page.page_size)
+
+    current_page = page.page if page.total_pages else 0
+    with ui.row().classes(
+        "w-full items-center justify-between gap-3 rounded-lg "
+        "border border-slate-200/70 bg-white/55 px-3 py-2 "
+        "dark:border-white/10 dark:bg-slate-950/35 "
+        "max-sm:flex-col max-sm:items-stretch"
+    ):
+        ui.label(
+            f"Page {current_page} of {page.total_pages} · {page.total} total"
+        ).classes(f"text-sm {MUTED_TEXT}")
+        with ui.row().classes(
+            "items-center gap-2 max-sm:w-full max-sm:justify-between"
+        ):
+            ui.select(
+                options=list(page_size_options),
+                value=page.page_size,
+                label=f"{label} rows",
+                on_change=change_page_size,
+            ).classes("w-32").props("dense")
+            previous_button = ui.button(
+                icon="chevron_left",
+                on_click=previous_page,
+            ).props(f'flat round dense aria-label="{label} previous page"')
+            previous_button.classes(ICON_BUTTON_CLASSES)
+            if not page.has_previous:
+                previous_button.props("disable")
+            next_button = ui.button(
+                icon="chevron_right",
+                on_click=next_page,
+            ).props(f'flat round dense aria-label="{label} next page"')
+            next_button.classes(ICON_BUTTON_CLASSES)
+            if not page.has_next:
+                next_button.props("disable")
 
 
 def section_title(title: str, subtitle: str | None = None):  # pragma: no cover
