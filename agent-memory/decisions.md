@@ -5,11 +5,13 @@ tags:
 type: decision
 project: satoidc
 status: active
-updated: 2026-05-17
+updated: 2026-05-18
 ---
 
 # Decisions
 
+- 2026-05-18: Consolidate Setup Wizard requirements under `specs/features/setup-wizard/spec.md`. Keep `specs/features/application-setup/spec.md` only as a superseded historical record of the implemented bootstrap slice, and use `specs/decisions/2026-05-18-setup-wizard-spec-consolidation.md` to record the rationale.
+- 2026-05-18: Use English for all repository content, including code, comments, log messages, specs, docs, tests, examples, project memory, and Git-facing artifacts. AI-agent conversations with Codex, Claude, Gemini, and similar tools may use any language the user prefers, but persisted repository outputs must be English.
 - 2026-05-17: Use async `httpx` for SatOIDC outbound HTTP/web requests. Keep `httpx` as a direct Poetry dependency and avoid adding new production `urllib.request`, `http.client`, or synchronous HTTP call sites for web requests.
 - 2026-05-17: Generate new schema migrations with `poetry run alembic revision --autogenerate -m "<message>"` against a database at the current repository head, then edit only the minimum necessary for dialect-specific fixes, data backfills, enum handling, or constraint details.
 - 2026-05-16: Track application setup bootstrap as a dedicated feature spec. Future setup work should make startup validate or generate required owned runtime values before the main app starts, while keeping Coolify-managed environment variables in Coolify.
@@ -41,4 +43,4 @@ updated: 2026-05-17
 - 2026-05-15: Keep Authlib bearer-token integration compatible with its current header/scope expectations: preserve an `Authorization` key in the FastAPI request adapter and pass UserInfo required scopes as a list.
 - 2026-05-16: For hardened OIDC signing, design against a Vault-compatible Transit interface. Prefer OpenBao as the default self-hosted backend because it better matches SatOIDC's open-source, sovereignty, auditability, and future-project philosophy; keep HashiCorp Vault compatibility for managed service, Enterprise support, or existing Vault estates.
 - 2026-05-16: Email verification/account recovery must include Testcontainers-backed email-server integration coverage, and OpenBao/Vault-compatible signing must include Testcontainers-backed OpenBao coverage for the real Transit path.
-- 2026-05-16: Promote the Gemini report findings into explicit backlog/specs instead of treating `relatorio.md` as a source of truth. The durable tracked work is public route boundary hardening, external signing backend, route service extraction, operational observability, token load checks, LNURL shim cleanup, and report encoding/archive cleanup.
+- 2026-05-16: Promote the Gemini report findings into explicit backlog/specs instead of treating the original root `relatorio.md` as a source of truth. That report was normalized and archived as `docs/archive/legacy-analysis-report.md`; durable tracked work lives in public route boundary hardening, external signing backend, route service extraction, operational observability, token load checks, LNURL shim cleanup, and report encoding/archive cleanup.

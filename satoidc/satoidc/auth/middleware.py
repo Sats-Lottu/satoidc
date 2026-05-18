@@ -8,9 +8,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 log = logging.getLogger(__name__)
 
 PUBLIC_PREFIXES = (
-    "/_nicegui",  # assets internos
-    "/oauth",  # tudo de OIDC
-    "/api",  # APIs públicas (token, callbacks, etc.)
+    "/_nicegui",  # internal assets
+    "/oauth",  # OIDC endpoints
+    "/api",  # public APIs: tokens, callbacks, etc.
     "/auth/lnurl",  # endpoints de LNURL auth
     "/.well-known",  # OIDC/OAuth discovery documents
 )
@@ -23,7 +23,7 @@ PUBLIC_EXACT = {
     "/reset-password",
     "/verify-email",
     "/health",
-    "/forbidden",  # página de acesso negado
+    "/forbidden",  # access denied page
     "/",
 }
 

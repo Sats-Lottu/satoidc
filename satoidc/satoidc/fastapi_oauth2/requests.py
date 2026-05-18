@@ -13,8 +13,9 @@ from starlette.requests import Request
 
 
 def _decode_cached_body(request: Request) -> bytes:
-    """Lê o body já cacheado pelo Starlette. Sync.
-    Retorna b'' se ainda não foi lido (ou seja, não cacheou).
+    """Read the Starlette-cached body synchronously.
+
+    Return b"" when the body has not been read and cached yet.
     """
     body = getattr(request, "_body", None)
     return body or b""
@@ -31,13 +32,13 @@ def _is_json(request: Request) -> bool:
 
 
 def _parse_cached_form(request: Request) -> Dict[str, Any]:
-    """Parseia x-www-form-urlencoded a partir de request._body (se existir)."""
+    """Parse x-www-form-urlencoded data from request._body when present."""
     body = _decode_cached_body(request)
     if not body or not _is_form_urlencoded(request):
         return {}
 
     qs = parse_qs(body.decode("utf-8"), keep_blank_values=True)
-    # flatten: 1 valor vira escalar, >1 vira lista
+    # Flatten one value to a scalar; keep multiple values as a list.
     out: Dict[str, Any] = {}
     for k, v in qs.items():
         if not v:  # pragma: no cover

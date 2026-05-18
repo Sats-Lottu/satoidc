@@ -343,7 +343,7 @@ Mark one option or write a custom answer before implementation starts.
 Open answer:
 
 ```text
-use https://testcontainers.com/?language=python para testes de integração
+Use https://testcontainers.com/?language=python for integration tests.
 ```
 
 ### Q2. Password Reset Session Policy
@@ -367,11 +367,17 @@ Open answer:
 Open answer:
 
 ```text
-Comece com uma interface de entrega de e-mail simplificada e forneça duas implementações iniciais: um backend de console para desenvolvimento/teste local e um backend SMTP para entrega real. Isso mantém a primeira versão simples, evita abstrações prematuras e impede que o aplicativo dependa diretamente dos detalhes do SMTP.
+Start with a simplified email delivery interface and provide two initial
+implementations: a console backend for local development/testing and an SMTP
+backend for real delivery. This keeps the first version simple, avoids premature
+abstractions, and prevents the application from depending directly on SMTP
+details.
 
-O backend selecionado pode ser configurado por meio de variáveis ​​de ambiente, por exemplo, EMAIL_BACKEND=console ou EMAIL_BACKEND=smtp.
+The selected backend can be configured through environment variables, for
+example EMAIL_BACKEND=console or EMAIL_BACKEND=smtp.
 
-Um sistema de provedores totalmente plugável pode ser introduzido posteriormente, se necessário, por exemplo, para Resend, SES, Mailgun, Brevo ou Postmark.
+A fully pluggable provider system can be introduced later if needed, for
+example for Resend, SES, Mailgun, Brevo, or Postmark.
 ```
 
 ### Q4. UserInfo Email Claim Policy

@@ -1,11 +1,11 @@
-# Spec: Rotacao de Chaves OIDC no SatOIDC
+# Spec: OIDC Key Rotation
 
 ## Status
 
 - Status: implemented
 - Owner: TBD
 - Created: 2026-05-06
-- Updated: 2026-05-16
+- Updated: 2026-05-18
 - Related code:
   - `satoidc/satoidc/auth/oauth2.py`
   - `satoidc/satoidc/routes/oauth2.py`
@@ -20,71 +20,78 @@
 
 ## Intent
 
-Implementar um mecanismo seguro de geracao, ativacao, rotacao, publicacao e aposentadoria de chaves de assinatura OIDC, garantindo que tokens JWT emitidos pelo SatOIDC possam ser validados corretamente pelos clientes por meio do endpoint publico JWKS.
+Implement secure generation, activation, rotation, publication, and retirement
+of OIDC signing keys so JWTs issued by SatOIDC can be validated by clients
+through the public JWKS endpoint.
 
-A regra principal e: nunca remover uma chave publica do JWKS enquanto ainda puder existir token valido assinado por ela.
+Main rule: never remove a public key from JWKS while any still-valid token may
+have been signed by that key.
 
 ## Context
 
-O SatOIDC atualmente assina tokens OIDC com uma chave RSA gerada em memoria durante a inicializacao da aplicacao. Esse comportamento torna tokens antigos potencialmente invalidos apos restart e impossibilita operacao consistente com multiplas replicas.
+Before this feature, SatOIDC signed OIDC tokens with an RSA key generated in
+memory during application startup. That behavior made older tokens potentially
+invalid after restart and prevented consistent multi-replica operation.
 
-A feature deve substituir esse comportamento por um ciclo de vida persistente de chaves, com publicacao controlada no JWKS, uso obrigatorio de `kid` nos JWTs e trilha de auditoria para operacoes criticas.
+The implemented feature replaced that behavior with persistent key lifecycle
+management, controlled JWKS publication, mandatory `kid` headers in JWTs, and
+audit hooks for critical operations.
 
 ## Scope
 
 In scope:
 
-- Geracao de novas chaves assimetricas para assinatura OIDC.
-- Definicao de uma unica chave ativa para assinatura.
-- Publicacao de chaves publicas em estado `active` e `validating` no JWKS.
-- Inclusao de `kid` no header de todo JWT emitido.
-- Manutencao temporaria de chaves antigas enquanto tokens assinados por elas ainda puderem ser validos.
-- Remocao segura de chaves expiradas do JWKS.
-- Auditoria de eventos de criacao, ativacao, rebaixamento, aposentadoria e assinatura.
-- Publicacao de `jwks_uri` no documento de descoberta OIDC.
+- generate asymmetric OIDC signing keys;
+- maintain exactly one active signing key;
+- publish `active` and `validating` public keys in JWKS;
+- include `kid` in every issued JWT header;
+- retain old public keys while tokens signed by them may still be valid;
+- remove expired keys from JWKS safely;
+- audit key creation, activation, demotion, retirement, and signing events;
+- publish `jwks_uri` in OIDC discovery.
 
 Out of scope:
 
-- Rotacao automatica de client secrets.
-- Rotacao de refresh tokens.
-- Integracao obrigatoria com HSM fisico.
+- rotating OAuth client secrets;
+- rotating refresh tokens;
+- requiring a physical HSM.
 
 ## Architectural Decision
 
-A solucao preferencial para producao endurecida deve usar OpenBao por meio de
-uma interface compativel com Vault Transit como backend criptografico.
+The preferred hardened production design uses OpenBao through a
+Vault-compatible Transit interface as the cryptographic backend.
 
-O MVP implementado armazena a chave privada no banco criptografada com uma chave derivada de `OAUTH2_JWT_SECRET_KEY`; ela nunca e exposta por endpoints, logs, documentos de descoberta ou eventos de auditoria.
+The implemented MVP stores the private key in the database encrypted with a key
+derived from `OAUTH2_JWT_SECRET_KEY`. Private material is never exposed through
+endpoints, logs, discovery documents, JWKS, or audit events.
 
-A aplicacao SatOIDC deve funcionar com ou sem OpenBao. Sem OpenBao, ela usa seus
-mecanismos internos de ciclo de vida, criptografia e assinatura. Com OpenBao,
-ela deve solicitar a assinatura ao backend Transit e manter a chave privada fora
-do banco e do processo da aplicacao.
+SatOIDC must work with or without OpenBao. Without OpenBao, it uses internal key
+lifecycle, encryption, and signing. With OpenBao, it requests signatures from
+the Transit backend and keeps private key material outside the database and
+application process.
 
-O modo interno carrega um risco material: se um atacante obtiver o banco de
-dados e tambem o segredo de runtime usado para criptografar as chaves privadas,
-ele pode comprometer a chave de assinatura OIDC e forjar tokens. Esse modo e
-adequado para desenvolvimento, testes, demos e implantacoes simples que aceitam
-esse risco; producao endurecida deve preferir OpenBao Transit ou backend
-externo equivalente.
+The internal mode has a material risk: if an attacker obtains both the database
+and the runtime secret used to encrypt private keys, they can compromise the
+OIDC signing key and forge tokens. This mode is suitable for development,
+tests, demos, and simple deployments that explicitly accept that risk. Hardened
+production should prefer OpenBao Transit or an equivalent external backend.
 
 ## Key States
 
-Cada chave de assinatura deve possuir exatamente um estado:
+Each signing key has exactly one state:
 
-- `active`: chave usada para assinar novos tokens.
-- `validating`: chave antiga, ainda publicada no JWKS para validar tokens ja emitidos.
-- `retired`: chave removida do JWKS e nao usada para assinatura.
+- `active`: key used to sign new tokens.
+- `validating`: old key still published in JWKS for token validation.
+- `retired`: key removed from JWKS and not used for signing.
 
-Em qualquer momento deve existir no maximo uma chave `active`. Em operacao normal deve existir exatamente uma chave `active` antes de emitir tokens.
+At any time there must be at most one `active` key. In normal operation there
+must be exactly one `active` key before tokens can be issued.
 
 ## Functional Requirements
 
-### RF01 - Gerar nova chave de assinatura
+### RF01 - Generate Signing Key
 
-O sistema deve permitir gerar uma nova chave assimetrica para assinatura de tokens OIDC.
-
-A chave deve conter:
+SatOIDC must create a new asymmetric signing key with:
 
 - `kid`
 - `alg`
@@ -95,32 +102,23 @@ A chave deve conter:
 - `public_jwk`
 - `backend_reference`
 
-Exemplo:
+New keys start in `validating` until activated.
 
-```json
-{
-  "kid": "sat-oidc-2026-05-06-001",
-  "alg": "RS256",
-  "kty": "RSA",
-  "use": "sig",
-  "status": "validating"
-}
-```
+### RF02 - Activate Key
 
-### RF02 - Ativar nova chave
+SatOIDC must allow a newly created or idle key to become active. Activating a
+new key must:
 
-O sistema deve permitir tornar uma chave ociosa ou recem-criada em chave ativa.
+- demote the previous `active` key to `validating`;
+- promote the new key to `active`;
+- sign new tokens with the new `kid`;
+- publish both old and new public keys while the old key remains in its
+  validation window;
+- happen in one transaction.
 
-Ao ativar uma nova chave:
+### RF03 - JWT Header
 
-- A chave anterior `active` deve mudar para `validating`.
-- A nova chave deve mudar para `active`.
-- Novos tokens devem ser assinados com a nova `kid`.
-- Ambas as chaves devem aparecer no JWKS enquanto a chave antiga estiver em janela de validacao.
-
-### RF03 - Assinar tokens com kid
-
-Todo JWT emitido pelo SatOIDC deve conter no header:
+Every issued JWT must include:
 
 ```json
 {
@@ -130,252 +128,108 @@ Todo JWT emitido pelo SatOIDC deve conter no header:
 }
 ```
 
-O valor de `kid` deve corresponder a uma chave publicada no JWKS enquanto o token estiver valido.
+The `kid` must match a key published in JWKS for the full validity window of
+the token.
 
-### RF04 - Publicar JWKS
+### RF04 - JWKS Publication
 
-O SatOIDC deve expor:
+SatOIDC must expose:
 
-```http
-GET /.well-known/jwks.json
-```
+- `GET /.well-known/openid-configuration`
+- `GET /.well-known/jwks.json`
 
-O endpoint deve retornar todas as chaves publicas com estado `active` ou `validating`.
+JWKS must include only public keys with status `active` or `validating`.
+`retired` keys and private material must never be returned.
 
-O endpoint nao deve retornar chaves `retired` nem qualquer material privado.
+### RF05 - Retire Old Keys
 
-### RF05 - Aposentar chave antiga
+A `validating` key may become `retired` only after the maximum token lifetime
+and configured safety window have passed. Retired keys are removed from JWKS
+and never used for new signatures.
 
-O sistema deve aposentar uma chave quando:
+### RF06 - Audit
 
-```text
-now > retired_after
-```
+Every key rotation operation must write an audit event including actor, action,
+`kid`, previous state, new state, timestamp, and result. Audit records must not
+include private key material.
 
-Onde:
+## Security Requirements
 
-```text
-retired_after = momento_da_rotacao + maior_TTL_de_token + margem_de_cache_JWKS
-```
+- Private key material must never appear in JWKS, logs, HTTP responses, audit
+  events, trace spans, or error messages.
+- Only authenticated users with administrative/root authorization can trigger
+  manual key lifecycle endpoints.
+- Concurrent activation must not produce two active keys.
+- Startup must fail safely if token signing is requested without an active key.
+- Internal encrypted database-backed keys are acceptable only as an MVP/fallback
+  mode; hardened deployments should use Transit signing.
 
-Exemplo:
+## Public Discovery
 
-```text
-access_token_ttl = 15 minutos
-id_token_ttl = 15 minutos
-jwks_cache_ttl = 15 minutos
-margem_extra = 15 minutos
-
-retired_after = rotacao + 45 minutos
-```
-
-### RF06 - Auditoria
-
-Toda operacao de rotacao deve gerar evento de auditoria.
-
-Eventos minimos:
-
-- `key.created`
-- `key.activated`
-- `key.demoted_to_validating`
-- `key.retired`
-- `token.signed`
-
-Evento minimo:
+OIDC discovery must publish `jwks_uri`:
 
 ```json
 {
-  "event": "key.activated",
-  "kid": "sat-oidc-2026-05-06-001",
-  "actor": "system",
-  "occurred_at": "2026-05-06T10:30:00Z"
+  "issuer": "https://auth.example.com",
+  "jwks_uri": "https://auth.example.com/.well-known/jwks.json"
 }
 ```
-
-## Non-Functional Requirements
-
-### RNF01 - Seguranca
-
-A chave privada nao deve ser armazenada em texto puro e nunca deve aparecer no JWKS, logs, respostas HTTP, eventos de auditoria ou mensagens de erro.
-
-### RNF02 - Compatibilidade OIDC
-
-O provedor deve publicar `jwks_uri` no documento de descoberta:
-
-```http
-GET /.well-known/openid-configuration
-```
-
-Exemplo:
-
-```json
-{
-  "issuer": "https://auth.exemplo.com",
-  "jwks_uri": "https://auth.exemplo.com/.well-known/jwks.json"
-}
-```
-
-### RNF03 - Disponibilidade
-
-A rotacao de chave nao deve invalidar tokens ainda validos.
-
-### RNF04 - Observabilidade
-
-O sistema deve registrar:
-
-- `kid` usado em cada assinatura.
-- Falhas de assinatura.
-- Falhas de leitura do backend criptografico.
-- Mudancas de estado das chaves.
-
-## Data Model
-
-Para MVP com banco:
-
-```text
-oidc_signing_keys
-- id
-- kid
-- alg
-- kty
-- use
-- status
-- public_jwk
-- private_jwk_encrypted
-- backend_reference
-- created_at
-- activated_at
-- validating_since
-- retired_at
-- retired_after
-```
-
-Com OpenBao/Vault Transit:
-
-```text
-oidc_signing_keys
-- id
-- kid
-- alg
-- kty
-- use
-- status
-- public_jwk
-- vault_key_name
-- vault_key_version
-- created_at
-- activated_at
-- validating_since
-- retired_at
-- retired_after
-```
-
-## Rotation Flow
-
-1. Administrador ou job automatico solicita rotacao.
-2. Sistema cria nova chave no backend criptografico.
-3. Sistema obtem ou registra a chave publica correspondente.
-4. Nova chave e publicada no JWKS como `validating`.
-5. Sistema ativa nova chave.
-6. Chave anterior muda para `validating`.
-7. Novos tokens passam a usar a nova `kid`.
-8. Apos a janela de seguranca, chave antiga muda para `retired`.
-9. Chave `retired` deixa de aparecer no JWKS.
 
 ## Use Cases
 
-### UC01 - Emitir token
+### UC01 - Issue Token
 
-Dado que existe uma chave `active`, quando o SatOIDC emitir um ID Token, entao o token deve ser assinado com a chave `active` e o header JWT deve conter o `kid` correto.
+Given an `active` key exists, when SatOIDC issues an ID Token, then the token is
+signed with the active key and includes the correct `kid` header.
 
-### UC02 - Rotacionar chave
+### UC02 - Rotate Key
 
-Dado que existe uma chave `active`, quando uma nova chave for ativada, entao a chave antiga deve mudar para `validating`, a nova chave deve mudar para `active` e ambas devem aparecer no JWKS.
+Given an `active` key exists, when a new key is activated, then the old key
+moves to `validating`, the new key moves to `active`, and both public keys are
+published in JWKS.
 
-### UC03 - Aposentar chave
+### UC03 - Retire Key
 
-Dado que uma chave `validating` ultrapassou `retired_after`, quando o job de limpeza executar, entao a chave deve mudar para `retired` e deve ser removida do JWKS.
+Given a `validating` key passed `retired_after`, when cleanup runs, then the key
+moves to `retired` and is removed from JWKS.
 
 ## Acceptance Criteria
 
-- CA01: Tokens emitidos antes da rotacao continuam validos ate expirarem.
-- CA02: Tokens emitidos depois da rotacao usam a nova `kid`.
-- CA03: O JWKS publica a chave ativa e as chaves antigas ainda validas.
-- CA04: Nenhuma chave privada aparece no JWKS.
-- CA05: Chaves `retired` nao aparecem no JWKS.
-- CA06: Toda rotacao gera evento de auditoria.
-- CA07: A aplicacao nao precisa ser reiniciada para usar a nova chave ativa.
+- AC01: Tokens include `kid`.
+- AC02: JWKS publishes public keys only.
+- AC03: JWKS publishes the active key and still-valid old keys.
+- AC04: Private key material never appears in JWKS.
+- AC05: Only one active key exists.
+- AC06: Activating a key demotes the previous active key.
+- AC07: The application does not need restart to use a newly active key.
+- AC08: Old tokens remain verifiable until their validation window ends.
+- AC09: Retired keys are not published or used for signing.
+- AC10: Key lifecycle operations are audited.
 
-## Expected Tests
+## Tests
 
-Unit:
+- Select exactly one active key.
+- Prevent two active keys.
+- Move the old active key to `validating`.
+- Publish only `active` and `validating` keys in JWKS.
+- Exclude private fields from JWKS.
+- Sign tokens with the active key.
+- Rotate keys without invalidating still-valid tokens.
+- Retire old keys after the configured safety window.
+- Reject unauthorized manual rotation.
 
-- Deve selecionar apenas uma chave `active`.
-- Deve gerar `kid` unico.
-- Deve impedir duas chaves `active` ao mesmo tempo.
-- Deve mover chave antiga para `validating`.
-- Deve ocultar `retired` do JWKS.
+## Configuration Examples
 
-Integration:
-
-- Emitir token antes da rotacao.
-- Rotacionar chave.
-- Validar token antigo usando JWKS.
-- Emitir token novo.
-- Validar token novo usando JWKS.
-- Aposentar chave antiga.
-- Verificar que token antigo expirado nao depende mais da chave removida.
-
-Security:
-
-- Garantir que `private_jwk` nao aparece em logs.
-- Garantir que `private_jwk` nao aparece no endpoint JWKS.
-- Garantir que apenas usuario/admin autorizado aciona rotacao manual.
-- Garantir auditoria de todas as operacoes criticas.
-
-## Example Rotation Policy
-
-```text
-Algoritmo: RS256
-Rotacao automatica: mensal
-Access token TTL: 15 minutos
-ID token TTL: 15 minutos
-JWKS Cache-Control: 300 segundos
-Retencao de chave antiga no JWKS: 1 hora
-Refresh token: opaco, rotacionado separadamente no banco
+```env
+OIDC_KEY_BACKEND=database
+OIDC_KEY_ROTATION_ENABLED=true
+OIDC_KEY_RETENTION_SECONDS=3600
 ```
 
-## Minimal Administrative Interface
-
-Internal endpoints:
-
-```http
-POST /admin/oidc/keys
-POST /admin/oidc/keys/{kid}/activate
-POST /admin/oidc/keys/rotate
-POST /admin/oidc/keys/retire-expired
-GET  /admin/oidc/keys
+```env
+OIDC_KEY_BACKEND=transit
+OIDC_TRANSIT_ADDR=https://openbao.example.com
+OIDC_TRANSIT_KEY_NAME=satoidc-oidc-signing
+OIDC_KEY_ROTATION_ENABLED=true
+OIDC_KEY_RETENTION_SECONDS=3600
 ```
-
-Public endpoints:
-
-```http
-GET /.well-known/openid-configuration
-GET /.well-known/jwks.json
-```
-
-Discovery and JWKS should use the root well-known endpoints above. OAuth protocol endpoints may remain under `/oauth`.
-
-## Traceability
-
-- Code:
-  - `satoidc/satoidc/auth/oidc_keys.py`
-  - `satoidc/satoidc/auth/oauth2.py`
-  - `satoidc/satoidc/routes/oauth2.py`
-  - `satoidc/satoidc/models/__init__.py`
-  - `satoidc/migrations/versions/6c2f4c9d1a7e_add_oidc_signing_keys.py`
-- Tests:
-  - `satoidc/tests/test_oidc_key_rotation.py`
-  - `satoidc/tests/test_oauth_metadata.py`
-- Docs: this feature folder.
-- Decisions: `agent-memory/decisions.md`.

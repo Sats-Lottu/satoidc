@@ -1,119 +1,127 @@
-# Design: Rotacao de Chaves OIDC
+# Design: OIDC Key Rotation
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Created: 2026-05-06
-- Updated: 2026-05-06
+- Updated: 2026-05-18
 
-## Current Behavior
+## Lifecycle Note
 
-`satoidc/satoidc/auth/oauth2.py` gera uma chave RSA em memoria no import da aplicacao. `satoidc/satoidc/routes/oauth2.py` publica o JWKS a partir dessa chave em memoria.
+This design document is a historical implementation design for the OIDC key
+rotation feature. The feature has been implemented and the canonical behavior is
+tracked in `spec.md`, `api-contract.md`, `tasks.md`, and the current code.
 
-Impactos:
+The original design identified Vault Transit as the preferred hardened backend.
+The project later implemented the broader OpenBao/Vault-compatible Transit
+backend in `specs/features/external-signing-backend/spec.md`.
 
-- Restart invalida a chave publica anterior.
-- Replicas podem assinar tokens com chaves diferentes.
-- Nao ha ciclo de vida de chaves, auditoria, nem garantia de `kid` estavel.
+## Previous Behavior
 
-## Target Components
+Before implementation, SatOIDC used an in-memory RSA key generated during
+startup. This created three production risks:
 
-- `OidcSigningKey` model: representa metadados, estado, JWK publico e referencia ao backend criptografico.
-- `OidcSigningKeyRepository`: consulta e transiciona estados de chaves com transacao.
-- `OidcSigningService`: assina JWTs usando a chave `active` e registra `token.signed`.
-- `OidcKeyRotationService`: gera, ativa, rebaixa e aposenta chaves.
-- `OidcAuditLog` ou integracao com mecanismo de auditoria existente: registra eventos criticos.
-- Rotas publicas de discovery/JWKS e rotas administrativas sob `/admin/oidc/keys`.
+- restart invalidated the previous public key;
+- replicas could sign tokens with different keys;
+- key lifecycle, audit, and stable `kid` handling were missing.
 
-## Backend Cryptografico
+## Components
 
-### Preferencial: Vault Transit
+- `OidcSigningKey`: persisted key metadata and encrypted/private backend
+  reference.
+- `OidcSigningKeyRepository`: queries and transitions key state transactionally.
+- `OidcSigningService`: signs JWTs using the active key and records
+  `token.signed`.
+- `OidcKeyRotationService`: generates, activates, demotes, and retires keys.
+- JWKS publisher: serializes public key material only.
+- Admin endpoints: expose manual key lifecycle operations to authorized admins.
 
-O banco armazena:
+## Storage Options
 
-- `public_jwk`
-- `vault_key_name`
-- `vault_key_version`
-- metadados de lifecycle
+### Internal Database Fallback
 
-A assinatura e feita via Vault Transit. A chave privada nao passa pela aplicacao.
+The MVP stores encrypted private JWK material in the database. This mode is
+sufficient for development, tests, demos, and simple deployments that accept the
+documented risk.
 
-### MVP: banco com chave privada criptografada
+Rules:
 
-O banco armazena `private_jwk_encrypted`, nunca `private_jwk` em texto puro.
+- private material is encrypted before persistence;
+- the encryption secret does not live in the same database row;
+- logs and errors mask private material;
+- decrypted material exists only for the minimum signing scope.
 
-Pre-condicoes:
+### Transit Backend
 
-- A chave de criptografia de dados nao deve ficar no mesmo registro.
-- Logs e erros devem mascarar qualquer material privado.
-- O material descriptografado deve existir apenas no escopo minimo necessario para assinatura.
+Hardened production should use OpenBao/Vault-compatible Transit signing. In
+that mode, SatOIDC stores backend references and public metadata, and the
+Transit backend performs signing.
 
 ## State Transitions
 
-```text
-created -> validating
-validating -> active
-active -> validating
-validating -> retired
-```
+Allowed transitions:
 
-Regras:
+- `validating` -> `active`
+- `active` -> `validating`
+- `validating` -> `retired`
 
-- So pode existir uma chave `active`.
-- Ativacao deve ocorrer em transacao unica.
-- Ao ativar uma nova chave, a chave ativa anterior recebe `status=validating`, `validating_since=now` e `retired_after`.
-- Chave `retired` nao pode voltar a `active` sem decisao explicita futura.
+Rules:
 
-## Token Signing
+- only one key may be `active`;
+- activation happens in a single transaction;
+- activating a new key demotes the previous active key to `validating` and sets
+  its retirement deadline;
+- retired keys are never promoted again.
 
-O emissor de tokens deve resolver a chave `active` no momento da assinatura, sem depender de restart.
+## Signing Flow
 
-Header minimo:
+The token issuer resolves the active key at signing time. It must not depend on
+process restart or module-level key state.
+
+If no active key exists, token issuance fails safely. If signing fails, the
+error is logged without sensitive material and returned as the appropriate
+OAuth/OIDC error.
+
+## JWKS Flow
+
+`/.well-known/jwks.json` returns only keys in `active` or `validating` state.
+
+Published keys contain public parameters only:
 
 ```json
 {
+  "kid": "sat-oidc-2026-05-06-001",
   "alg": "RS256",
-  "typ": "JWT",
-  "kid": "<active-kid>"
+  "kty": "RSA",
+  "use": "sig",
+  "n": "...",
+  "e": "AQAB"
 }
 ```
 
-Falhas ao obter a chave ativa ou assinar devem ser logadas sem material sensivel e retornar erro apropriado ao fluxo OAuth/OIDC.
+`private_jwk_encrypted`, backend references, and administrative fields must not
+leave the server.
 
-## JWKS
+## Retention
 
-`/.well-known/jwks.json` retorna somente chaves em `active` ou `validating`.
+`retired_after` must account for:
 
-Cada chave publicada deve conter apenas parametros publicos, por exemplo:
+- the longest token lifetime signed by the key;
+- expected clock skew;
+- JWKS/client cache TTL;
+- a safety margin.
 
-- `kid`
-- `alg`
-- `kty`
-- `use`
-- parametros publicos RSA como `n` e `e`
+## Authorization And Audit
 
-`private_jwk_encrypted`, referencias internas e campos administrativos nao devem sair no JWKS.
+Manual endpoints require existing admin/root authorization. Manual operations
+record the authenticated actor. Background jobs record `actor=system`.
 
-## Retirement Window
+## Discovery
 
-`retired_after` deve considerar:
+OIDC discovery and JWKS live at:
 
-- maior TTL de token assinado por chave OIDC;
-- TTL/cache efetivo do JWKS;
-- margem operacional extra.
+- `/.well-known/openid-configuration`
+- `/.well-known/jwks.json`
 
-Configuracao inicial sugerida:
-
-```text
-retired_after = rotated_at + max_token_ttl + jwks_cache_ttl + extra_margin
-```
-
-## Administrative Security
-
-Endpoints administrativos devem exigir autorizacao administrativa/root existente no SatOIDC.
-
-Operacoes manuais devem registrar `actor` quando houver usuario autenticado. Jobs devem registrar `actor=system`.
-
-## Compatibility Notes
-
-O contrato alvo usa `/.well-known/openid-configuration` e `/.well-known/jwks.json`. Os endpoints OAuth continuam sob `/oauth`, mas discovery e JWKS nao devem depender do prefixo `/oauth`.
+OAuth endpoints can remain under `/oauth`, but discovery and JWKS must not
+depend on the `/oauth` prefix.

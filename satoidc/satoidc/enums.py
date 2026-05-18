@@ -42,13 +42,13 @@ class TokenEndpointAuthMethodEnum(StrEnum):
     NONE = "none"  # public client (PKCE)
     CLIENT_SECRET_BASIC = "client_secret_basic"
     CLIENT_SECRET_POST = "client_secret_post"
-    # Se quiser futuramente:
+    # Future options:
     # PRIVATE_KEY_JWT = "private_key_jwt"
     # TLS_CLIENT_AUTH = "tls_client_auth"
 
 
 class JwkAlgEnum(StrEnum):
-    # Recomendo RS256 primeiro (simples e compatível). Depois, EdDSA.
+    # Prefer RS256 first for broad compatibility, then EdDSA.
     RS256 = "RS256"
     PS256 = "PS256"
     ES256 = "ES256"

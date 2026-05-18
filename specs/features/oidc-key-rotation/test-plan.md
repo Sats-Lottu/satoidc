@@ -1,59 +1,81 @@
-# Test Plan: Rotacao de Chaves OIDC
+# Test Plan: OIDC Key Rotation
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Created: 2026-05-06
-- Updated: 2026-05-06
+- Updated: 2026-05-18
+
+## Lifecycle Note
+
+This test plan guided the implemented OIDC key rotation feature. It is retained
+as implementation evidence and a regression reference. New external signing
+coverage belongs to `specs/features/external-signing-backend/spec.md` and
+`specs/features/quality-testing/testcontainers-integration.md`.
 
 ## Unit Tests
 
-- Deve gerar `kid` unico para novas chaves.
-- Deve criar chave nova com `status=validating`.
-- Deve impedir duas chaves `active` ao mesmo tempo.
-- Deve selecionar exatamente uma chave `active` para assinatura.
-- Deve mover chave ativa anterior para `validating` ao ativar outra chave.
-- Deve calcular `retired_after` usando TTL maximo de token, cache JWKS e margem extra.
-- Deve listar no JWKS apenas chaves `active` e `validating`.
-- Deve ocultar chaves `retired` do JWKS.
-- Deve serializar somente parametros publicos no JWK publicado.
-- Deve registrar eventos de auditoria para criacao, ativacao, rebaixamento, aposentadoria e assinatura.
+- Generate unique `kid` values for new keys.
+- Create a new key with `status=validating`.
+- Prevent two `active` keys at the same time.
+- Select exactly one `active` key for signing.
+- Move the previous active key to `validating` when another key is activated.
+- Retire old keys only after the configured retention window.
+- List only `active` and `validating` keys in JWKS.
+- Hide `retired` keys from JWKS.
+- Exclude private material from public JWK serialization.
 
 ## Integration Tests
 
-- Emitir token antes da rotacao e capturar `kid` antigo.
-- Rotacionar chave e ativar nova `kid`.
-- Verificar que o JWKS contem a chave antiga e a nova.
-- Validar token antigo usando JWKS apos a rotacao.
-- Emitir token novo e verificar que usa a nova `kid`.
-- Validar token novo usando JWKS.
-- Executar aposentadoria apos `retired_after`.
-- Verificar que chave antiga deixa de aparecer no JWKS.
-- Verificar que chaves `retired` nao sao usadas para novas assinaturas.
-- Verificar que a aplicacao usa a nova chave sem restart.
+### Token Signing
 
-## API Tests
+- Issue a token with the current active key.
+- Assert the JWT header contains the active `kid`.
+- Assert the public JWKS contains the matching key.
 
-- `GET /.well-known/openid-configuration` retorna `jwks_uri`.
-- `GET /.well-known/jwks.json` retorna `keys`.
-- `POST /admin/oidc/keys` cria uma chave para usuario autorizado.
-- `POST /admin/oidc/keys/{kid}/activate` ativa a chave e rebaixa a anterior.
-- `POST /admin/oidc/keys/rotate` executa criacao e ativacao.
-- `POST /admin/oidc/keys/retire-expired` aposenta chaves vencidas.
-- `GET /admin/oidc/keys` lista metadados sem material privado.
-- Usuario nao autorizado recebe erro apropriado nos endpoints administrativos.
+### Rotation
+
+- Rotate a key and activate the new `kid`.
+- Assert JWKS contains both the old and new keys during the validation window.
+- Assert new tokens use the new `kid`.
+- Assert old tokens remain verifiable while they are still valid.
+
+### Retirement
+
+- Freeze time beyond the retention window.
+- Run the retirement job.
+- Assert the old key no longer appears in JWKS.
+- Assert retired keys are not used for new signatures.
+- Assert the application uses the new key without restart.
+
+## Endpoint Tests
+
+- `GET /.well-known/openid-configuration` includes `jwks_uri`.
+- `GET /.well-known/jwks.json` returns only public key material.
+- `POST /admin/oidc/keys` creates a key for an authorized user.
+- `POST /admin/oidc/keys/{kid}/activate` activates a key and demotes the
+  previous one.
+- `POST /admin/oidc/keys/retire-expired` retires expired keys.
+- Unauthorized users cannot manage keys.
 
 ## Security Tests
 
-- `private_jwk`, `private_jwk_encrypted` e equivalentes nao aparecem no JWKS.
-- Material privado nao aparece em logs de sucesso ou falha.
-- Eventos de auditoria nao incluem material privado.
-- Falha no backend criptografico nao vaza segredo em mensagem de erro.
-- Rotacao manual exige permissao administrativa.
-- Nao e possivel ativar chave inexistente ou `retired`.
+- No response contains `private_jwk`, encrypted private material, or backend
+  secrets.
+- Logs do not include private material.
+- Audit events include `kid`, action, actor, and result, but no private data.
+- Concurrent activation cannot produce two active keys.
+- Missing active key fails token issuance safely.
+- Nonexistent or `retired` keys cannot be activated.
 
-## Regression Tests
+## Manual Smoke Test
 
-- Discovery OIDC continua publicando issuer, authorization endpoint, token endpoint e userinfo endpoint.
-- Clientes que consomem `jwks_uri` conseguem validar tokens emitidos antes e depois da rotacao.
-- Alias de compatibilidade sob `/oauth` continuam funcionando enquanto forem suportados.
+1. Start SatOIDC.
+2. Create and activate a new OIDC key.
+3. Complete an authorization-code flow.
+4. Decode the issued ID Token and inspect `kid`.
+5. Fetch JWKS and confirm the `kid` is present.
+6. Rotate the key.
+7. Repeat token issuance and confirm the new `kid`.
+8. Retire expired keys and confirm old keys disappear only after the safety
+   window.

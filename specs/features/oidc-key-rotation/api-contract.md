@@ -1,10 +1,16 @@
-# API Contract: Rotacao de Chaves OIDC
+# API Contract: OIDC Key Rotation
 
 ## Status
 
-- Status: draft
+- Status: implemented
 - Created: 2026-05-06
-- Updated: 2026-05-06
+- Updated: 2026-05-18
+
+## Lifecycle Note
+
+This API contract is retained as implementation evidence for the implemented
+OIDC key rotation feature. Current behavior should be checked against the code,
+`spec.md`, and external signing follow-up work before extending the contract.
 
 ## Public Discovery
 
@@ -16,8 +22,8 @@ Response must include:
 
 ```json
 {
-  "issuer": "https://auth.exemplo.com",
-  "jwks_uri": "https://auth.exemplo.com/.well-known/jwks.json"
+  "issuer": "https://auth.example.com",
+  "jwks_uri": "https://auth.example.com/.well-known/jwks.json"
 }
 ```
 
