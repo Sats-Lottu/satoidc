@@ -120,10 +120,10 @@ class FastAPIOAuth2Request(OAuth2Request):
     """Equivalent to FlaskOAuth2Request, 100% sync."""
 
     def __init__(self, request: Request):
-        # authlib expects a standard dict. Starlette's Headers are case-insensitive,
-        # but dict(request.headers) creates a case-sensitive dict with lowercase keys.
-        # We need to ensure the 'Authorization' header is present with that exact
-        # casing for authlib to find it.
+        # authlib expects a standard dict. Starlette's Headers are
+        # case-insensitive, but dict(request.headers) creates a case-sensitive
+        # dict with lowercase keys. We need to ensure the 'Authorization'
+        # header is present with that exact casing for authlib to find it.
         headers = dict(request.headers)
         auth_header = request.headers.get("Authorization")
         if auth_header:
