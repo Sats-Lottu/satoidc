@@ -19,9 +19,12 @@ from setup_wizard.apply import (
 )
 from setup_wizard.get_root import (
     authenticate_root_user,
+    authenticate_setup_admin_user,
     database_schema_ready,
     exists_root_user,
+    exists_setup_admin_user,
     has_active_root_permission,
+    has_active_setup_admin_permission,
     parse_root_user_id,
     setup_completed,
 )
@@ -31,6 +34,7 @@ from setup_wizard.routes import (
     initial_root_form_state_from_result,
     initial_root_review_from_payload,
     set_root,
+    setup_reconfiguration_fields,
     stored_root_has_access,
 )
 
@@ -111,6 +115,26 @@ async def test_setup_wizard_detects_existing_root_user(
     await db_session.commit()
 
     assert await exists_root_user() is True
+    assert await exists_setup_admin_user() is True
+
+
+async def test_setup_wizard_detects_existing_admin_user(
+    db_session, make_user
+):
+    user = await make_user()
+    db_session.add(
+        Permission(
+            user_id=user.id,
+            granted_by=None,
+            permission_type=PermissionsEnum.ADMIN,
+            expiration_date=None,
+            reason="test admin user",
+        )
+    )
+    await db_session.commit()
+
+    assert await exists_root_user() is False
+    assert await exists_setup_admin_user() is True
 
 
 async def test_setup_wizard_authenticates_active_root_user(
@@ -158,6 +182,33 @@ async def test_setup_wizard_authenticates_root_by_email(
 
     assert authenticated is not None
     assert authenticated.id == user.id
+
+
+async def test_setup_wizard_authenticates_admin_for_reconfiguration(
+    db_session, make_user
+):
+    user = await make_user(password_hash=hash_password("StrongPass1!"))
+    db_session.add(
+        Permission(
+            user_id=user.id,
+            granted_by=None,
+            permission_type=PermissionsEnum.ADMIN,
+            expiration_date=None,
+            reason="test admin user",
+        )
+    )
+    await db_session.commit()
+
+    authenticated = await authenticate_setup_admin_user(
+        db_session, user.email.upper(), "StrongPass1!"
+    )
+
+    assert authenticated is not None
+    assert authenticated.id == user.id
+    assert (
+        await has_active_setup_admin_permission(db_session, user.id) is True
+    )
+    assert await has_active_root_permission(db_session, user.id) is False
 
 
 async def test_setup_wizard_rejects_non_root_credentials(
@@ -263,7 +314,11 @@ async def test_setup_wizard_blocks_public_root_creation_when_completed(
     )
     monkeypatch.setattr(routes_module, "database_schema_ready", schema_ready)
     monkeypatch.setattr(routes_module, "setup_completed", completed)
-    monkeypatch.setattr(routes_module, "exists_root_user", no_root_user)
+    monkeypatch.setattr(
+        routes_module,
+        "exists_setup_admin_user",
+        no_root_user,
+    )
     monkeypatch.setattr(
         routes_module,
         "render_completed_setup_locked",
@@ -299,7 +354,11 @@ async def test_setup_wizard_allows_public_root_creation_when_not_completed(
     )
     monkeypatch.setattr(routes_module, "database_schema_ready", schema_ready)
     monkeypatch.setattr(routes_module, "setup_completed", incomplete)
-    monkeypatch.setattr(routes_module, "exists_root_user", no_root_user)
+    monkeypatch.setattr(
+        routes_module,
+        "exists_setup_admin_user",
+        no_root_user,
+    )
     monkeypatch.setattr(
         routes_module,
         "render_initial_root_setup",
@@ -425,3 +484,28 @@ def test_initial_root_review_normalizes_and_masks_secret():
         "password": "********",
     }
     assert "StrongPass1!" not in repr(review)
+
+
+def test_setup_reconfiguration_fields_lock_env_and_mask_secrets():
+    fields = setup_reconfiguration_fields(
+        {
+            "SATOIDC_ISSUER": "https://issuer.example.com",
+            "SATOIDC_SECRET_KEY": "super-secret-value",
+            "SATOIDC_SMTP_PASSWORD_FILE": "/run/secrets/smtp",
+        }
+    )
+
+    by_name = {field["name"]: field for field in fields}
+
+    assert by_name["OAUTH2_JWT_ISS"]["locked"] is True
+    assert by_name["OAUTH2_JWT_ISS"]["high_impact"] is True
+    assert (
+        by_name["OAUTH2_JWT_ISS"]["display_value"]
+        == "https://issuer.example.com"
+    )
+    assert by_name["SESSION_MIDDLEWARE_SECRET_KEY"]["display_value"] == (
+        "********"
+    )
+    assert by_name["SMTP_PASSWORD"]["source"] == "SATOIDC_SMTP_PASSWORD_FILE"
+    assert by_name["SMTP_PASSWORD"]["display_value"] == "********"
+    assert "super-secret-value" not in repr(fields)

@@ -46,6 +46,11 @@ review, and browser e2e coverage are complete.
 
 ## Task 3.7: Add Admin-Only Reconfiguration Mode
 
+Status: partially complete. Admin/root setup access, read-only
+environment-controlled runtime fields, and setup reconfiguration access log
+events were added on 2026-05-20. In-app mutation semantics and dedicated e2e
+coverage remain open.
+
 1. Clear task name: Add authenticated setup reconfiguration mode.
 2. Technical objective: allow admins to review or change wizard-owned settings
    after bootstrap without exposing public setup.
@@ -71,8 +76,8 @@ review, and browser e2e coverage are complete.
 
 ### Subtasks
 
-- Add admin route guard.
-- Render env-controlled fields as locked/read-only.
-- Add confirmation for issuer/public URL/signing backend changes.
-- Add audit/log events.
-- Add e2e coverage.
+- [x] Add admin route guard.
+- [x] Render env-controlled fields as locked/read-only.
+- [ ] Add confirmation for issuer/public URL/signing backend changes.
+- [x] Add audit/log events.
+- [ ] Add e2e coverage.

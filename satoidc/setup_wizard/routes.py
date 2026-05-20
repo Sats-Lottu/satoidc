@@ -1,5 +1,7 @@
+import logging
+import os
 from secrets import token_urlsafe
-from typing import Annotated
+from typing import Annotated, Mapping
 
 import segno
 from fastapi import Depends, Form, Request
@@ -25,6 +27,7 @@ from satoidc.routes.ui_components import (
     card,
     responsive_grid,
 )
+from satoidc.runtime_config import RUNTIME_ENV_VARS, mask_secret
 from satoidc.settings import ENV
 from satoidc.validators import (
     is_valid_email,
@@ -43,16 +46,17 @@ from setup_wizard.bootstrap import (
     validate_bootstrap_environment,
 )
 from setup_wizard.get_root import (
-    authenticate_root_user,
+    authenticate_setup_admin_user,
     database_schema_ready,
-    exists_root_user,
-    has_active_root_permission,
+    exists_setup_admin_user,
+    has_active_setup_admin_permission,
     parse_root_user_id,
     setup_completed,
     setup_session,
 )
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 SETUP_ROOT_USER_ID_KEY = "setup_root_user_id"
@@ -85,7 +89,7 @@ async def setup_root_login(
     identifier: Annotated[str, Form()] = "",
     password: Annotated[str, Form()] = "",
 ) -> RedirectResponse:
-    user = await authenticate_root_user(session, identifier, password)
+    user = await authenticate_setup_admin_user(session, identifier, password)
     if user is None:
         return RedirectResponse(
             "/?setup_error=invalid-root-login",
@@ -93,6 +97,15 @@ async def setup_root_login(
         )
 
     request.session[SETUP_ROOT_USER_ID_KEY] = user.id.hex
+    log.info(
+        "Setup reconfiguration access granted",
+        extra={
+            "event_name": "setup.reconfigure_access_granted",
+            "component": "setup_wizard",
+            "actor": str(user.id),
+            "auth_method": "password",
+        },
+    )
     return redirect_to_root()
 
 
@@ -109,13 +122,22 @@ async def complete_lnurl_root_login(
     ticket: str | None = None,
 ) -> RedirectResponse:
     user_id = pop_lnurl_root_login_ticket(ticket)
-    if not await has_active_root_permission(session, user_id):
+    if not await has_active_setup_admin_permission(session, user_id):
         return RedirectResponse(
             "/?setup_error=invalid-lnurl-root-login",
             status_code=HTTP_303_SEE_OTHER,
         )
 
     request.session[SETUP_ROOT_USER_ID_KEY] = str(user_id)
+    log.info(
+        "Setup reconfiguration access granted",
+        extra={
+            "event_name": "setup.reconfigure_access_granted",
+            "component": "setup_wizard",
+            "actor": str(user_id),
+            "auth_method": "lnurl",
+        },
+    )
     return redirect_to_root()
 
 
@@ -143,19 +165,96 @@ async def stored_root_has_access(
         return False
 
     if provided_session is not None:
-        if await has_active_root_permission(provided_session, user_id):
+        if await has_active_setup_admin_permission(provided_session, user_id):
             return True
     else:
         async with setup_session() as session:
-            if await has_active_root_permission(session, user_id):
+            if await has_active_setup_admin_permission(session, user_id):
                 return True
 
     request.session.pop(SETUP_ROOT_USER_ID_KEY, None)
     return False
 
 
+HIGH_IMPACT_RECONFIGURATION_FIELDS = {
+    "EMAIL_PUBLIC_BASE_URL",
+    "OAUTH2_JWT_ISS",
+    "DATABASE_URL",
+    "SYNC_DATABASE_URL",
+    "OAUTH2_TOKEN_EXPIRES_IN",
+    "OIDC_SIGNING_BACKEND",
+}
+
+
+def setup_reconfiguration_fields(
+    env: Mapping[str, str] | None = None,
+) -> list[dict[str, object]]:
+    values = {
+        name.upper(): value for name, value in (env or os.environ).items()
+    }
+    fields: list[dict[str, object]] = []
+    for spec in RUNTIME_ENV_VARS:
+        names = [
+            name for name in (spec.satoidc_name, spec.current_name) if name
+        ]
+        file_names = [f"{name}_FILE" for name in names if spec.supports_file]
+        source = next((name for name in names if name in values), None)
+        file_source = next(
+            (name for name in file_names if name in values),
+            None,
+        )
+        configured = source is not None or file_source is not None
+        value = values.get(source or "") if source else ""
+        if spec.secret:
+            display_value = mask_secret(value or values.get(file_source or ""))
+        elif file_source and not source:
+            display_value = f"{file_source} file"
+        else:
+            display_value = value or "Not configured"
+
+        fields.append(
+            {
+                "name": spec.field_name,
+                "display_value": display_value,
+                "source": source or file_source or "default",
+                "locked": configured,
+                "secret": spec.secret,
+                "high_impact": (
+                    spec.field_name in HIGH_IMPACT_RECONFIGURATION_FIELDS
+                ),
+            }
+        )
+    return fields
+
+
+def render_reconfiguration_field(field: dict[str, object]):
+    badge = "High impact" if field["high_impact"] else "Runtime"
+    with ui.row().classes(
+        "items-start gap-3 rounded-lg border border-white/10 "
+        "bg-white/5 p-3 w-full"
+    ):
+        ui.icon("lock" if field["locked"] else "info").classes(
+            "text-sky-300"
+        )
+        with ui.column().classes("gap-1 w-full"):
+            with ui.row().classes(
+                "items-center justify-between gap-3 w-full"
+            ):
+                ui.label(str(field["name"])).classes("font-semibold")
+                ui.label(badge).classes(
+                    "text-xs uppercase tracking-wide text-slate-400"
+                )
+            ui.label(str(field["display_value"])).classes(
+                "font-mono text-sm break-all"
+            )
+            ui.label(f"Source: {field['source']}").classes(
+                f"text-xs {MUTED_TEXT}"
+            )
+
+
 def render_reconfiguration_panel():
     report = validate_bootstrap_environment()
+    fields = setup_reconfiguration_fields()
 
     with auth_shell("max-w-2xl"):
         with ui.column().classes("gap-4"):
@@ -188,6 +287,20 @@ def render_reconfiguration_panel():
                         ui.label(check.message).classes(
                             f"text-sm {MUTED_TEXT}"
                         )
+
+            ui.separator().classes("opacity-20")
+            with ui.column().classes("gap-2"):
+                ui.label("Locked runtime settings").classes(
+                    "text-lg font-semibold"
+                )
+                ui.label(
+                    "Environment-controlled values are read-only in the "
+                    "wizard. High-impact changes require operator action and "
+                    "service restart."
+                ).classes(f"text-sm {MUTED_TEXT}")
+
+            for field in fields:
+                render_reconfiguration_field(field)
 
             with ui.row().classes("gap-3 mt-4"):
                 ui.button(
@@ -373,16 +486,16 @@ def render_root_login(request: Request):
                 eyebrow="Setup Access",
                 title="Root credentials protect service reconfiguration.",
                 body=(
-                    "After initial setup, this wizard remains available for "
-                    "runtime checks but requires a root account or linked "
-                    "Lightning wallet."
+                "After initial setup, this wizard remains available for "
+                "runtime checks but requires an administrator account or "
+                "linked Lightning wallet."
+            ),
+            features=[
+                (
+                    "admin_panel_settings",
+                    "Admin only",
+                    "Only active admin/root users can reach setup checks.",
                 ),
-                features=[
-                    (
-                        "admin_panel_settings",
-                        "Root only",
-                        "Only active root users can reach setup checks.",
-                    ),
                     (
                         "qr_code",
                         "Lightning access",
@@ -397,14 +510,14 @@ def render_root_login(request: Request):
             )
             with card("max-w-lg w-full mx-auto items-stretch gap-4"):
                 with ui.column().classes("gap-1"):
-                    ui.label("Root Access Required").classes(
+                    ui.label("Setup Access Required").classes(
                         "text-2xl font-bold"
                     )
                     ui.label(
-                        "Sign in with root credentials to access setup."
+                        "Sign in with admin credentials to access setup."
                     ).classes(MUTED_TEXT)
                 if setup_error:
-                    ui.label("Invalid root credentials.").classes(ERROR_TEXT)
+                    ui.label("Invalid admin credentials.").classes(ERROR_TEXT)
                 with (
                     ui.element("form")
                     .props('method="post" action="/setup/root-login"')
@@ -454,14 +567,14 @@ async def render_existing_root_setup(request: Request):
             return
 
         async with setup_session() as db_session:
-            has_root_permission = await has_active_root_permission(
+            has_root_permission = await has_active_setup_admin_permission(
                 db_session,
                 user_id,
             )
 
         if not has_root_permission:
             ui.notify(
-                "Lightning wallet is not a root account.",
+                "Lightning wallet is not an admin account.",
                 type="negative",
             )
             return
@@ -870,13 +983,13 @@ async def set_root(request: Request):
         return
 
     if await setup_completed():
-        if await exists_root_user():
+        if await exists_setup_admin_user():
             await render_existing_root_setup(request)
         else:
             render_completed_setup_locked()
         return
 
-    if await exists_root_user():
+    if await exists_setup_admin_user():
         await render_existing_root_setup(request)
         return
 

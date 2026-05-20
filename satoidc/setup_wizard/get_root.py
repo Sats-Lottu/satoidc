@@ -12,6 +12,8 @@ from satoidc.models import Permission, User
 from satoidc.models.database import get_session
 from satoidc.services.setup_lock import get_setup_state
 
+SETUP_ADMIN_PERMISSIONS = (PermissionsEnum.ROOT, PermissionsEnum.ADMIN)
+
 
 @asynccontextmanager
 async def setup_session() -> AsyncIterator[AsyncSession]:
@@ -80,6 +82,21 @@ async def exists_root_user() -> bool:
         return result is not None
 
 
+async def exists_setup_admin_user() -> bool:
+    async with setup_session() as session:
+        try:
+            result = await session.scalar(
+                select(Permission).where(
+                    Permission.permission_type.in_(SETUP_ADMIN_PERMISSIONS)
+                )
+            )
+        except OperationalError as exc:
+            if is_missing_schema_error(exc):
+                return False
+            raise
+        return result is not None
+
+
 async def authenticate_root_user(
     session: AsyncSession,
     identifier: str | None,
@@ -101,6 +118,47 @@ async def authenticate_root_user(
                 ),
                 User.password_hash.is_not(None),
                 Permission.permission_type == PermissionsEnum.ROOT,
+                Permission.disabled.is_(False),
+                or_(
+                    Permission.expiration_date > func.now(),
+                    Permission.expiration_date.is_(None),
+                ),
+            )
+        )
+    except OperationalError as exc:
+        if is_missing_schema_error(exc):
+            return None
+        raise
+    if not user or not user.password_hash:
+        return None
+
+    if not verify_password(password, user.password_hash):
+        return None
+
+    return user
+
+
+async def authenticate_setup_admin_user(
+    session: AsyncSession,
+    identifier: str | None,
+    password: str | None,
+) -> User | None:
+    normalized_identifier = (identifier or "").strip().lower()
+    if not normalized_identifier or not password:
+        return None
+
+    try:
+        user = await session.scalar(
+            select(User)
+            .join(Permission, Permission.user_id == User.id)
+            .where(
+                User.is_active.is_(True),
+                or_(
+                    User.email == normalized_identifier,
+                    User.login == normalized_identifier,
+                ),
+                User.password_hash.is_not(None),
+                Permission.permission_type.in_(SETUP_ADMIN_PERMISSIONS),
                 Permission.disabled.is_(False),
                 or_(
                     Permission.expiration_date > func.now(),
@@ -146,3 +204,30 @@ async def has_active_root_permission(
             return False
         raise
     return root_permission is not None
+
+
+async def has_active_setup_admin_permission(
+    session: AsyncSession,
+    user_id,
+) -> bool:
+    parsed_user_id = parse_root_user_id(user_id)
+    if parsed_user_id is None:
+        return False
+
+    try:
+        setup_admin_permission = await session.scalar(
+            select(Permission).where(
+                Permission.user_id == parsed_user_id,
+                Permission.permission_type.in_(SETUP_ADMIN_PERMISSIONS),
+                Permission.disabled.is_(False),
+                or_(
+                    Permission.expiration_date > func.now(),
+                    Permission.expiration_date.is_(None),
+                ),
+            )
+        )
+    except OperationalError as exc:
+        if is_missing_schema_error(exc):
+            return False
+        raise
+    return setup_admin_permission is not None
