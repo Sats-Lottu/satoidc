@@ -13,12 +13,9 @@ import pytest
 import uvicorn
 from alembic import command
 from alembic.config import Config
-from docker.errors import DockerException
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from testcontainers.core.exceptions import ContainerStartException
-from testcontainers.postgres import PostgresContainer
 
 import satoidc.auth.oauth2 as oauth2_module
 import satoidc.models.database as database_module
@@ -46,32 +43,11 @@ def _pkce_challenge(verifier: str) -> str:
 
 
 @pytest.fixture
-def postgres_urls() -> Iterator[tuple[str, str]]:
-    try:
-        container = PostgresContainer(
-            "postgres:16-alpine",
-            driver="psycopg",
-            dbname="satoidc_token_smoke",
-        )
-    except DockerException as exc:
-        pytest.skip(f"Docker is not available for Testcontainers: {exc}")
-
-    try:
-        with container as postgres:
-            sync_url = postgres.get_connection_url(driver="psycopg")
-            yield sync_url, sync_url
-    except (ContainerStartException, DockerException) as exc:
-        pytest.skip(f"PostgreSQL Testcontainer could not start: {exc}")
-
-
-@pytest.fixture
 def postgres_app(
     monkeypatch: pytest.MonkeyPatch,
     postgres_urls: tuple[str, str],
 ) -> Iterator[str]:
     async_url, sync_url = postgres_urls
-    if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     env = Settings(DATABASE_URL=async_url, SYNC_DATABASE_URL=sync_url)
     monkeypatch.setattr(settings_module, "ENV", env)

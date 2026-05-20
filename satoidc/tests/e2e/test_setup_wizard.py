@@ -132,3 +132,41 @@ async def test_setup_wizard_reviews_and_applies_masked_root(
 
     assert setup_state is not None
     assert user is not None
+
+    await page.set_viewport_size({"width": 1280, "height": 900})
+    reconfiguration_response = await page.goto(
+        setup_live_server, wait_until="domcontentloaded"
+    )
+
+    assert reconfiguration_response is not None
+    assert reconfiguration_response.status == HTTPStatus.OK
+    await expect(
+        page.get_by_text("Setup Access Required", exact=True)
+    ).to_be_visible()
+
+    await page.get_by_label("Login or email").fill("rootadm")
+    await page.get_by_label("Password").fill(PASSWORD)
+    await page.get_by_role("button", name="Continue").click()
+
+    await expect(page.get_by_text("Service Setup", exact=True)).to_be_visible()
+    await expect(
+        page.get_by_text("Locked runtime settings", exact=True)
+    ).to_be_visible()
+    await expect(
+        page.get_by_text("OAUTH2_JWT_ISS", exact=True).first
+    ).to_be_visible()
+    await expect(page.get_by_text("High impact").first).to_be_visible()
+    await _assert_no_horizontal_overflow(page)
+
+    await page.get_by_role("button", name="Review high-impact changes").click()
+    await expect(
+        page.get_by_text("Confirm high-impact changes", exact=True)
+    ).to_be_visible()
+    await expect(
+        page.get_by_text("Verify discovery, JWKS, token, and login behavior.")
+    ).to_be_visible()
+    await page.get_by_role("button", name="I understand").click()
+
+    await page.set_viewport_size({"width": 390, "height": 844})
+    await expect(page.get_by_text("Service Setup", exact=True)).to_be_visible()
+    await _assert_no_horizontal_overflow(page)

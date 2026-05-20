@@ -1,15 +1,10 @@
 import asyncio
-import sys
-from collections.abc import Iterator
 
 import pytest
 from alembic import command
 from alembic.config import Config
-from docker.errors import DockerException
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine
-from testcontainers.core.exceptions import ContainerStartException
-from testcontainers.postgres import PostgresContainer
 
 import satoidc.settings as settings_module
 from satoidc.settings import Settings
@@ -17,33 +12,11 @@ from satoidc.settings import Settings
 pytestmark = [pytest.mark.integration, pytest.mark.container]
 
 
-@pytest.fixture
-def postgres_urls() -> Iterator[tuple[str, str]]:
-    try:
-        container = PostgresContainer(
-            "postgres:16-alpine",
-            driver="psycopg",
-            dbname="satoidc_test",
-        )
-    except DockerException as exc:
-        pytest.skip(f"Docker is not available for Testcontainers: {exc}")
-
-    try:
-        with container as postgres:
-            sync_url = postgres.get_connection_url(driver="psycopg")
-            yield sync_url, sync_url
-    except (ContainerStartException, DockerException) as exc:
-        pytest.skip(f"PostgreSQL Testcontainer could not start: {exc}")
-
-
 def test_postgres_migrations_support_sync_and_async_sessions(
     monkeypatch: pytest.MonkeyPatch,
     postgres_urls: tuple[str, str],
 ) -> None:
     async_url, sync_url = postgres_urls
-
-    if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     monkeypatch.setattr(
         settings_module,

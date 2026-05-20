@@ -252,6 +252,50 @@ def render_reconfiguration_field(field: dict[str, object]):
             )
 
 
+def render_high_impact_confirmation():
+    with (
+        ui.dialog() as confirmation_dialog,
+        card(f"{DIALOG_CLASSES} max-w-lg mx-auto gap-4"),
+    ):
+        with ui.column().classes("gap-1"):
+            ui.label("Confirm high-impact changes").classes(
+                "text-xl font-semibold"
+            )
+            ui.label(
+                "Issuer, public URL, database, token lifetime, and signing "
+                "backend changes must be made outside the wizard and "
+                "validated after restart."
+            ).classes(MUTED_TEXT)
+        with ui.column().classes("gap-2"):
+            for item in (
+                "Plan the value change in deployment configuration.",
+                "Restart SatOIDC after updating the environment.",
+                "Verify discovery, JWKS, token, and login behavior.",
+            ):
+                with ui.row().classes("items-start gap-2"):
+                    ui.icon("check_circle").classes("text-emerald-400")
+                    ui.label(item).classes("text-sm")
+        with ui.row().classes(
+            "gap-3 w-full justify-end max-sm:flex-col-reverse"
+        ):
+            ui.button(
+                "Cancel",
+                icon="close",
+                on_click=confirmation_dialog.close,
+            ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
+            ui.button(
+                "I understand",
+                icon="verified",
+                on_click=confirmation_dialog.close,
+            ).classes(PRIMARY_BUTTON_CLASSES)
+
+    ui.button(
+        "Review high-impact changes",
+        icon="warning",
+        on_click=confirmation_dialog.open,
+    ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
+
+
 def render_reconfiguration_panel():
     report = validate_bootstrap_environment()
     fields = setup_reconfiguration_fields()
@@ -303,6 +347,7 @@ def render_reconfiguration_panel():
                 render_reconfiguration_field(field)
 
             with ui.row().classes("gap-3 mt-4"):
+                render_high_impact_confirmation()
                 ui.button(
                     "Shut down wizard",
                     icon="close",

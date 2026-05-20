@@ -1,3 +1,5 @@
+import asyncio
+import sys
 from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
@@ -29,6 +31,39 @@ def assert_no_sensitive_log_values(caplog):
             assert value not in caplog.text
 
     return _assert_no_sensitive_log_values
+
+
+@pytest.fixture
+def postgres_urls() -> Iterator[tuple[str, str]]:
+    if sys.platform == "win32" and hasattr(
+        asyncio,
+        "WindowsSelectorEventLoopPolicy",
+    ):
+        asyncio.set_event_loop_policy(
+            asyncio.WindowsSelectorEventLoopPolicy()
+        )
+
+    from docker.errors import DockerException  # noqa: PLC0415
+    from testcontainers.core.exceptions import (  # noqa: PLC0415
+        ContainerStartException,
+    )
+    from testcontainers.postgres import PostgresContainer  # noqa: PLC0415
+
+    try:
+        container = PostgresContainer(
+            "postgres:16-alpine",
+            driver="psycopg",
+            dbname="satoidc_test",
+        )
+    except DockerException as exc:
+        pytest.skip(f"Docker is not available for Testcontainers: {exc}")
+
+    try:
+        with container as postgres:
+            sync_url = postgres.get_connection_url(driver="psycopg")
+            yield sync_url, sync_url
+    except (ContainerStartException, DockerException) as exc:
+        pytest.skip(f"PostgreSQL Testcontainer could not start: {exc}")
 
 
 @pytest.fixture
