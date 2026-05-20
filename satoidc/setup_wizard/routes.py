@@ -36,6 +36,7 @@ from setup_wizard.apply import (
     InteractiveSetupApplyResult,
     InteractiveSetupApplyStatus,
     apply_interactive_setup_admin,
+    validate_interactive_setup_admin_payload,
 )
 from setup_wizard.bootstrap import (
     BootstrapStatus,
@@ -201,6 +202,32 @@ def render_reconfiguration_panel():
                 ).classes(PRIMARY_BUTTON_CLASSES)
 
 
+def render_bootstrap_diagnostics_summary():
+    report = validate_bootstrap_environment()
+
+    with ui.column().classes("gap-3 w-full"):
+        with ui.column().classes("gap-1"):
+            ui.label("Setup diagnostics").classes("text-lg font-semibold")
+            ui.label(
+                "Review runtime checks before creating the initial root "
+                "account."
+            ).classes(f"text-sm {MUTED_TEXT}")
+
+        for check in report.checks:
+            status_ok = check.status == BootstrapStatus.OK
+            status_color = "text-emerald-400" if status_ok else ERROR_TEXT
+            with ui.row().classes(
+                "items-start gap-3 rounded-lg border border-white/10 "
+                "bg-white/5 p-3 w-full"
+            ):
+                ui.icon("check_circle" if status_ok else "error").classes(
+                    status_color
+                )
+                with ui.column().classes("gap-1"):
+                    ui.label(check.name).classes("font-semibold")
+                    ui.label(check.message).classes(f"text-sm {MUTED_TEXT}")
+
+
 def render_database_setup_required():
     with auth_shell("max-w-2xl"):
         with ui.column().classes("gap-4"):
@@ -325,6 +352,16 @@ def initial_root_form_state_from_result(
         "errors": result.errors,
         "completed": False,
         "message": result.message,
+    }
+
+
+def initial_root_review_from_payload(
+    payload: InteractiveSetupAdminPayload,
+) -> dict[str, str]:
+    return {
+        "username": payload.username.strip().lower(),
+        "email": payload.email.strip().lower(),
+        "password": "********",
     }
 
 
@@ -531,6 +568,8 @@ def render_initial_root_admin_form():
         "errors": {},
         "completed": False,
         "message": "",
+        "review": False,
+        "payload": None,
     }
 
     @ui.refreshable
@@ -539,8 +578,14 @@ def render_initial_root_admin_form():
             render_setup_completion_panel()
             return
 
-        with ui.column().classes("gap-1"):
-            ui.label("Create Root").classes("text-2xl font-bold")
+        if form_state["review"]:
+            render_initial_root_review(form_state, root_form)
+            return
+
+        render_bootstrap_diagnostics_summary()
+
+        with ui.column().classes("gap-1 mt-2"):
+            ui.label("Create Root").classes("text-xl font-semibold")
             ui.label("Register the initial administrator account.").classes(
                 MUTED_TEXT
             )
@@ -549,15 +594,34 @@ def render_initial_root_admin_form():
         if form_state["message"]:
             ui.label(str(form_state["message"])).classes(ERROR_TEXT)
 
+        payload = form_state.get("payload")
+        has_payload = isinstance(payload, InteractiveSetupAdminPayload)
+        username_value = (
+            payload.username if has_payload else None
+        )
+        email_value = payload.email if has_payload else None
+        password_value = payload.password if has_payload else None
+        confirm_value = (
+            payload.password_confirmation if has_payload else None
+        )
+
         login_field = (
-            ui.input("Login", validation={"Invalid login!": is_valid_login})
+            ui.input(
+                "Login",
+                value=username_value,
+                validation={"Invalid login!": is_valid_login},
+            )
             .classes(INPUT_CLASSES)
             .tooltip("Lowercase letters and numbers, 6-30 characters")
         )
         render_initial_root_field_error(errors, "username")
 
         email_field = (
-            ui.input("Email", validation={"Invalid email!": is_valid_email})
+            ui.input(
+                "Email",
+                value=email_value,
+                validation={"Invalid email!": is_valid_email},
+            )
             .props("type=email")
             .classes(INPUT_CLASSES)
         ).tooltip("Enter a valid email address")
@@ -566,6 +630,7 @@ def render_initial_root_admin_form():
         password_field = (
             ui.input(
                 "Password",
+                value=password_value,
                 password=True,
                 password_toggle_button=True,
                 validation={
@@ -588,6 +653,7 @@ def render_initial_root_admin_form():
 
         confirm_field = ui.input(
             "Confirm password",
+            value=confirm_value,
             password=True,
             password_toggle_button=True,
             validation={
@@ -605,29 +671,117 @@ def render_initial_root_admin_form():
             render_initial_root_field_error(errors, field)
 
         async def submit():
-            result = await apply_initial_root_setup_form(
-                username=login_field.value,
-                email=email_field.value,
-                password=password_field.value,
-                password_confirmation=confirm_field.value,
+            payload = InteractiveSetupAdminPayload(
+                username=login_field.value or "",
+                email=email_field.value or "",
+                password=password_field.value or "",
+                password_confirmation=confirm_field.value or "",
             )
-            form_state.update(initial_root_form_state_from_result(result))
-            if form_state["completed"]:
-                ui.notify("Root user created.", type="positive")
+            errors = await validate_interactive_setup_admin_payload(payload)
+            if errors:
+                form_state.update(
+                    {
+                        "errors": errors,
+                        "message": (
+                            "Interactive setup admin payload is invalid."
+                        ),
+                        "payload": payload,
+                        "review": False,
+                    }
+                )
+                ui.notify("Review the highlighted fields.", type="negative")
             else:
-                ui.notify("Setup could not be applied.", type="negative")
+                form_state.update(
+                    {
+                        "errors": {},
+                        "message": "",
+                        "payload": payload,
+                        "review": True,
+                    }
+                )
             root_form.refresh()
 
         with ui.row().classes(
             "gap-3 mt-2 w-full justify-end max-sm:flex-col"
         ):
             ui.button(
-                "Create account",
-                icon="admin_panel_settings",
+                "Review setup",
+                icon="fact_check",
                 on_click=submit,
             ).classes(f"w-full {PRIMARY_BUTTON_CLASSES}")
 
     root_form()
+
+
+def render_initial_root_review(form_state: dict[str, object], root_form):
+    payload = form_state.get("payload")
+    if not isinstance(payload, InteractiveSetupAdminPayload):
+        form_state["review"] = False
+        return
+
+    review = initial_root_review_from_payload(payload)
+
+    with ui.column().classes("gap-1"):
+        ui.label("Review setup").classes("text-2xl font-bold")
+        ui.label(
+            "Confirm the initial root account before applying setup."
+        ).classes(MUTED_TEXT)
+
+    with ui.column().classes(
+        "gap-3 rounded-lg border border-white/10 bg-white/5 p-3 w-full"
+    ):
+        for label, value in (
+            ("Login", review["username"]),
+            ("Email", review["email"]),
+            ("Password", review["password"]),
+        ):
+            with ui.row().classes(
+                "items-center justify-between gap-3 w-full max-sm:flex-col "
+                "max-sm:items-start"
+            ):
+                ui.label(label).classes(f"text-sm {MUTED_TEXT}")
+                ui.label(value).classes(
+                    "font-mono text-sm break-all text-right max-sm:text-left"
+                )
+
+    ui.label(
+        "After confirmation, public setup is locked and the completion "
+        "screen offers shutdown."
+    ).classes(f"text-sm {MUTED_TEXT}")
+
+    async def confirm():
+        result = await apply_initial_root_setup_form(
+            username=payload.username,
+            email=payload.email,
+            password=payload.password,
+            password_confirmation=payload.password_confirmation,
+        )
+        form_state.update(initial_root_form_state_from_result(result))
+        if form_state["completed"]:
+            form_state.update({"payload": None, "review": False})
+            ui.notify("Root user created.", type="positive")
+        else:
+            form_state.update({"review": False})
+            ui.notify("Setup could not be applied.", type="negative")
+        root_form.refresh()
+
+    def back_to_form():
+        form_state.update({"review": False, "errors": {}, "message": ""})
+        root_form.refresh()
+
+    with ui.row().classes(
+        "gap-3 mt-2 w-full justify-end max-sm:flex-col-reverse"
+    ):
+        ui.button(
+            "Back",
+            icon="arrow_back",
+            on_click=back_to_form,
+        ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
+        ui.button(
+            "Create root account",
+            icon="admin_panel_settings",
+            on_click=confirm,
+        ).classes(PRIMARY_BUTTON_CLASSES)
 
 
 def render_initial_root_field_error(errors: object, field: str):

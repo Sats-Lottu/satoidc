@@ -29,6 +29,7 @@ from setup_wizard.routes import (
     SETUP_ROOT_USER_ID_KEY,
     apply_initial_root_setup_form,
     initial_root_form_state_from_result,
+    initial_root_review_from_payload,
     set_root,
     stored_root_has_access,
 )
@@ -406,3 +407,21 @@ def test_initial_root_form_state_shows_lock_error():
     assert state["errors"] == {
         "setup_lock": "Setup is locked by another setup attempt."
     }
+
+
+def test_initial_root_review_normalizes_and_masks_secret():
+    payload = InteractiveSetupAdminPayload(
+        username=" RootAdm ",
+        email=" ROOT@Example.COM ",
+        password="StrongPass1!",
+        password_confirmation="StrongPass1!",
+    )
+
+    review = initial_root_review_from_payload(payload)
+
+    assert review == {
+        "username": "rootadm",
+        "email": "root@example.com",
+        "password": "********",
+    }
+    assert "StrongPass1!" not in repr(review)
