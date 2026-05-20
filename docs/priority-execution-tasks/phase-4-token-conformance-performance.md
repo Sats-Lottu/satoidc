@@ -61,10 +61,10 @@ Recommended agents: OIDC QA, performance engineering
 
 ### Subtasks
 
-- Search code/tests/docs for `action=auth`.
-- Decide keep/remove/formalize.
-- Update specs.
-- Update implementation and tests.
+- [x] Search code/tests/docs for `action=auth`.
+- [x] Decide keep/remove/formalize.
+- [x] Update specs.
+- [x] Update implementation and tests.
 
 ## Task 4.3: Prepare OIDC Basic OP Conformance Environment
 

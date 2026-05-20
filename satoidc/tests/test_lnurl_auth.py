@@ -301,24 +301,7 @@ async def test_lnurl_link_callback_rejects_missing_linked_user(db_session):
     }
 
 
-async def test_lnurl_auth_callback_accepts_stateless_auth(db_session):
-    k1 = "9" * 64
-    key, signature = _wallet_signature(k1)
-    challenge = LnurlAuthChallenge(k1=k1, action="auth")
-    db_session.add(challenge)
-    await db_session.commit()
 
-    response = await lnurl_auth_callback(
-        LnurlAuthCallbackIn(
-            k1=k1,
-            key=key,
-            sig=signature,
-            action="auth",
-        ),
-        db_session,
-    )
-
-    assert response == {"status": "OK"}
 
 
 async def test_lnurl_callback_rejects_missing_action(db_session):

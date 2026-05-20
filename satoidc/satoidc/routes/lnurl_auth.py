@@ -134,9 +134,6 @@ async def lnurl_auth_callback(  # noqa: PLR0911, PLR0912
             session.add(user)
             await session.commit()
             response = {"status": "OK"}
-        case "auth":
-            # Authorize a stateless action without login.
-            response = {"status": "OK"}
         case _:
             response = {"status": "ERROR", "reason": "Unknown action"}
     await lnurl_auth_events.call(

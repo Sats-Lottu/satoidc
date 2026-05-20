@@ -16,7 +16,7 @@ Login, register, and setup wizard pages create `LnurlAuthChallenge` records and 
 
 - `tag=login`
 - `k1=<challenge>`
-- `action=<register|login|link|auth>`
+- `action=<register|login|link>`
 
 ## Callback
 
@@ -41,14 +41,15 @@ Current validation:
 - `register`: create user for `key` when missing, attach challenge to user.
 - `login`: require existing user for `key`, attach challenge to user.
 - `link`: attach `key` to the challenge user.
-- `auth`: currently returns success without extra action binding.
-
 ## Risks To Resolve
 
 - Callback attempts intentionally consume the challenge before signature verification as a replay-defense measure, even when the signature is invalid.
 - `register` can create a user without email, login, or password, but must use
   `satoshi` as the default nickname when no nickname is supplied.
-- `auth` action needs a documented meaning before production use.
+
+## Decisions
+
+- **Remove `auth` action**: The stateless `auth` action was removed to eliminate uncontracted stateless authentication behavior before production, reducing the attack surface.
 
 ## Product Hardening Requirement
 

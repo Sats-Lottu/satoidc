@@ -2,7 +2,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-LnurlAction = Optional[Literal["register", "login", "link", "auth"]]
+LnurlAction = Optional[Literal["register", "login", "link"]]
 
 
 class LnurlAuthCallbackIn(BaseModel):
