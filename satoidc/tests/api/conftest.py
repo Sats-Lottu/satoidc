@@ -40,6 +40,7 @@ def api_base_url(
             port=port,
             log_level="warning",
             lifespan="on",
+            ws="none",
         )
     )
 

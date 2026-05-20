@@ -113,6 +113,7 @@ def postgres_app(
             port=port,
             log_level="warning",
             lifespan="on",
+            ws="none",
         )
     )
 

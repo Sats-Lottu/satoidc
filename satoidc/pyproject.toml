@@ -64,12 +64,6 @@ markers = [
     "slow: tests too expensive for the default local suite",
 ]
 filterwarnings = [
-    "ignore:websockets\\.legacy is deprecated.*:DeprecationWarning:uvicorn\\..*",
-    "ignore:websockets\\.legacy is deprecated.*:DeprecationWarning:websockets\\..*",
-    "ignore:websockets\\.server\\.WebSocketServerProtocol is deprecated.*:DeprecationWarning:uvicorn\\..*",
-    "ignore:websockets\\.server\\.WebSocketServerProtocol is deprecated.*:DeprecationWarning:websockets\\..*",
-    "ignore:remove second argument of ws_handler:DeprecationWarning:uvicorn\\..*",
-    "ignore:remove second argument of ws_handler:DeprecationWarning:websockets\\..*",
 ]
 
 [tool.coverage.run]
