@@ -21,6 +21,7 @@ Use this index to track active and historical specs.
 | [Operator Runbooks](features/operator-runbooks/spec.md) | draft | Operations/Docs | 2026-05-18 |
 | [OIDC Conformance Evidence](features/oidc-conformance/spec.md) | active | OAuth/OIDC/Compliance | 2026-05-20 |
 | [Operational Observability Baseline](features/operational-observability/spec.md) | draft | Operations/Security | 2026-05-18 |
+| [Prometheus-Compatible Metrics Baseline](features/operational-observability/metrics-baseline.md) | draft | Operations/Metrics | 2026-05-20 |
 | [Automated Testing Baseline](features/quality-testing/spec.md) | draft | Testing/Quality | 2026-05-17 |
 | [Pytest And Test Extensions](features/quality-testing/pytest-extensions.md) | draft | Testing/Quality | 2026-05-17 |
 | [Hypothesis Property Tests](features/quality-testing/hypothesis-property.md) | draft | Testing/Quality | 2026-05-17 |

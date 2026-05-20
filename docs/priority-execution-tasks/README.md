@@ -35,7 +35,6 @@ Agent rules:
 | [phase-3-setup-config-bootstrap.md](phase-3-setup-config-bootstrap.md) | Setup Wizard | P1 | Backend config/security |
 | [phase-3-setup-wizard-ui.md](phase-3-setup-wizard-ui.md) | Setup Wizard | P2/P3 | NiceGUI/security |
 | [phase-4-token-conformance-performance.md](phase-4-token-conformance-performance.md) | Protocol evidence | P1/P3 | OIDC QA/performance |
-| [phase-5-compatibility-metrics.md](phase-5-compatibility-metrics.md) | Future readiness | P3 | Integration/observability |
 
 ## Critical Path
 

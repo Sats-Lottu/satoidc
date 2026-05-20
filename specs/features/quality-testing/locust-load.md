@@ -5,11 +5,12 @@
 - Status: draft
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-17
+- Updated: 2026-05-20
 - Related code:
   - `satoidc/pyproject.toml`
   - `satoidc/tests/load/`
   - `satoidc/locustfile.py`
+  - `docs/load-testing.md`
 - Related specs:
   - `specs/features/quality-testing/spec.md`
   - `specs/flows/token-lifecycle.md`
@@ -72,8 +73,10 @@ must remain a bounded local smoke test.
 
 - Discovery and JWKS reads.
 - Login and registration page GET requests.
-- Token endpoint issuance for seeded clients.
-- UserInfo requests with valid bearer tokens.
+- Token endpoint refresh-grant issuance for seeded clients and one active
+  refresh token per simulated token lifecycle user.
+- UserInfo requests with valid bearer tokens from the seed pool or refreshed
+  token response.
 - OAuth client metadata or dashboard-adjacent endpoints where safe and useful.
 
 ## Acceptance Criteria

@@ -10,11 +10,10 @@ split into specs or backlog items.
 
 ## Medium Priority
 
-1. Refresh token revocation has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
-2. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
-3. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
-4. `/oauth/token` has a container-backed PostgreSQL concurrency smoke, but still needs a clearer load-testing threshold before production sizing decisions.
-5. Production deployments must configure reverse-proxy rate limiting for public auth, recovery, and LNURL callback routes; direct public exposure is not hardened.
+1. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
+2. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
+3. `/oauth/token` has a container-backed PostgreSQL concurrency smoke and Locust seed/runbook support, but still needs a recorded PostgreSQL load result before production sizing decisions.
+4. Production deployments must configure reverse-proxy rate limiting for public auth, recovery, and LNURL callback routes; direct public exposure is not hardened.
 
 ## Lower Priority
 
@@ -65,3 +64,6 @@ split into specs or backlog items.
   integration, load, and aggregate commands.
 - LNURL registration now uses the default nickname `satoshi` instead of
   attempting to create `User(nickname=None)`.
+- Refresh token rotation, revoked access token behavior, introspection
+  ownership, and UserInfo scope protection are covered by browser/client e2e
+  token lifecycle tests.

@@ -314,7 +314,8 @@ Run on 2026-05-15 after priority backlog completion:
 
 ## Suggested Documentation Next Steps
 
-- Expand refresh-token revocation/reuse e2e coverage.
+- Record PostgreSQL load-test evidence before publishing production sizing
+  guidance.
 - Decide whether OIDC signing should move to an external signing backend for production.
 - Add inline validation UX to the create-client form.
 - Keep README, specs, and agent memory aligned when LNURL actions change.

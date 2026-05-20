@@ -1,9 +1,26 @@
 # Priority Execution History
 
-Updated: 2026-05-18
+Updated: 2026-05-20
 
 This file summarizes completed execution backlog items. Keep active work in
 `docs/priority-execution-backlog.md`.
+
+## Completed On 2026-05-20
+
+- Complete Phase 5 compatibility and metrics planning.
+  - Source: `docs/priority-execution-tasks/phase-5-compatibility-metrics.md`
+  - Outcome: `docs/relying-party-compatibility.md` now records the first
+    verified relying-party compatibility entries for the Authlib confidential
+    example and public PKCE example, plus pending targets for Grafana,
+    oauth2-proxy, Gitea, MinIO, and Auth.js/NextAuth without implying support.
+    `specs/features/operational-observability/metrics-baseline.md` defines the
+    proposed Prometheus-compatible metric names, allowed labels, forbidden
+    sensitive/high-cardinality labels, histogram defaults, and `/metrics`
+    access-control decision for a future exporter.
+  - Validation: `cd satoidc; poetry run ruff check tests/load/locustfile.py`
+    passed; `cd satoidc; poetry run locust -f tests/load/locustfile.py
+    --list` loaded `PublicRouteUser` and `TokenLifecycleUser`; `cd satoidc;
+    poetry run task test` passed with 283 selected tests and 25 deselected.
 
 ## Completed On 2026-05-18
 

@@ -17,8 +17,9 @@ Start from `../_template.md` and keep each spec focused enough to review with th
 - [Admin Dashboard Safety And Scale](admin-dashboard-safety-scale/spec.md): review spec for destructive action confirmation and server-side dashboard pagination.
 - [Setup Wizard Complete Specification](setup-wizard/spec.md): canonical review spec for guided and non-interactive setup, `_FILE` secrets, admin bootstrap, setup state, and reconfiguration.
 - [Operator Runbooks](operator-runbooks/spec.md): draft spec for backup, restore, upgrade, reverse proxy, email, and Transit operations docs.
-- [OIDC Conformance Evidence](oidc-conformance/spec.md): draft spec for documenting OpenID Provider conformance targets and results.
+- [OIDC Conformance Evidence](oidc-conformance/spec.md): active spec for documenting OpenID Provider conformance targets and results.
 - [Operational Observability Baseline](operational-observability/spec.md): draft spec for structured logs, audit/log separation, and operator-visible failure events.
+- [Prometheus-Compatible Metrics Baseline](operational-observability/metrics-baseline.md): draft metrics spec with names, labels, cardinality limits, and `/metrics` access decision.
 - [Automated Testing Baseline](quality-testing/spec.md): draft umbrella spec for default pytest, browser e2e, container integration, and load testing strategy.
 - [Pytest And Test Extensions](quality-testing/pytest-extensions.md): draft spec for pytest, markers, coverage, async fixtures, factories, and deterministic time helpers.
 - [Hypothesis Property Tests](quality-testing/hypothesis-property.md): draft spec for property-based/fuzzy tests over validation, redirects, tokens, LNURL inputs, and OIDC claim invariants.

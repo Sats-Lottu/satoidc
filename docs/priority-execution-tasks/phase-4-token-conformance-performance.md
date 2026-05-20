@@ -155,8 +155,7 @@ Recommended agents: OIDC QA, performance engineering
 
 ### Subtasks
 
-- Add explicit seed requirements.
-- Add token issuance scenario if missing.
+- [x] Add explicit seed requirements.
+- [x] Add token issuance scenario if missing.
 - Run against PostgreSQL.
-- Document conservative baseline.
-
+- [x] Document conservative baseline.

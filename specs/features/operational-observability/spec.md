@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: TBD
 - Created: 2026-05-16
-- Updated: 2026-05-18
+- Updated: 2026-05-20
 - Related code:
   - `satoidc/satoidc/auth/`
   - `satoidc/satoidc/routes/`
@@ -16,6 +16,7 @@
   - `specs/features/auth-rate-limiting/spec.md`
   - `specs/contracts/security-session.md`
   - `specs/features/operator-runbooks/spec.md`
+  - `specs/features/operational-observability/metrics-baseline.md`
 
 ## Intent
 
@@ -66,6 +67,8 @@ Out of scope:
   implementation may use standard `logging` with a JSON formatter, `structlog`,
   or another narrow adapter.
 - Prometheus must be treated as a metrics target, not as a log ingestion target.
+- Metrics names, labels, cardinality limits, and `/metrics` access decisions
+  are defined in `metrics-baseline.md`.
 - Security failures should log the reason class without leaking credentials or
   token contents.
 - User-facing notifications remain concise and do not replace server logs.

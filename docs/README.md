@@ -20,6 +20,10 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
   environment runbook, seed data, smoke checklist, and result recording format.
 - [Local Development Troubleshooting](local-development-troubleshooting.md):
   known local setup failures and repair workflows.
+- [Load Testing](load-testing.md): Locust smoke scenarios, token lifecycle seed
+  requirements, and baseline result template.
+- [Relying-Party Compatibility](relying-party-compatibility.md): verified and
+  pending OIDC client integration matrix.
 - [Reverse Proxy Operations](operations/reverse-proxy.md): TLS, forwarded
   headers, and reverse-proxy rate limiting guidance for self-hosted production.
 - [Priority Execution Backlog](priority-execution-backlog.md): temporary active queue for open execution work.

@@ -37,7 +37,6 @@ Flows **not** advertised and **not** in scope for this conformance target:
 - The SatOIDC repository cloned locally.
 - Dependencies installed: `cd satoidc && poetry install`.
 - A working Alembic head migration: `poetry run alembic upgrade head`.
-- For the Docker Compose path: Docker Engine 24+ and Compose V2.
 - **No production `.env` file loaded** during this procedure.
 
 ---
@@ -57,9 +56,9 @@ flows without a live GUI registration step.
 | Password | `ConformPass1!`                |
 | Role     | Root (bootstrapped from env)   |
 
-The bootstrap mechanism creates this user automatically on first startup if the
-`SATOIDC_ADMIN_*` variables are set (see [Environment Variables](#environment-variables)
-below). No manual UI step is required.
+The bootstrap command creates this user if the `SATOIDC_ADMIN_*` variables are
+set (see [Environment Variables](#environment-variables) below). No manual UI
+step is required for the root user.
 
 ### Conformance OIDC Client
 
@@ -142,12 +141,13 @@ SATOIDC_ADMIN_PASSWORD=ConformPass1!
 EOF
 ```
 
-### Step 2 — Apply migrations against the conformance database
+### Step 2 — Apply migrations and bootstrap the database
 
 ```bash
 cd satoidc
 set -a && source .env.conformance && set +a
 poetry run alembic upgrade head
+poetry run python -m setup_wizard.bootstrap --database-state
 ```
 
 On Windows (PowerShell):
@@ -160,6 +160,7 @@ Get-Content .env.conformance | ForEach-Object {
     }
 }
 poetry run alembic upgrade head
+poetry run python -m setup_wizard.bootstrap --database-state
 ```
 
 ### Step 3 — Start the conformance instance
@@ -171,8 +172,8 @@ poetry run task run
 ```
 
 The server starts at `http://localhost:8000`. The bootstrap mechanism creates
-the `conformtest` root user automatically on the first request if no root
-permission exists yet.
+the `conformtest` root user during Step 2 if no root/admin permission exists
+yet.
 
 ### Step 4 — Register the conformance client
 
@@ -187,47 +188,21 @@ described in the [Seed Data](#seed-data) section. Note the generated
 
 ---
 
-## Docker Compose Startup Runbook
+## PostgreSQL Startup Notes
 
-Use this path for a PostgreSQL-backed conformance instance that mirrors a
-production-like deployment.
-
-### Step 1 — Create the conformance override file
-
-```bash
-cat > .env.conformance.compose << 'EOF'
-POSTGRES_USER=conform_user
-POSTGRES_PASSWORD=conform_password
-POSTGRES_DB=conform_db
-SATOIDC_PORT=8000
-APP_ENV=development
-OAUTH2_JWT_ISS=http://localhost:8000
-OAUTH2_JWT_SECRET_KEY=conformance-disposable-secret-000000001
-OIDC_SIGNING_BACKEND=database
-SESSION_MIDDLEWARE_SECRET_KEY=conformance-disposable-session-key-0001
-SESSION_COOKIE_HTTPS_ONLY=false
-OAUTH2_TOKEN_EXPIRES_IN=3600
-EMAIL_SENDER_MODE=console
-EMAIL_PUBLIC_BASE_URL=http://localhost:8000
-SMTP_FROM_EMAIL=no-reply@satoidc.local
-SATOIDC_ADMIN_USERNAME=conformtest
-SATOIDC_ADMIN_EMAIL=conformtest@satoidc.local
-SATOIDC_ADMIN_PASSWORD=ConformPass1!
-EOF
-```
-
-### Step 2 — Start the stack
+The repository does not currently include a checked-in Docker Compose stack.
+For PostgreSQL-backed conformance runs, provision a disposable PostgreSQL
+database with your local container or hosting tooling, then use the same
+SQLite runbook with PostgreSQL URLs:
 
 ```bash
-docker compose --env-file .env.conformance.compose up --build
+DATABASE_URL=postgresql+psycopg://conform_user:conform_password@localhost:5432/conform_db
+SYNC_DATABASE_URL=postgresql+psycopg://conform_user:conform_password@localhost:5432/conform_db
 ```
 
-Compose waits for PostgreSQL to pass its health check before starting SatOIDC.
-Migrations run automatically inside `entrypoint.sh`.
-
-### Step 3 — Register the conformance client
-
-Follow Step 4 from the SQLite runbook above.
+Run `poetry run alembic upgrade head` and
+`poetry run python -m setup_wizard.bootstrap --database-state` against that
+database before starting SatOIDC.
 
 ---
 

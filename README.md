@@ -270,6 +270,9 @@ NiceGUI relying-party examples are available in [examples](examples/):
 | `basic_client.py` | Confidential client using `client_secret`. |
 | `public_client.py` | Public client using PKCE and `token_endpoint_auth_method=none`. |
 
+Tracked compatibility status is documented in
+[docs/relying-party-compatibility.md](docs/relying-party-compatibility.md).
+
 Public client example:
 
 ```bash
@@ -342,7 +345,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 - [x] Normalize the permission model across enum, migration, UI and access checks.
 - [x] Harden login redirect handling and add regression tests for open redirect prevention.
 - [x] Rename LNURL challenge state from `verified` to `consumed` while preserving the current replay-defense behavior where every callback attempt consumes the challenge.
-- [ ] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
+- [x] Broaden refresh token issuance and revocation coverage into end-to-end client flows.
 - [x] Make session/cookie settings production-aware, including HTTPS-only cookies.
 - [x] Harden public route boundary matching for lookalike protected paths.
 - [x] Add OpenBao/Vault-compatible external signing backend.

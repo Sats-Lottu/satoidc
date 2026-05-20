@@ -1,6 +1,6 @@
 # Priority Execution Backlog
 
-Updated: 2026-05-18
+Updated: 2026-05-20
 
 This backlog is a temporary queue for open execution work. Completed items must
 be removed from this file and summarized in `docs/priority-execution-history.md`.
@@ -16,4 +16,3 @@ summarized in `docs/priority-execution-history.md`.
 | --- | --- | --- |
 | [phase-3-setup-wizard-ui.md](priority-execution-tasks/phase-3-setup-wizard-ui.md) | P2/P3 | Setup UI; initial admin form, public completion lock, and apply service complete; diagnostics/review/e2e remain open |
 | [phase-4-token-conformance-performance.md](priority-execution-tasks/phase-4-token-conformance-performance.md) | P1/P3 | OIDC/performance |
-| [phase-5-compatibility-metrics.md](priority-execution-tasks/phase-5-compatibility-metrics.md) | P3 | Compatibility/metrics |
