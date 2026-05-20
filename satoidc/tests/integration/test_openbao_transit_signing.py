@@ -7,7 +7,8 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from docker.errors import DockerException
-from joserfc import jwk, jwt
+from joserfc import jwt
+from joserfc.jwk import RSAKey
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.exceptions import ContainerStartException
 
@@ -134,7 +135,7 @@ async def test_openbao_transit_signs_id_token(
     )
     decoded = jwt.decode(
         id_token,
-        jwk.import_key(json.loads(active_key.public_jwk)),
+        RSAKey.import_key(json.loads(active_key.public_jwk)),
         ["RS256"],
     )
 

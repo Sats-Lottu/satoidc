@@ -7,7 +7,8 @@ from types import SimpleNamespace
 import pytest
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from joserfc import jwk, jwt
+from joserfc import jwt
+from joserfc.jwk import RSAKey
 from sqlalchemy import select
 
 from satoidc.auth.oauth2 import OpenIDCode
@@ -258,7 +259,7 @@ def test_transit_backend_signs_jwt_without_private_material():
     )
     decoded = jwt.decode(
         token,
-        jwk.import_key(json.loads(key_row.public_jwk)),
+        RSAKey.import_key(json.loads(key_row.public_jwk)),
         ["RS256"],
     )
 

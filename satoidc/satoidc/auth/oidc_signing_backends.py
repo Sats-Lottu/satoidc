@@ -10,6 +10,7 @@ from typing import Any, Protocol
 import httpx
 from cryptography.fernet import Fernet
 from joserfc import jwk, jwt
+from joserfc.jwk import RSAKey
 
 from satoidc.models import OidcSigningKey
 from satoidc.settings import ENV
@@ -83,7 +84,7 @@ class DatabaseSigningBackend:
     def jwt_config(self, key_row: OidcSigningKey) -> dict[str, Any]:  # noqa: PLR6301
         private_jwk = _decrypt_private_jwk(key_row.private_jwk_encrypted)
         return {
-            "key": jwk.import_key(private_jwk),
+            "key": RSAKey.import_key(private_jwk),
             "kid": key_row.kid,
             "alg": key_row.alg,
             "iss": ENV.OAUTH2_JWT_ISS,
@@ -278,7 +279,7 @@ class TransitSigningBackend:
         )
         version = _latest_version(key_metadata)
         public_key_pem = self.client.export_public_key(self.key_name, version)
-        public_jwk = jwk.import_key(public_key_pem).as_dict(private=False)
+        public_jwk = RSAKey.import_key(public_key_pem).as_dict(private=False)
         public_jwk["alg"] = ENV.OAUTH2_JWT_ALG
         public_jwk["use"] = "sig"
         kid = f"{self.key_name}-v{version}"

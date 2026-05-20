@@ -249,12 +249,9 @@ class OpenIDCode(_OpenIDCode):
         jwt_config = get_active_jwt_config()
         context_token = _oidc_jwt_config.set(jwt_config)
         try:
-            if jwt_config["key"] is not None:
-                id_token = super().encode_id_token(token, request)
-            else:
-                id_token = self._encode_external_id_token(
-                    token, request, jwt_config, key_row
-                )
+            id_token = self._encode_external_id_token(
+                token, request, jwt_config, key_row
+            )
             audit_token_signed(jwt_config["kid"])
             return id_token
         finally:
