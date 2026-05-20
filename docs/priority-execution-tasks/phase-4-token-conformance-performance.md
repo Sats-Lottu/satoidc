@@ -29,12 +29,12 @@ Recommended agents: OIDC QA, performance engineering
 
 ### Subtasks
 
-- Reuse existing OAuth browser fixture.
-- Exchange authorization code for tokens.
-- Refresh and verify rotation.
-- Revoke token and verify failure.
-- Introspect with correct and incorrect client.
-- Assert UserInfo claims by scope.
+- [x] Reuse existing OAuth browser fixture.
+- [x] Exchange authorization code for tokens.
+- [x] Refresh and verify rotation.
+- [x] Revoke token and verify failure.
+- [x] Introspect with correct and incorrect client.
+- [x] Assert UserInfo claims by scope.
 
 ## Task 4.2: Decide LNURL `action=auth` Contract
 
