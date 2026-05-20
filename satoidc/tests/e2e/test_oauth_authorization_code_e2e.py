@@ -136,6 +136,7 @@ def oidc_client_app(live_server: str) -> Iterator[dict]:  # noqa: PLR0915
         port=port,
         log_level="warning",
         lifespan="on",
+        ws="none",
     )
     server = uvicorn.Server(config)
 

@@ -50,6 +50,7 @@ def live_server(
         port=port,
         log_level="warning",
         lifespan="on",
+        ws="wsproto",
     )
     server = uvicorn.Server(config)
 
