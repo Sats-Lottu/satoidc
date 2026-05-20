@@ -317,7 +317,7 @@ Run on 2026-05-15 after priority backlog completion:
 - Expand refresh-token revocation/reuse e2e coverage.
 - Decide whether OIDC signing should move to an external signing backend for production.
 - Add inline validation UX to the create-client form.
-- Review LNURL `auth` action semantics before presenting it as a production authorization contract.
+- Keep README, specs, and agent memory aligned when LNURL actions change.
 
 ## Related Files
 

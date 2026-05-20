@@ -115,7 +115,7 @@ content.
 | Introspection             | Implemented    | Authlib endpoint registered.                                                 |
 | Revocation                | Implemented    | Authlib endpoint registered.                                                 |
 | Refresh Token Grant       | Implemented    | Registered with refresh token issuance enabled and covered by focused tests. |
-| LNURL-auth                | Implemented    | Login, register, link and auth actions exist.                                |
+| LNURL-auth                | Implemented    | Login, register, and link actions exist.                                     |
 | Implicit/Hybrid           | Not advertised | Not registered for the current provider contract.                            |
 
 ---
