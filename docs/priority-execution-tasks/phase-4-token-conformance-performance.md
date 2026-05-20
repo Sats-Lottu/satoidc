@@ -93,10 +93,10 @@ Recommended agents: OIDC QA, performance engineering
 
 ### Subtasks
 
-- Select Basic OP profile.
-- Define seed data.
-- Document environment variables.
-- Add smoke checklist.
+- [x] Select Basic OP profile.
+- [x] Define seed data.
+- [x] Document environment variables.
+- [x] Add smoke checklist.
 
 ## Task 4.4: Run And Record OIDC Basic OP Evidence
 

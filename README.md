@@ -363,7 +363,7 @@ poetry run python -m compileall satoidc setup_wizard tests
 
 ### Future Protocol Work
 
-- [ ] Publish a stable OIDC contract and conformance checklist.
+- [x] Publish disposable OIDC Basic OP conformance environment runbook ([docs/conformance.md](docs/conformance.md)).
 - [x] Expose discovery at root `/.well-known/openid-configuration`.
 - [ ] Evaluate Nostr identity integration.
 - [ ] Revisit implicit/hybrid support before advertising those flows.

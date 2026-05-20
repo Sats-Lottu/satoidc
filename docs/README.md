@@ -16,6 +16,8 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
   Transit setup, required variables, failure modes, and fallback.
 - [Database Support Matrix](database-support-matrix.md): SQLite/PostgreSQL
   support scope, URL pairing rules, and verification commands.
+- [OIDC Basic OP Conformance](conformance.md): disposable conformance
+  environment runbook, seed data, smoke checklist, and result recording format.
 - [Local Development Troubleshooting](local-development-troubleshooting.md):
   known local setup failures and repair workflows.
 - [Reverse Proxy Operations](operations/reverse-proxy.md): TLS, forwarded

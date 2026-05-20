@@ -19,7 +19,7 @@ Use this index to track active and historical specs.
 | [Reverse Proxy Authentication Rate Limiting](features/auth-rate-limiting/spec.md) | approved | Auth/Security/Operations | 2026-05-18 |
 | [Admin Dashboard Safety And Scale](features/admin-dashboard-safety-scale/spec.md) | review | Admin/UI | 2026-05-18 |
 | [Operator Runbooks](features/operator-runbooks/spec.md) | draft | Operations/Docs | 2026-05-18 |
-| [OIDC Conformance Evidence](features/oidc-conformance/spec.md) | draft | OAuth/OIDC/Compliance | 2026-05-18 |
+| [OIDC Conformance Evidence](features/oidc-conformance/spec.md) | active | OAuth/OIDC/Compliance | 2026-05-20 |
 | [Operational Observability Baseline](features/operational-observability/spec.md) | draft | Operations/Security | 2026-05-18 |
 | [Automated Testing Baseline](features/quality-testing/spec.md) | draft | Testing/Quality | 2026-05-17 |
 | [Pytest And Test Extensions](features/quality-testing/pytest-extensions.md) | draft | Testing/Quality | 2026-05-17 |

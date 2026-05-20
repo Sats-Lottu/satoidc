@@ -2,10 +2,10 @@
 
 ## Status
 
-- Status: draft
+- Status: active
 - Owner: TBD
 - Created: 2026-05-18
-- Updated: 2026-05-18
+- Updated: 2026-05-20
 - Product source:
   - `prd.md`
   - `relatorio_tecnico.md`
@@ -19,6 +19,8 @@
   - `specs/flows/authorization-code.md`
   - `specs/flows/token-lifecycle.md`
   - `specs/features/quality-testing/spec.md`
+- Implementation artifact:
+  - `docs/conformance.md`
 
 ## Intent
 
@@ -30,6 +32,12 @@ own focused tests.
 SatOIDC has route and e2e coverage for key OIDC flows, but there is no recorded
 OpenID Foundation Basic OP conformance result. Product readiness should not
 claim conformance until evidence exists.
+
+The conformance environment is now defined and documented in
+`docs/conformance.md`. It covers seed data, environment variables, startup
+runbooks for both SQLite and Docker Compose, a smoke verification checklist,
+instructions for running the OpenID Foundation suite, and a recording format
+for pass/fail evidence.
 
 ## Scope
 
@@ -71,7 +79,7 @@ Out of scope:
 ## Test Plan
 
 - Manual: run the OpenID Foundation conformance suite against a disposable local
-  SatOIDC instance.
+  SatOIDC instance following the runbook in `docs/conformance.md`.
 - Automated future work: add a CI job only after manual setup is stable and not
   too slow for regular validation.
 - Regression: keep existing OAuth/OIDC route and Playwright e2e tests as release
