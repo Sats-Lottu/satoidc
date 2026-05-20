@@ -301,9 +301,6 @@ async def test_lnurl_link_callback_rejects_missing_linked_user(db_session):
     }
 
 
-
-
-
 async def test_lnurl_callback_rejects_missing_action(db_session):
     k1 = "a" * 64
     key, signature = _wallet_signature(k1)
