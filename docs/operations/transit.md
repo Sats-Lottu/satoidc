@@ -31,7 +31,7 @@ are not accepted by the current settings loader yet.
 | `OIDC_TRANSIT_TOKEN` | required for transit | empty | Token with narrow Transit permissions. Current runtime does not support `_FILE` for this variable. |
 | `OIDC_TRANSIT_MOUNT` | optional for transit | `transit` | Transit mount path without leading slash. |
 | `OIDC_TRANSIT_KEY_NAME` | optional for transit | `satoidc-id-token` | Transit key used for OIDC ID Token signing. |
-| `OAUTH2_JWT_ALG` | optional | `RS256` | Current Transit implementation expects RSA 2048 keys and RS256-compatible signing. |
+| `OAUTH2_JWT_ALG` | optional | `RS256` | Supported with the current Transit RSA backend: `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`. |
 | `OAUTH2_TOKEN_EXPIRES_IN` | optional | `300` | ID/access token lifetime in seconds. |
 | `OIDC_JWKS_CACHE_TTL_SECONDS` | optional | `300` | JWKS cache safety window used for signing-key retirement. |
 | `OIDC_KEY_RETENTION_MARGIN_SECONDS` | optional | `900` | Extra retention margin for validating keys after rotation. |

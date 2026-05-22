@@ -45,6 +45,9 @@ Updated: 2026-05-22
 
 ## Recently Resolved Or Reduced
 
+- The v1 OIDC signing contract now supports the RSA JWS algorithms shared by
+  Authlib/Joserfc and the current OpenBao Transit backend: `RS256`, `RS384`,
+  `RS512`, `PS256`, `PS384`, and `PS512`.
 - Registration now has a dedicated `POST /register` endpoint that validates, creates the user, logs the user in, and sanitizes `redirect_to`.
 - Schemas are centralized in `satoidc/satoidc/schemas/`; the old LNURL schema
   compatibility re-export was removed after confirming no imports used it.

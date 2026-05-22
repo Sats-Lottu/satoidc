@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from satoidc.enums import JwkAlgEnum
 from satoidc.runtime_config import (
     is_production_environment,
     resolved_runtime_env_settings,
@@ -11,6 +12,10 @@ from satoidc.runtime_config import (
     validate_production_secret,
     validate_public_url,
 )
+
+SUPPORTED_OIDC_SIGNING_ALGORITHMS = {
+    algorithm.value for algorithm in JwkAlgEnum
+}
 
 
 class Settings(BaseSettings):
@@ -98,6 +103,12 @@ class Settings(BaseSettings):
         if self.OIDC_SIGNING_BACKEND not in {"database", "transit"}:
             raise ValueError(
                 "OIDC_SIGNING_BACKEND must be either 'database' or 'transit'"
+            )
+        if self.OAUTH2_JWT_ALG not in SUPPORTED_OIDC_SIGNING_ALGORITHMS:
+            supported = ", ".join(sorted(SUPPORTED_OIDC_SIGNING_ALGORITHMS))
+            raise ValueError(
+                "OAUTH2_JWT_ALG must be one of the v1 supported "
+                f"algorithms: {supported}"
             )
         if self.EMAIL_SENDER_MODE not in {"disabled", "console", "smtp"}:
             raise ValueError(

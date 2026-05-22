@@ -1,10 +1,22 @@
 import pytest
 
+from satoidc.enums import JwkAlgEnum
 from satoidc.runtime_config import PLACEHOLDER_SECRET, mask_secret
 from satoidc.settings import Settings
 
 STRONG_SESSION_SECRET = "s" * 32
 STRONG_OIDC_SECRET = "o" * 32
+
+
+def test_jwk_alg_enum_tracks_authlib_joserfc_jws_algorithms():
+    assert {algorithm.value for algorithm in JwkAlgEnum} == {
+        "RS256",
+        "RS384",
+        "RS512",
+        "PS256",
+        "PS384",
+        "PS512",
+    }
 
 
 def test_session_cookie_https_only_defaults_to_environment():
@@ -176,6 +188,14 @@ def test_oidc_signing_backend_must_be_supported():
 
     with pytest.raises(ValueError, match="OIDC_SIGNING_BACKEND"):
         Settings(_env_file=None, OIDC_SIGNING_BACKEND="unsupported")
+
+
+def test_oidc_signing_algorithm_supports_v1_rsa_contract():
+    for algorithm in JwkAlgEnum:
+        Settings(_env_file=None, OAUTH2_JWT_ALG=algorithm.value)
+
+    with pytest.raises(ValueError, match="OAUTH2_JWT_ALG"):
+        Settings(_env_file=None, OAUTH2_JWT_ALG="ES256")
 
 
 def test_satoidc_alias_wins_over_current_env(monkeypatch, caplog):

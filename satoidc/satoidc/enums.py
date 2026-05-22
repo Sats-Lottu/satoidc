@@ -46,8 +46,9 @@ class TokenEndpointAuthMethodEnum(StrEnum):
 
 
 class JwkAlgEnum(StrEnum):
-    # Prefer RS256 first for broad compatibility, then EdDSA.
     RS256 = "RS256"
+    RS384 = "RS384"
+    RS512 = "RS512"
     PS256 = "PS256"
-    ES256 = "ES256"
-    EDDSA = "EdDSA"
+    PS384 = "PS384"
+    PS512 = "PS512"

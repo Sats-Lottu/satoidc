@@ -24,10 +24,10 @@ larger breaking changes immediately after publication.
 | L05 | Refactor | P1 | OAuth client destructive actions | Open. |
 | L06 | Migrate | P1 | API/security docs and specs | Partially corrected. |
 | L07 | Maintain temporarily | P2 | Draft specs and temporary task docs | Open. |
-| L08 | Refactor | P2 | Enums for unsupported protocol values | Grant enum corrected; signing alg enum still open. |
+| L08 | Refactor | P2 | Enums for unsupported protocol values | Corrected for grants; signing enum tracks Authlib/Joserfc plus OpenBao RSA support. |
 | L09 | Migrate | P2 | Local database development state | Decision recorded; workflow still open. |
 | L10 | Replace | P2 | Load/conformance evidence placeholders | Open. |
-| L11 | Refactor | P1 | UI/application logic separation | Open. |
+| L11 | Refactor | P1 | UI/application logic separation | Started with OAuth client creation command endpoint. |
 | L12 | Remove | P3 | Non-English code comments | Corrected. |
 
 ## Detailed Findings
@@ -209,9 +209,10 @@ contract should advertise only `authorization_code` and `refresh_token`.
 
 Action taken: Removed unsupported `GrantTypeEnum` members for client
 credentials and device code. Comments were normalized to English and future
-implicit/hybrid wording was clarified. `JwkAlgEnum` still exposes algorithms
-that are not part of the current RS256-only signing contract and should be
-resolved in a separate OIDC signing cleanup.
+implicit/hybrid wording was clarified. `JwkAlgEnum` now tracks the JWS
+algorithm names that are supported by both the Authlib/Joserfc dependency and
+the current OpenBao Transit RSA signing backend: `RS256`, `RS384`, `RS512`,
+`PS256`, `PS384`, and `PS512`.
 
 ### L09 - Local database files are disposable, not canonical
 
@@ -285,6 +286,11 @@ Strategy: Define the v1 UI mutation pattern:
   session, CSRF/session protections, and server-rendered/NiceGUI flows, but the
   boundary should still be explicit and testable.
 - Page modules should not directly own database commits for domain mutations.
+
+Action started: Added `POST /dashboard/developer/clients` as a session-backed
+command endpoint for OAuth client creation. The endpoint derives v1-safe
+metadata from guided form fields, checks developer/admin authorization, calls
+the client service, and stores redirect-safe flash state for page feedback.
 
 ### L12 - Non-English code comments contradicted repository language policy
 
@@ -400,7 +406,7 @@ Do not expose for v1 without a new spec:
 | Priority | Action |
 | --- | --- |
 | P0 | Implement wizard-owned persisted settings or explicitly defer reconfiguration mutation from v1. |
-| P0 | Freeze v1 protocol contract and remove unsupported enum exposure if no internal dependency exists. |
+| P0 | Freeze v1 protocol contract and keep unsupported protocol values out of code and docs. |
 | P1 | Add OAuth client delete typed confirmation. |
 | P1 | Implement structured operational logging baseline. |
 | P1 | Finish admin dashboard service extraction and pagination. |

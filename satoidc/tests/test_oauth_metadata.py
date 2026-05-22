@@ -4,6 +4,7 @@ from uuid import UUID
 
 import satoidc.auth.oauth2 as oauth2_module
 from satoidc.auth.oauth2 import generate_user_info
+from satoidc.enums import JwkAlgEnum
 from satoidc.models import OAuth2Client, User
 from satoidc.routes.oauth2 import well_known_root
 
@@ -21,7 +22,9 @@ def test_oidc_discovery_metadata_matches_advertised_contract(app_client):
     assert metadata["response_types_supported"] == ["code"]
     assert "authorization_code" in metadata["grant_types_supported"]
     assert "refresh_token" in metadata["grant_types_supported"]
-    assert metadata["id_token_signing_alg_values_supported"] == ["RS256"]
+    assert metadata["id_token_signing_alg_values_supported"] == [
+        algorithm.value for algorithm in JwkAlgEnum
+    ]
     assert metadata["code_challenge_methods_supported"] == ["S256"]
     assert well_known_root()["issuer"] == metadata["issuer"]
 

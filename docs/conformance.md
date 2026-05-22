@@ -18,7 +18,7 @@ SatOIDC targets the **OpenID Connect Core 1.0 Basic OP** profile:
 | Response types               | `code`                                   |
 | Grant types                  | `authorization_code`, `refresh_token`    |
 | Subject types                | `public`                                 |
-| ID token signing algorithms  | `RS256`                                  |
+| ID token signing algorithms  | `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512` |
 | PKCE challenge methods       | `S256`                                   |
 | Scopes                       | `openid`, `email`, `profile`             |
 | Token endpoint auth methods  | `none`, `client_secret_post`, `client_secret_basic` |
@@ -229,7 +229,14 @@ Expected fields:
   "response_types_supported": ["code"],
   "grant_types_supported": ["authorization_code", "refresh_token"],
   "subject_types_supported": ["public"],
-  "id_token_signing_alg_values_supported": ["RS256"],
+  "id_token_signing_alg_values_supported": [
+    "RS256",
+    "RS384",
+    "RS512",
+    "PS256",
+    "PS384",
+    "PS512"
+  ],
   "scopes_supported": ["openid", "email", "profile"],
   "token_endpoint_auth_methods_supported": ["none", "client_secret_post", "client_secret_basic"],
   "code_challenge_methods_supported": ["S256"]

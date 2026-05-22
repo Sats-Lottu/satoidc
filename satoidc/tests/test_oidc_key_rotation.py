@@ -236,11 +236,27 @@ class FakeTransitClient:
         )
         return public_key.decode()
 
-    def sign(self, key_name, version, signing_input):
+    def sign(self, key_name, version, signing_input, *, alg):
+        hash_algorithm = {
+            "RS256": hashes.SHA256(),
+            "RS384": hashes.SHA384(),
+            "RS512": hashes.SHA512(),
+            "PS256": hashes.SHA256(),
+            "PS384": hashes.SHA384(),
+            "PS512": hashes.SHA512(),
+        }[alg]
+        signature_padding = (
+            padding.PKCS1v15()
+            if alg.startswith("RS")
+            else padding.PSS(
+                mgf=padding.MGF1(hash_algorithm),
+                salt_length=hash_algorithm.digest_size,
+            )
+        )
         return self.private_key.sign(
             signing_input,
-            padding.PKCS1v15(),
-            hashes.SHA256(),
+            signature_padding,
+            hash_algorithm,
         )
 
 
@@ -266,6 +282,36 @@ def test_transit_backend_signs_jwt_without_private_material():
     assert not key_row.private_jwk_encrypted
     assert key_row.backend_reference == "transit:satoidc-test:1"
     assert decoded.header["kid"] == "satoidc-test-v1"
+    assert decoded.claims["sub"] == "user-1"
+
+
+def test_transit_backend_signs_ps384_jwt_without_private_material(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "satoidc.auth.oidc_signing_backends.ENV.OAUTH2_JWT_ALG",
+        "PS384",
+    )
+    fake_client = FakeTransitClient()
+    backend = TransitSigningBackend(
+        client=fake_client,
+        key_name="satoidc-test",
+    )
+    key_row = backend.create_key_row(status="active")
+
+    token = backend.encode_jwt(
+        {"alg": "PS384", "kid": key_row.kid},
+        {"iss": "issuer", "sub": "user-1"},
+        key_row,
+    )
+    decoded = jwt.decode(
+        token,
+        RSAKey.import_key(json.loads(key_row.public_jwk)),
+        ["PS384"],
+    )
+
+    assert key_row.alg == "PS384"
+    assert decoded.header["alg"] == "PS384"
     assert decoded.claims["sub"] == "user-1"
 
 

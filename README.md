@@ -254,7 +254,14 @@ Expected metadata includes:
   "jwks_uri": "http://localhost:8000/.well-known/jwks.json",
   "response_types_supported": ["code"],
   "grant_types_supported": ["authorization_code", "refresh_token"],
-  "id_token_signing_alg_values_supported": ["RS256"],
+  "id_token_signing_alg_values_supported": [
+    "RS256",
+    "RS384",
+    "RS512",
+    "PS256",
+    "PS384",
+    "PS512"
+  ],
   "code_challenge_methods_supported": ["S256"]
 }
 ```

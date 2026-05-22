@@ -26,7 +26,7 @@ from satoidc.auth.oidc_keys import (
 )
 from satoidc.auth.scopes import scopes
 from satoidc.auth.security import get_active_user_permissions, is_authorized
-from satoidc.enums import PermissionsEnum
+from satoidc.enums import JwkAlgEnum, PermissionsEnum
 from satoidc.models import User
 from satoidc.models.database import get_session, remove_sync_session
 from satoidc.settings import ENV
@@ -213,7 +213,9 @@ def well_known():
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code", "refresh_token"],
         "subject_types_supported": ["public"],
-        "id_token_signing_alg_values_supported": ["RS256"],
+        "id_token_signing_alg_values_supported": [
+            algorithm.value for algorithm in JwkAlgEnum
+        ],
         "scopes_supported": list(scopes.keys()),
         "token_endpoint_auth_methods_supported": [
             "none",

@@ -120,6 +120,44 @@ def _decode_vault_signature(signature: str) -> bytes:
     return base64.b64decode(encoded_signature)
 
 
+def _transit_signing_parameters(alg: str) -> dict[str, str]:
+    match alg:
+        case "RS256":
+            return {
+                "hash_algorithm": "sha2-256",
+                "signature_algorithm": "pkcs1v15",
+            }
+        case "RS384":
+            return {
+                "hash_algorithm": "sha2-384",
+                "signature_algorithm": "pkcs1v15",
+            }
+        case "RS512":
+            return {
+                "hash_algorithm": "sha2-512",
+                "signature_algorithm": "pkcs1v15",
+            }
+        case "PS256":
+            return {
+                "hash_algorithm": "sha2-256",
+                "signature_algorithm": "pss",
+                "salt_length": "hash",
+            }
+        case "PS384":
+            return {
+                "hash_algorithm": "sha2-384",
+                "signature_algorithm": "pss",
+                "salt_length": "hash",
+            }
+        case "PS512":
+            return {
+                "hash_algorithm": "sha2-512",
+                "signature_algorithm": "pss",
+                "salt_length": "hash",
+            }
+    raise RuntimeError(f"Unsupported Transit signing algorithm: {alg}")
+
+
 def _run_async_http(coro_factory: Callable[[], Coroutine[Any, Any, Any]]):
     try:
         asyncio.get_running_loop()
@@ -235,14 +273,29 @@ class TransitClient:
             )
         return public_key
 
-    def sign(self, key_name: str, version: int, signing_input: bytes) -> bytes:
+    def sign(
+        self,
+        key_name: str,
+        version: int,
+        signing_input: bytes,
+        *,
+        alg: str,
+    ) -> bytes:
+        signing_parameters = _transit_signing_parameters(alg)
         response = self.request(
             "POST",
-            f"sign/{key_name}/sha2-256",
+            f"sign/{key_name}/{signing_parameters['hash_algorithm']}",
             {
                 "input": _standard_b64(signing_input),
                 "key_version": version,
-                "signature_algorithm": "pkcs1v15",
+                "signature_algorithm": signing_parameters[
+                    "signature_algorithm"
+                ],
+                **(
+                    {"salt_length": signing_parameters["salt_length"]}
+                    if "salt_length" in signing_parameters
+                    else {}
+                ),
             },
         )
         signature = response.get("data", {}).get("signature")
@@ -324,7 +377,12 @@ class TransitSigningBackend:
         header_segment = _json_b64url({"typ": "JWT", **header})
         payload_segment = _json_b64url(claims)
         signing_input = f"{header_segment}.{payload_segment}".encode()
-        signature = self.client.sign(key_name, version, signing_input)
+        signature = self.client.sign(
+            key_name,
+            version,
+            signing_input,
+            alg=key_row.alg,
+        )
         return f"{header_segment}.{payload_segment}.{_b64url(signature)}"
 
 

@@ -98,7 +98,7 @@ Status meanings:
 | LNURL challenge TTL | `LNURL_K1_TTL_SECONDS` | `SATOIDC_LNURL_K1_TTL_SECONDS` | no | no | optional | implemented / planned-alias | Future alias maps to current QR/challenge lifetime. |
 | LNURL Auth enablement | none | `SATOIDC_LNURL_AUTH_ENABLED` | no | no | optional | planned | Future wizard-owned feature flag; no current runtime switch exists. |
 | OIDC audience | `OAUTH2_JWT_AUDIENCE` | `SATOIDC_OIDC_AUDIENCE` | no | no | optional | implemented / planned-alias | Future alias maps to configured audience value. |
-| OIDC signing algorithm | `OAUTH2_JWT_ALG` | `SATOIDC_OIDC_SIGNING_ALG` | no | no | optional | implemented / planned-alias | Future alias maps to ID Token signing algorithm. |
+| OIDC signing algorithm | `OAUTH2_JWT_ALG` | `SATOIDC_OIDC_SIGNING_ALG` | no | no | optional | implemented / planned-alias | Future alias maps to ID Token signing algorithm. v1 accepts `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, and `PS512`. |
 | Access/ID token lifetime | `OAUTH2_TOKEN_EXPIRES_IN` | `SATOIDC_TOKEN_LIFETIME_SECONDS` | no | no | optional | implemented / planned-alias | Future alias maps to current token expiration value. |
 | Refresh token lifetime | none | `SATOIDC_REFRESH_TOKEN_LIFETIME_SECONDS` | no | no | optional | planned | No current setting; add only with implementation and tests. |
 | Default OIDC scopes | none | `SATOIDC_OIDC_DEFAULT_SCOPES` | no | no | optional | planned | Future wizard-owned client/protocol default. |
