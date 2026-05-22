@@ -221,16 +221,21 @@ async def test_create_client_validation_and_success(
     )
     await expect(page.get_by_text("Create OAuth2 Client")).to_be_visible()
 
-    await page.get_by_role("button", name="Submit").click()
-    await expect(page.get_by_text("Client Name is required.")).to_be_visible()
+    await page.get_by_role("button", name="Create client").click()
+    await expect(
+        page.locator("#app").get_by_text("Client Name is required.")
+    ).to_be_visible()
 
     await page.get_by_label("Client Name").fill("Created E2E Client")
     await page.get_by_label("Client URI").fill("https://created.example")
-    await page.get_by_label("Allowed Scope").fill("openid profile")
     await page.get_by_label("Redirect URIs").fill(
         "https://created.example/callback"
     )
-    await page.get_by_role("button", name="Submit").click()
+    await expect(page.get_by_text("Allowed scopes")).to_be_visible()
+    await expect(
+        page.get_by_text("openid profile email").first
+    ).to_be_visible()
+    await page.get_by_role("button", name="Create client").click()
 
     await expect(page.get_by_text("Client created")).to_be_visible()
     await expect(

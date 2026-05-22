@@ -86,6 +86,10 @@ Recent implementation state:
 - Profile and OAuth client persistence-heavy UI actions are now extracted into
   `satoidc.services.profile` and `satoidc.services.oauth_clients`, with focused
   unit coverage. Route modules keep NiceGUI composition and notification glue.
+- OAuth client creation now also has a session-backed command endpoint at
+  `POST /dashboard/developer/clients`, starting the v1 boundary where NiceGUI
+  pages render UI while state-changing commands are exposed through explicit
+  HTTP method semantics.
 - Email verification and password recovery are implemented with hashed
   single-use `EmailToken` rows, profile resend support, public
   `/verify-email`, `/forgot-password`, and `/reset-password` routes,

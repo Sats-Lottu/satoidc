@@ -1,7 +1,10 @@
 import logging
+from http import HTTPStatus
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
+from sqlalchemy import select
 
 from satoidc.auth.client_management import (
     CLIENT_DISABLED_AT,
@@ -11,7 +14,10 @@ from satoidc.auth.client_management import (
     rotate_client_secret,
     set_client_disabled,
 )
-from satoidc.models import OAuth2Client
+from satoidc.enums import PermissionsEnum
+from satoidc.models import OAuth2Client, Permission
+from satoidc.routes.create_client import create_client_command
+from satoidc.schemas.oauth_clients import CreateOAuthClientCommand
 from satoidc.services.oauth_clients import (
     build_client_metadata,
     create_oauth_client,
@@ -268,6 +274,77 @@ async def test_create_oauth_client_persists_confidential_client(db_session):
     assert secret
     assert stored.client_secret == secret
     assert stored.client_metadata["client_name"] == "Client"
+
+
+async def test_create_client_command_persists_guided_form_client(
+    db_session, make_user
+):
+    user = await make_user(login="command_user", email="command@example.com")
+    db_session.add(
+        Permission(
+            user_id=user.id,
+            granted_by=None,
+            permission_type=PermissionsEnum.DEVELOPER,
+            expiration_date=None,
+            reason="test developer access",
+        )
+    )
+    await db_session.commit()
+    request = SimpleNamespace(session={"user_id": user.id.hex})
+
+    response = await create_client_command(
+        db_session,
+        request,
+        CreateOAuthClientCommand(
+            client_name="Command Client",
+            client_uri="https://command.example",
+            redirect_uri="https://command.example/callback",
+            profile_scope=True,
+            email_scope=False,
+            refresh_token_enabled=True,
+        ),
+    )
+
+    clients = (
+        await db_session.scalars(
+            select(OAuth2Client).where(OAuth2Client.user_id == user.id)
+        )
+    ).all()
+    client = next(
+        item
+        for item in clients
+        if item.client_metadata["client_name"] == "Command Client"
+    )
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == "/create_client"
+    assert client is not None
+    assert client.client_metadata["scope"] == "openid profile"
+    assert client.client_metadata["grant_types"] == [
+        "authorization_code",
+        "refresh_token",
+    ]
+    assert request.session["create_client_flash"]["type"] == "created"
+    assert request.session["create_client_flash"]["client_secret"]
+
+
+async def test_create_client_command_rejects_missing_permission(
+    db_session, make_user
+):
+    user = await make_user(login="plain_user", email="plain@example.com")
+    request = SimpleNamespace(session={"user_id": user.id.hex})
+
+    response = await create_client_command(
+        db_session,
+        request,
+        CreateOAuthClientCommand(
+            client_name="Command Client",
+            client_uri="https://command.example",
+            redirect_uri="https://command.example/callback",
+        ),
+    )
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == "/forbidden"
 
 
 async def test_update_oauth_client_generates_secret_for_private_method(
