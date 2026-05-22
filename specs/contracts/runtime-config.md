@@ -144,6 +144,12 @@ the future alias behavior required before the Setup Wizard can depend on
 `SATOIDC_*` inputs. Documentation for operators must clearly label planned
 aliases until runtime support and settings tests exist.
 
+Wizard-owned mutable settings are defined separately in
+[docs/setup-wizard-mutable-settings.md](../../docs/setup-wizard-mutable-settings.md).
+Persisted database configuration may participate in runtime resolution only
+after environment and `_FILE` sources have been checked, and only for logical
+settings that document explicitly marks as wizard-owned.
+
 ## Database Configuration
 
 SatOIDC must keep first-class support for both SQLite and PostgreSQL.

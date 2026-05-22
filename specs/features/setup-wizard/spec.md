@@ -197,6 +197,14 @@ vars.
 If both `VAR` and `VAR_FILE` are set, `VAR` wins and startup must log a
 non-sensitive warning.
 
+Wizard-owned persisted configuration is limited by
+[Setup Wizard Mutable Settings](../../../docs/setup-wizard-mutable-settings.md).
+The wizard may persist non-secret runtime settings only when no direct env var
+or `_FILE` source controls the logical setting. Database URLs, app/OIDC secret
+keys, Transit tokens, SMTP passwords, bootstrap admin credentials, OAuth client
+secrets, and OIDC private keys are deployment-owned or feature-owned and must
+not be stored as raw wizard-owned settings.
+
 ## 10. Supported Environment Variables
 
 Mandatory settings:

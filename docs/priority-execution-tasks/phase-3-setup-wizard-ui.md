@@ -49,8 +49,8 @@ review, and browser e2e coverage are complete.
 Status: partially complete. Admin/root setup access, read-only
 environment-controlled runtime fields, high-impact change confirmation, setup
 reconfiguration access log events, and dedicated e2e coverage were added on
-2026-05-20. In-app mutation semantics remain open until wizard-owned persisted
-configuration is defined.
+2026-05-20. Wizard-owned mutable settings were defined on 2026-05-22; the
+database persistence model and runtime resolver integration remain open.
 
 1. Clear task name: Add authenticated setup reconfiguration mode.
 2. Technical objective: allow admins to review or change wizard-owned settings
@@ -82,4 +82,6 @@ configuration is defined.
 - [x] Add confirmation for issuer/public URL/signing backend changes.
 - [x] Add audit/log events.
 - [x] Add e2e coverage.
-- [ ] Define and persist wizard-owned mutable settings.
+- [x] Define wizard-owned mutable settings.
+- [ ] Persist wizard-owned mutable settings and load them through the runtime
+  resolver after env sources.
