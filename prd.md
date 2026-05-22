@@ -1,6 +1,6 @@
 # SatOIDC Product Requirements Document
 
-Updated: 2026-05-18
+Updated: 2026-05-22
 
 ## 1. Executive Summary
 
@@ -203,7 +203,10 @@ Required docs before a self-hosted MVP label:
 Self-hosted MVP:
 
 - [x] LNURL registration uses `satoshi` when no nickname is supplied.
-- [ ] Hardened deployments configure reverse-proxy rate limiting for auth, registration, recovery, and LNURL endpoints.
+- [x] Reverse-proxy rate limiting guidance is documented for auth,
+  registration, recovery, email verification, and LNURL callback endpoints.
+- [ ] Hardened deployments validate reverse-proxy rate limiting in staging or
+  production before public exposure.
 - [ ] Client deletion requires text confirmation.
 - [ ] Operator runbook covers backup, restore, upgrade, and reverse proxy setup.
 - [ ] Structured application logs are emitted to stdout.
@@ -222,7 +225,8 @@ Production 1.0:
 ### Phase 0: Immediate Risk Reduction
 
 - Keep LNURL default nickname regression coverage after the completed fix.
-- Document and verify reverse-proxy rate limiting for public auth surfaces.
+- Keep reverse-proxy rate limiting documented as the hardened deployment
+  requirement for public auth surfaces; verify it during deployment validation.
 - Add text confirmation for OAuth client deletion.
 
 ### Phase 1: Self-Hosted MVP
@@ -254,7 +258,7 @@ Production 1.0:
 | ID | Title | Type | Priority | Status | Effort | Impact | Acceptance Criteria |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | P0-01 | Keep LNURL default nickname valid | bugfix | P0 | Completed | S | High | LNURL registration uses `satoshi` and regression tests pass. Historical context is kept here because it was a prior P0 production-readiness risk. |
-| P0-02 | Document reverse-proxy auth rate limiting | security | P0 | Open | S | High | NGINX and Traefik examples cover login/register/recovery/LNURL throttling. |
+| P0-02 | Document reverse-proxy auth rate limiting | security | P0 | Completed | S | High | NGINX and Traefik examples cover login/register/recovery/email-verification/LNURL throttling in `docs/operations/reverse-proxy.md`. |
 | P1-01 | Add destructive action confirmation | uiux | P1 | Open | S | Medium | Client deletion requires typing the client identifier/name. |
 | P1-02 | Add structured logging baseline | ops | P1 | Open | M | High | Auth failures and admin mutations emit structured JSON logs. |
 | P1-03 | Write operator runbook | docs | P1 | Open | M | High | Backup/restore/upgrade/reverse-proxy procedures are documented and linked. |
@@ -273,18 +277,15 @@ Production 1.0:
 
 ## 17. Open Questions
 
-- Should LNURL `auth` be removed until a stateless authorization contract exists?
-- Should local database files be replaced by seed/setup workflows for repeatable
-  development?
 - What production load target should SatOIDC publish for small VPS deployments?
 - Which OIDC relying-party stacks should be part of the compatibility matrix?
 
 ## 18. Working Assumptions
 
-- LNURL `auth` should remain optional and marked as architecturally under
-  review until there is a clear stateless authorization contract.
-- Local database files should eventually be replaceable by repeatable seed/setup
-  workflows for deterministic development resets.
+- LNURL callback actions for v1 are limited to `register`, `login`, and `link`.
+  Stateless LNURL `auth` is removed until a dedicated contract exists.
+- Local database files are disposable development artifacts. Reproducible
+  environments should be created from migrations plus seed/setup workflows.
 - The first published load target should be conservative and tied to
   reproducible benchmarks with explicit CPU, RAM, database, and user/auth-flow
   assumptions.

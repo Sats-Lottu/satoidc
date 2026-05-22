@@ -11,7 +11,7 @@ PUBLIC_PREFIXES = (
     "/_nicegui",  # internal assets
     "/oauth",  # OIDC endpoints
     "/api",  # public APIs: tokens, callbacks, etc.
-    "/auth/lnurl",  # endpoints de LNURL auth
+    "/auth/lnurl",  # LNURL-auth endpoints
     "/.well-known",  # OIDC/OAuth discovery documents
 )
 

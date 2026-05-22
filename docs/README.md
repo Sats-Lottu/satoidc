@@ -7,6 +7,9 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
 - [Architecture](architecture.md): current system components, persistence boundary, and request flows.
 - [Project Analysis](project-analysis.md): broad repository map, runtime stack, protocol surface, examples, validation, and risks.
 - [Known Issues](known-issues.md): prioritized technical debt and production hardening items.
+- [V1 Legacy Sanitization Plan](v1-legacy-sanitization-plan.md): audit and
+  migration plan for removing legacy, temporary, and inconsistent contracts
+  before the first official release.
 - [VPS Deployment](deployment/vps.md): GitHub Actions CI/CD and VPS runbook.
 - [Operator Runbook](operations/runbook.md): backup, restore, upgrade,
   migration failure handling, health checks, and incident response.
@@ -18,6 +21,10 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
   support scope, URL pairing rules, and verification commands.
 - [OIDC Basic OP Conformance](conformance.md): disposable conformance
   environment runbook, seed data, smoke checklist, and result recording format.
+- [OIDF Conformance Docker Runner](../oidf-conformance/README.md): local
+  Docker Compose wrapper for the official OpenID Foundation conformance suite.
+- [Setup Wizard Mutable Settings](setup-wizard-mutable-settings.md): contract
+  for wizard-owned persisted settings and environment-locked configuration.
 - [Local Development Troubleshooting](local-development-troubleshooting.md):
   known local setup failures and repair workflows.
 - [Load Testing](load-testing.md): Locust smoke scenarios, token lifecycle seed

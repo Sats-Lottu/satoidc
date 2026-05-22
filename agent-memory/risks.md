@@ -6,14 +6,15 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-18
+updated: 2026-05-22
 ---
 
 # Risks And Pitfalls
 
 High priority:
 
-- OIDC signing keys now persist encrypted in the database, but production hardening should still evaluate Vault Transit or another external cryptographic backend.
+- Wizard-owned mutable settings are documented but not yet persisted or loaded by runtime. Until `setup_runtime_settings` and resolver integration exist, admin reconfiguration must remain read-mostly and must not imply in-app mutation support.
+- Unsupported protocol flows must stay outside the v1 contract: LNURL `action=auth`, dynamic client registration, device code, client credentials, implicit, and hybrid flows.
 
 Medium priority:
 - LNURL callback intentionally consumes a challenge before signature validation as a replay-defense measure, including invalid signatures. The model field is now named `consumed` to avoid implying successful signature verification.
@@ -22,6 +23,7 @@ Medium priority:
 - Prefer a Vault-compatible external signing boundary for hardened production. OpenBao is the better philosophical/default self-hosted fit; HashiCorp Vault remains a compatibility target for managed/vendor-supported environments.
 - Profile and OAuth client persistence-heavy NiceGUI actions have been extracted into services; admin dashboard query/commit logic still needs gradual service/use-case cleanup.
 - Add sanitized operational logging for auth, OIDC, LNURL, and UI mutation failures before production hardening.
+- OIDC signing keys now persist encrypted in the database, but hardened production should still prefer Vault-compatible Transit or another external cryptographic backend.
 
 Resolved/reduced on 2026-05-08:
 

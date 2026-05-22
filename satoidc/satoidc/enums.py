@@ -24,13 +24,11 @@ class PKCEMethodEnum(StrEnum):
 class GrantTypeEnum(StrEnum):
     AUTHORIZATION_CODE = "authorization_code"
     REFRESH_TOKEN = "refresh_token"
-    CLIENT_CREDENTIALS = "client_credentials"
-    DEVICE_CODE = "urn:ietf:params:oauth:grant-type:device_code"  # opcional
 
 
 class ResponseTypeEnum(StrEnum):
     CODE = "code"
-    # Se no futuro quiser implicit/hybrid (OIDC), adicione:
+    # Future implicit/hybrid flow values belong behind a dedicated spec.
     # ID_TOKEN = "id_token"
     # TOKEN = "token"
     # CODE_ID_TOKEN = "code id_token"

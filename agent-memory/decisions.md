@@ -5,11 +5,18 @@ tags:
 type: decision
 project: satoidc
 status: active
-updated: 2026-05-18
+updated: 2026-05-22
 ---
 
 # Decisions
 
+- 2026-05-22: Treat the v1 LNURL callback action set as closed to `register`, `login`, and `link`. The removed stateless `auth` action must not be reintroduced without a dedicated spec, route tests, and security review.
+- 2026-05-22: Treat wizard-owned mutable settings as database-backed non-secret runtime configuration loaded after env and `_FILE` sources. Database URLs, app/OIDC secrets, Transit tokens, SMTP passwords, bootstrap admin credentials, OAuth client secrets, and OIDC private keys remain deployment-owned or feature-owned.
+- 2026-05-22: Treat current OAuth/OIDC endpoint paths as stable for v1: `/authorize`, `/oauth/authorize`, `/oauth/token`, `/oauth/userinfo`, `/oauth/introspect`, `/oauth/revoke`, `/.well-known/openid-configuration`, and `/.well-known/jwks.json`.
+- 2026-05-22: Treat dynamic client registration, device code, client credentials, implicit, and hybrid flows as out of scope for v1 unless a dedicated spec is approved.
+- 2026-05-22: Treat local database files as disposable development artifacts. Canonical project state must come from migrations plus seed/setup workflows so environments are reproducible and consistent.
+- 2026-05-22: After persistent OIDC key rotation is implemented, time-sensitive OIDC token tests must validate signed JWT `exp` end-to-end with real signing, JWKS key resolution, expiration, and expired-token rejection.
+- 2026-05-22: Treat NiceGUI pages as UI composition only for v1. State-changing application logic should live in services and explicit command endpoints with clear HTTP method semantics, while SatOIDC remains a session-based server app rather than a stateless public REST API.
 - 2026-05-18: Consolidate Setup Wizard requirements under `specs/features/setup-wizard/spec.md`. Keep `specs/features/application-setup/spec.md` only as a superseded historical record of the implemented bootstrap slice, and use `specs/decisions/2026-05-18-setup-wizard-spec-consolidation.md` to record the rationale.
 - 2026-05-18: Use English for all repository content, including code, comments, log messages, specs, docs, tests, examples, project memory, and Git-facing artifacts. AI-agent conversations with Codex, Claude, Gemini, and similar tools may use any language the user prefers, but persisted repository outputs must be English.
 - 2026-05-17: Use async `httpx` for SatOIDC outbound HTTP/web requests. Keep `httpx` as a direct Poetry dependency and avoid adding new production `urllib.request`, `http.client`, or synchronous HTTP call sites for web requests.

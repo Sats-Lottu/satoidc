@@ -5,7 +5,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-17
+updated: 2026-05-22
 ---
 
 # Project State
@@ -98,7 +98,11 @@ Recent implementation state:
   `docs/local-development-troubleshooting.md` before repairing or stamping any
   other local database.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
-- No open priority execution backlog items remain.
+- `docs/v1-legacy-sanitization-plan.md` tracks pre-v1 cleanup for legacy,
+  temporary, and inconsistent contracts. Current high-risk cleanup centers on
+  wizard-owned persisted settings, unsupported protocol surface, admin
+  dashboard safety/scale, structured operational logs, conformance evidence,
+  and load baseline evidence.
 
 UI design support:
 

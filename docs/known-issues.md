@@ -1,12 +1,19 @@
 # Known Issues And Technical Debt
 
-Updated: 2026-05-18
+Updated: 2026-05-22
 
 ## High Priority
 
-No high-priority technical debt is currently tracked in this document. New
-security or production-readiness findings should be added here before they are
-split into specs or backlog items.
+1. Wizard-owned mutable settings are defined, but the
+   `setup_runtime_settings` persistence model and runtime resolver integration
+   still need implementation before admin reconfiguration can mutate settings.
+2. The v1 protocol surface must stay closed to unsupported flows: LNURL
+   `action=auth`, dynamic client registration, device code, client credentials,
+   implicit, and hybrid flows remain out of scope unless a dedicated spec is
+   approved.
+3. NiceGUI pages still need a stricter v1 boundary: page modules should render
+   UI and call services or command endpoints, not own state-changing
+   application logic directly.
 
 ## Medium Priority
 
@@ -14,6 +21,11 @@ split into specs or backlog items.
 2. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
 3. `/oauth/token` has a container-backed PostgreSQL concurrency smoke and Locust seed/runbook support, but still needs a recorded PostgreSQL load result before production sizing decisions.
 4. Production deployments must configure reverse-proxy rate limiting for public auth, recovery, and LNURL callback routes; direct public exposure is not hardened.
+5. Temporary execution task files under `docs/priority-execution-tasks/` should
+   be retired or reduced before v1 so release planning does not depend on stale
+   multi-agent scaffolding.
+6. Local database files are disposable artifacts; v1 still needs a repeatable
+   migration plus seed/setup workflow for deterministic development resets.
 
 ## Lower Priority
 
@@ -22,6 +34,8 @@ split into specs or backlog items.
 ## Active Specs And Backlog
 
 - See `docs/priority-execution-backlog.md` for the active task queue.
+- See `docs/v1-legacy-sanitization-plan.md` for release-blocking legacy and
+  temporary-contract cleanup.
 - See `specs/index.md` for current draft, review, approved, implemented and
   superseded specs.
 - Completed backlog items are summarized in

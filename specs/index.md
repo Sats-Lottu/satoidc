@@ -36,7 +36,7 @@ Use this index to track active and historical specs.
 | [Deployment Flow](flows/deployment.md) | draft | Operations | 2026-05-17 |
 | [Login Flow](flows/login.md) | draft | Auth/UI | 2026-05-06 |
 | [Registration Flow](flows/registration.md) | draft | Auth/UI | 2026-05-08 |
-| [Page Security Flow](flows/page-security.md) | draft | Auth/UI | 2026-05-08 |
+| [Page Security Flow](flows/page-security.md) | implemented | Auth/UI | 2026-05-22 |
 | [Home And Client Console Flow](flows/home-and-client-console.md) | draft | Auth/UI | 2026-05-13 |
 | [Profile Flow](flows/profile.md) | implemented | Auth/UI | 2026-05-15 |
 | [LNURL-auth Flow](flows/lnurl-auth.md) | draft | LNURL/Auth | 2026-05-18 |
@@ -54,11 +54,14 @@ Resolved PRD backlog items that remain documented for history:
   [LNURL Registration Valid User Creation](features/lnurl-registration-valid-user/spec.md),
   which is implemented. Keep future work limited to regression coverage unless a
   new LNURL registration bug is found.
+- `P0-02` maps to
+  [Reverse Proxy Authentication Rate Limiting](features/auth-rate-limiting/spec.md),
+  which is documented for hardened deployments. Keep future work limited to
+  deployment validation or optional proxy profiles unless a new abuse-control
+  requirement is found.
 
 Open PRD backlog items with active specs:
 
-- `P0-02` maps to
-  [Reverse Proxy Authentication Rate Limiting](features/auth-rate-limiting/spec.md).
 - `P1-01` and the pagination part of `P2-01` map to
   [Admin Dashboard Safety And Scale](features/admin-dashboard-safety-scale/spec.md).
 - `P1-02` maps to

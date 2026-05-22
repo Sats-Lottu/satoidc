@@ -5,16 +5,17 @@ tags:
 type: question
 project: satoidc
 status: active
-updated: 2026-05-20
+updated: 2026-05-22
 ---
 
 # Open Questions
 
-- Should local database files be replaced by migrations plus seed/setup workflows for repeatable development?
-- Should time-sensitive OIDC token tests cover signed JWT `exp` validation end-to-end once persistent key rotation is implemented?
+No open questions are currently tracked.
 
 ## Resolved
 
+- 2026-05-22: Local database files are disposable development artifacts, not canonical project state. Repeatable environments should use migrations plus seed/setup workflows.
+- 2026-05-22: Time-sensitive OIDC token tests should cover signed JWT `exp` validation end-to-end after persistent key rotation is implemented, including real signing, JWKS resolution, expiration, and rejection of expired tokens.
 - 2026-05-20: Refresh-token rotation, old refresh-token rejection, access-token revocation, introspection ownership, and UserInfo scope protection are covered by browser/client e2e token lifecycle tests.
 - 2026-05-20: LNURL `action=auth` was removed from the callback contract until an explicit stateless authorization contract exists; supported LNURL actions are `register`, `login`, and `link`.
 - 2026-05-17: Outbound HTTP/web request implementation should use async `httpx`, recorded as a direct Poetry dependency.

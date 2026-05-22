@@ -75,6 +75,7 @@ Current schema modules:
 - `lnurl.py`: LNURL callback query schema.
 - `login.py`: password login form schema.
 - `register.py`: password registration form schema.
+- `recovery.py`: email verification and password recovery form schemas.
 
 ### LNURL-auth
 

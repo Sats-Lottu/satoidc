@@ -1,7 +1,7 @@
 # Page Security Flow
 
-Status: draft
-Updated: 2026-05-08
+Status: implemented
+Updated: 2026-05-22
 
 ## Protected NiceGUI Pages
 
@@ -20,4 +20,6 @@ Updated: 2026-05-08
 
 - The decorator should remain thin and delegate testable authorization behavior to helper functions.
 - Permission values may arrive as `PermissionsEnum` members or strings; authorization normalizes both to strings before comparison.
-- Permission taxonomy remains unresolved: current UI references `developer`, while `PermissionsEnum` only defines `root`, `admin`, and `support`.
+- Permission taxonomy is `root`, `admin`, `developer`, and `support`.
+  `developer` is a first-class `PermissionsEnum` value. `root` authorizes every
+  protected page through the centralized authorization helper.
