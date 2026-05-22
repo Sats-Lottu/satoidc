@@ -285,9 +285,33 @@ is available as:
 
 - **Hosted**: `https://www.certification.openid.net/` (requires internet
   access from your SatOIDC instance or ngrok tunnelling).
-- **Self-hosted**: Docker image `openid-foundation/conformance-suite`
-  (see [the OIDF conformance suite repository](https://gitlab.com/openid/conformance-suite)
-  for instructions).
+- **Self-hosted**: official Docker images from the OIDF GitLab Container
+  Registry. Use the local wrapper in
+  [oidf-conformance/](../oidf-conformance/README.md), or see
+  [the OIDF conformance suite repository](https://gitlab.com/openid/conformance-suite)
+  for upstream instructions.
+
+### Local Docker runner
+
+The repository includes a small Compose wrapper around the official prebuilt
+OIDF images:
+
+```bash
+cd oidf-conformance
+docker compose up
+```
+
+Open:
+
+```text
+https://localhost.emobix.co.uk:8443/
+```
+
+Before starting, add `localhost.emobix.co.uk` to your host file pointing at
+`127.0.0.1`, as described in
+[oidf-conformance/README.md](../oidf-conformance/README.md). The suite stores
+local MongoDB state in a Docker volume; use `docker compose down -v` for a clean
+slate.
 
 ### Configuration values for the suite
 
