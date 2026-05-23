@@ -512,7 +512,12 @@ def test_setup_reconfiguration_fields_lock_env_and_mask_secrets():
     assert "super-secret-value" not in repr(fields)
 
 
-def test_setup_reconfiguration_fields_marks_safe_unlocked_values_editable():
+def test_setup_reconfiguration_fields_marks_safe_unlocked_values_editable(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setenv("SATOIDC_ISSUER", "https://ci.example.com")
+    monkeypatch.setenv("OIDC_SIGNING_BACKEND", "database")
+
     fields = setup_reconfiguration_fields({})
     by_name = {field["name"]: field for field in fields}
 

@@ -210,7 +210,8 @@ def setup_reconfiguration_fields(
     env: Mapping[str, str] | None = None,
 ) -> list[dict[str, object]]:
     values = {
-        name.upper(): value for name, value in (env or os.environ).items()
+        name.upper(): value
+        for name, value in (os.environ if env is None else env).items()
     }
     fields: list[dict[str, object]] = []
     for spec in RUNTIME_ENV_VARS:
