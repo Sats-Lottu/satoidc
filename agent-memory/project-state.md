@@ -5,7 +5,7 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-22
+updated: 2026-05-23
 ---
 
 # Project State
@@ -90,6 +90,16 @@ Recent implementation state:
   `POST /dashboard/developer/clients`, starting the v1 boundary where NiceGUI
   pages render UI while state-changing commands are exposed through explicit
   HTTP method semantics.
+- Wizard-owned runtime settings now have a `setup_runtime_settings` table,
+  Alembic-generated migration, typed validation service, and runtime resolver
+  integration. Valid persisted values load after env and `_FILE` sources and
+  before defaults; environment-controlled fields remain locked by precedence.
+  The authenticated setup reconfiguration panel can persist a conservative
+  first set of unlocked, non-secret, low-impact runtime settings and requires a
+  restart to apply them.
+- Runtime logging now installs a stdlib JSON formatter for structured stdout,
+  redacts sensitive extra fields, and dashboard mutation failures log sanitized
+  event metadata in addition to user-facing notifications.
 - Email verification and password recovery are implemented with hashed
   single-use `EmailToken` rows, profile resend support, public
   `/verify-email`, `/forgot-password`, and `/reset-password` routes,
@@ -102,11 +112,11 @@ Recent implementation state:
   `docs/local-development-troubleshooting.md` before repairing or stamping any
   other local database.
 - `docs/priority-execution-backlog.md` is now a temporary active queue for open work only. Completed backlog items are summarized in `docs/priority-execution-history.md`.
-- `docs/v1-legacy-sanitization-plan.md` tracks pre-v1 cleanup for legacy,
-  temporary, and inconsistent contracts. Current high-risk cleanup centers on
-  wizard-owned persisted settings, unsupported protocol surface, admin
-  dashboard safety/scale, structured operational logs, conformance evidence,
-  and load baseline evidence.
+- Pre-v1 legacy sanitization cleanup was consolidated into code, specs, known
+  issues, and quality-testing plans. Current high-risk cleanup centers on the
+  closed unsupported protocol surface, continued admin dashboard route cleanup,
+  broader operational log taxonomy, conformance evidence, and load baseline
+  evidence.
 
 UI design support:
 

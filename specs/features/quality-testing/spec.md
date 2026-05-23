@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-17
+- Updated: 2026-05-23
 - Related code:
   - `satoidc/pyproject.toml`
   - `satoidc/tests/`
@@ -17,6 +17,7 @@
   - `specs/features/quality-testing/playwright-ui.md`
   - `specs/features/quality-testing/locust-load.md`
   - `specs/features/quality-testing/testcontainers-integration.md`
+  - `specs/features/oidc-conformance/spec.md`
 
 ## Intent
 
@@ -70,6 +71,8 @@ Out of scope:
   production-like service dependencies.
 - Load suite: Locust scenarios for auth, token issuance, metadata, UserInfo,
   and selected UI-adjacent paths.
+- OIDC conformance evidence: manual or external OpenID Foundation Basic OP
+  conformance runs recorded as dated evidence, separate from the default suite.
 
 ## Task Commands
 
@@ -119,6 +122,8 @@ Optional helper commands:
   tests run through Testcontainers.
 - Given a developer runs the load task, then Locust executes documented
   scenarios against a selected base URL.
+- Given release readiness is assessed, then OIDF Basic OP conformance evidence
+  is recorded or explicitly marked as absent with known deviations.
 - Given a new feature affects auth, OIDC, LNURL, persistence, or UI, then at
   least one relevant automated test tier is updated.
 
@@ -131,6 +136,15 @@ Optional helper commands:
   contracts through Python and Tavern tests.
 - The first Locust smoke scenario covers public metadata and auth pages against
   a configured base URL.
+
+## Release Evidence Follow-Ups
+
+- Run the OIDF Basic OP conformance suite against the disposable conformance
+  environment and record the result under `docs/conformance-results/`.
+- Publish a PostgreSQL-backed `/oauth/token` Locust baseline with request
+  count, failure rate, p95 latency, database target, and host shape.
+- Keep both evidence tasks outside the default local test suite and avoid
+  claiming certification or production capacity until evidence exists.
 
 ## Traceability
 

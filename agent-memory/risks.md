@@ -6,14 +6,14 @@ tags:
 type: state
 project: satoidc
 status: active
-updated: 2026-05-22
+updated: 2026-05-23
 ---
 
 # Risks And Pitfalls
 
 High priority:
 
-- Wizard-owned mutable settings are documented but not yet persisted or loaded by runtime. Until `setup_runtime_settings` and resolver integration exist, admin reconfiguration must remain read-mostly and must not imply in-app mutation support.
+- Wizard-owned mutable settings are now persisted and loaded by runtime through `setup_runtime_settings`, and the authenticated setup reconfiguration UI can edit a conservative safe subset. High-impact settings still need explicit-confirmation UI before operators can mutate them in-app.
 - Unsupported protocol flows must stay outside the v1 contract: LNURL `action=auth`, dynamic client registration, device code, client credentials, implicit, and hybrid flows.
 
 Medium priority:
@@ -21,8 +21,8 @@ Medium priority:
 - Refresh grant has focused unit/integration tests, but still needs broader end-to-end client-flow coverage.
 - Keep an eye on README/examples encoding when editing from non-UTF-8 shell sessions.
 - Prefer a Vault-compatible external signing boundary for hardened production. OpenBao is the better philosophical/default self-hosted fit; HashiCorp Vault remains a compatibility target for managed/vendor-supported environments.
-- Profile and OAuth client persistence-heavy NiceGUI actions have been extracted into services; admin dashboard query/commit logic still needs gradual service/use-case cleanup.
-- Add sanitized operational logging for auth, OIDC, LNURL, and UI mutation failures before production hardening.
+- Profile and OAuth client persistence-heavy NiceGUI actions have been extracted into services; admin dashboard query/commit logic still needs gradual service/use-case cleanup beyond existing pagination helpers and mutation failure logs.
+- Structured JSON stdout logging and initial dashboard mutation failure logs exist; broaden sanitized operational logging coverage for auth, OIDC, LNURL, setup, and email before production hardening.
 - OIDC signing keys now persist encrypted in the database, but hardened production should still prefer Vault-compatible Transit or another external cryptographic backend.
 
 Resolved/reduced on 2026-05-08:

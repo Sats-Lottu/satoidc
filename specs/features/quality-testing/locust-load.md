@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-20
+- Updated: 2026-05-23
 - Related code:
   - `satoidc/pyproject.toml`
   - `satoidc/tests/load/`
@@ -97,3 +97,6 @@ must remain a bounded local smoke test.
   the chosen path documented in `pyproject.toml`.
 - Start with short smoke settings, then add heavier profiles only after the
   basic scenario is stable.
+- The release-readiness baseline must run against PostgreSQL and publish a
+  dated result with request count, failure rate, p95 latency, database target,
+  and host shape before README or PRD production sizing claims are expanded.

@@ -7,9 +7,6 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
 - [Architecture](architecture.md): current system components, persistence boundary, and request flows.
 - [Project Analysis](project-analysis.md): broad repository map, runtime stack, protocol surface, examples, validation, and risks.
 - [Known Issues](known-issues.md): prioritized technical debt and production hardening items.
-- [V1 Legacy Sanitization Plan](v1-legacy-sanitization-plan.md): audit and
-  migration plan for removing legacy, temporary, and inconsistent contracts
-  before the first official release.
 - [VPS Deployment](deployment/vps.md): GitHub Actions CI/CD and VPS runbook.
 - [Operator Runbook](operations/runbook.md): backup, restore, upgrade,
   migration failure handling, health checks, and incident response.

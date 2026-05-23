@@ -221,6 +221,7 @@ Specs:
 - `specs/features/quality-testing/playwright-ui.md`
 - `specs/features/quality-testing/locust-load.md`
 - `specs/features/quality-testing/testcontainers-integration.md`
+- `specs/features/oidc-conformance/spec.md`
 
 Reason:
 
@@ -234,6 +235,8 @@ Test-first plan:
 - Add command/marker smoke tests where practical.
 - Ensure `poetry run task test` remains fast and excludes e2e/container/load.
 - Add one representative test per new tier before expanding coverage.
+- Record OIDF Basic OP conformance evidence as release evidence rather than as
+  a default automated test.
 
 Proposed commits:
 
@@ -242,6 +245,7 @@ Proposed commits:
 3. `test(property): Add invariant tests`
 4. `test(api): Add security contract smoke`
 5. `test(integration): Add postgres smoke`
+6. `docs(conformance): Record Basic OP evidence`
 
 ### 8. Add Token Issuance Load/Concurrency Checks
 
@@ -265,11 +269,14 @@ Test-first plan:
 - Ensure it can target a configured base URL and does not run by default.
 - Document expected local prerequisites and non-goal of strict performance
   thresholds in the first pass.
+- Publish the first PostgreSQL-backed baseline only after recording request
+  count, failure rate, p95 latency, database target, and host shape.
 
 Proposed commits:
 
 1. `test(load): Add token issuance smoke`
 2. `docs(test): Document load test usage`
+3. `docs(load): Publish postgres baseline`
 
 ### 9. Remove LNURL Schema Compatibility Shim
 

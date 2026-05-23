@@ -1,12 +1,13 @@
 # Known Issues And Technical Debt
 
-Updated: 2026-05-22
+Updated: 2026-05-23
 
 ## High Priority
 
-1. Wizard-owned mutable settings are defined, but the
-   `setup_runtime_settings` persistence model and runtime resolver integration
-   still need implementation before admin reconfiguration can mutate settings.
+1. Wizard-owned mutable settings now have persistence, runtime resolver
+   integration, and safe-subset authenticated reconfiguration UI. High-impact
+   settings still need explicit-confirmation editing before operators can
+   mutate them in-app.
 2. The v1 protocol surface must stay closed to unsupported flows: LNURL
    `action=auth`, dynamic client registration, device code, client credentials,
    implicit, and hybrid flows remain out of scope unless a dedicated spec is
@@ -18,7 +19,9 @@ Updated: 2026-05-22
 ## Medium Priority
 
 1. Keep an eye on README and examples encoding when editing from non-UTF-8 shell sessions.
-2. Auth, OIDC, LNURL, and UI mutation failures need a minimal sanitized logging baseline for production operations.
+2. Structured JSON stdout logging and initial dashboard mutation failure logs
+   exist, but auth, OIDC, LNURL, setup, and email paths need broader sanitized
+   operational event coverage for production operations.
 3. `/oauth/token` has a container-backed PostgreSQL concurrency smoke and Locust seed/runbook support, but still needs a recorded PostgreSQL load result before production sizing decisions.
 4. Production deployments must configure reverse-proxy rate limiting for public auth, recovery, and LNURL callback routes; direct public exposure is not hardened.
 5. Temporary execution task files under `docs/priority-execution-tasks/` should
@@ -34,8 +37,6 @@ Updated: 2026-05-22
 ## Active Specs And Backlog
 
 - See `docs/priority-execution-backlog.md` for the active task queue.
-- See `docs/v1-legacy-sanitization-plan.md` for release-blocking legacy and
-  temporary-contract cleanup.
 - See `specs/index.md` for current draft, review, approved, implemented and
   superseded specs.
 - Completed backlog items are summarized in
