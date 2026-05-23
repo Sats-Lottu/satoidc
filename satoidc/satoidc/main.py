@@ -4,12 +4,14 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from satoidc.auth.middleware import AuthMiddleware
 from satoidc.auth.oauth2 import config_oauth
+from satoidc.logging_config import configure_logging
 from satoidc.routes.app_routes import get_routers
 from satoidc.settings import ENV
 from satoidc.ui_theme import apply_theme
 
 
 def create_app() -> FastAPI:
+    configure_logging()
     app = FastAPI(title="Identity Service", version="0.1.0")
     app.add_middleware(AuthMiddleware)
     app.add_middleware(

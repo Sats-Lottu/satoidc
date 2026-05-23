@@ -1,5 +1,6 @@
 # ruff: noqa: PLR1702
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -56,6 +57,7 @@ from satoidc.services.oauth_clients import (
 )
 
 router = APIRouter(prefix="/dashboard")
+log = logging.getLogger(__name__)
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 
@@ -100,22 +102,38 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
                     ui.label(error).classes(f"text-sm {ERROR_TEXT}")
 
     async def approve_request(permission_request_id: int):
-        permission_request = await approve_permission_request(
-            session,
-            permission_request_id,
-            actor_id=actor_id,
-            decision_reason="Approved in admin dashboard",
-        )
-        await session.commit()
-        await permission_request_events.call(
-            {
-                "action": "approved",
-                "permission_request_id": permission_request.id,
-                "permission_type": str(permission_request.permission_type),
-                "requester_id": str(permission_request.requester_id),
-            }
-        )
-        ui.notify("Developer access approved.", type="positive")
+        try:
+            permission_request = await approve_permission_request(
+                session,
+                permission_request_id,
+                actor_id=actor_id,
+                decision_reason="Approved in admin dashboard",
+            )
+            await session.commit()
+            await permission_request_events.call(
+                {
+                    "action": "approved",
+                    "permission_request_id": permission_request.id,
+                    "permission_type": str(
+                        permission_request.permission_type
+                    ),
+                    "requester_id": str(permission_request.requester_id),
+                }
+            )
+            ui.notify("Developer access approved.", type="positive")
+        except Exception as exc:
+            await session.rollback()
+            log.exception(
+                "Admin permission approval failed",
+                extra={
+                    "event_name": "admin.permission_approval_failed",
+                    "component": "admin_dashboard",
+                    "outcome": "failed",
+                    "reason": exc.__class__.__name__,
+                    "permission_request_id": permission_request_id,
+                },
+            )
+            ui.notify("Permission approval failed.", type="negative")
 
     def deny_dialog(permission_request_id: int):
         with ui.dialog() as dialog, ui.card().classes(
@@ -127,27 +145,41 @@ async def dashboard_admin(  # noqa: PLR0912, PLR0915, PLR1702
             reason = ui.textarea("Decision note").classes(INPUT_CLASSES)
 
             async def deny_request():
-                permission_request = await deny_permission_request(
-                    session,
-                    permission_request_id,
-                    actor_id=actor_id,
-                    decision_reason=reason.value,
-                )
-                await session.commit()
-                await permission_request_events.call(
-                    {
-                        "action": "denied",
-                        "permission_request_id": permission_request.id,
-                        "permission_type": str(
-                            permission_request.permission_type
-                        ),
-                        "requester_id": str(
-                            permission_request.requester_id
-                        ),
-                    }
-                )
-                ui.notify("Permission request denied.", type="warning")
-                dialog.close()
+                try:
+                    permission_request = await deny_permission_request(
+                        session,
+                        permission_request_id,
+                        actor_id=actor_id,
+                        decision_reason=reason.value,
+                    )
+                    await session.commit()
+                    await permission_request_events.call(
+                        {
+                            "action": "denied",
+                            "permission_request_id": permission_request.id,
+                            "permission_type": str(
+                                permission_request.permission_type
+                            ),
+                            "requester_id": str(
+                                permission_request.requester_id
+                            ),
+                        }
+                    )
+                    ui.notify("Permission request denied.", type="warning")
+                    dialog.close()
+                except Exception as exc:
+                    await session.rollback()
+                    log.exception(
+                        "Admin permission denial failed",
+                        extra={
+                            "event_name": "admin.permission_denial_failed",
+                            "component": "admin_dashboard",
+                            "outcome": "failed",
+                            "reason": exc.__class__.__name__,
+                            "permission_request_id": permission_request_id,
+                        },
+                    )
+                    ui.notify("Permission denial failed.", type="negative")
 
             with ui.row().classes("justify-end gap-3 w-full"):
                 ui.button("Cancel", on_click=dialog.close).classes(
@@ -591,6 +623,20 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
                     for message in error.messages[:3]:
                         ui.notify(message, type="negative")
                     return
+                except Exception as exc:
+                    await session.rollback()
+                    log.exception(
+                        "OAuth client update failed",
+                        extra={
+                            "event_name": "developer.client_update_failed",
+                            "component": "developer_dashboard",
+                            "outcome": "failed",
+                            "reason": exc.__class__.__name__,
+                            "client_id": client.client_id,
+                        },
+                    )
+                    ui.notify("Client update failed.", type="negative")
+                    return
                 ui.notify("Client updated.", type="positive")
                 if generated_secret:
                     secret_dialog(generated_secret)
@@ -620,6 +666,22 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
                 except ClientMetadataValidationError as error:
                     ui.notify(error.messages[0], type="negative")
                     return
+                except Exception as exc:
+                    await session.rollback()
+                    log.exception(
+                        "OAuth client secret rotation failed",
+                        extra={
+                            "event_name": (
+                                "developer.client_secret_rotation_failed"
+                            ),
+                            "component": "developer_dashboard",
+                            "outcome": "failed",
+                            "reason": exc.__class__.__name__,
+                            "client_id": client.client_id,
+                        },
+                    )
+                    ui.notify("Secret rotation failed.", type="negative")
+                    return
                 dialog.close()
                 secret_dialog(secret)
 
@@ -633,9 +695,23 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
         dialog.open()
 
     async def toggle_client(client: OAuth2Client):
-        await toggle_oauth_client_status(session, client)
-        ui.notify("Client status updated.", type="positive")
-        ui.navigate.to("/dashboard/developer")
+        try:
+            await toggle_oauth_client_status(session, client)
+            ui.notify("Client status updated.", type="positive")
+            ui.navigate.to("/dashboard/developer")
+        except Exception as exc:
+            await session.rollback()
+            log.exception(
+                "OAuth client status mutation failed",
+                extra={
+                    "event_name": "developer.client_status_failed",
+                    "component": "developer_dashboard",
+                    "outcome": "failed",
+                    "reason": exc.__class__.__name__,
+                    "client_id": client.client_id,
+                },
+            )
+            ui.notify("Client status update failed.", type="negative")
 
     def delete_client_dialog(client: OAuth2Client):
         metadata = client.client_metadata or {}
@@ -651,9 +727,23 @@ async def dashboard_developer(  # noqa: PLR0915, PLR1702
             ).classes(INPUT_CLASSES)
 
             async def delete():
-                await delete_oauth_client(session, client)
-                ui.notify("Client deleted.", type="positive")
-                ui.navigate.to("/dashboard/developer")
+                try:
+                    await delete_oauth_client(session, client)
+                    ui.notify("Client deleted.", type="positive")
+                    ui.navigate.to("/dashboard/developer")
+                except Exception as exc:
+                    await session.rollback()
+                    log.exception(
+                        "OAuth client deletion failed",
+                        extra={
+                            "event_name": "developer.client_delete_failed",
+                            "component": "developer_dashboard",
+                            "outcome": "failed",
+                            "reason": exc.__class__.__name__,
+                            "client_id": client.client_id,
+                        },
+                    )
+                    ui.notify("Client deletion failed.", type="negative")
 
             with ui.row().classes("justify-end gap-3 w-full"):
                 ui.button("Cancel", on_click=dialog.close).classes(
