@@ -32,10 +32,8 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
   pending OIDC client integration matrix.
 - [Reverse Proxy Operations](operations/reverse-proxy.md): TLS, forwarded
   headers, and reverse-proxy rate limiting guidance for self-hosted production.
-- [Priority Execution Backlog](priority-execution-backlog.md): temporary active queue for open execution work.
-- [Priority Execution Tasks](priority-execution-tasks/README.md): temporary
-  multiagent task files for production-readiness execution; remove task files
-  after completion and summarize outcomes in the history.
+- [Priority Execution Backlog](priority-execution-backlog.md): active queue
+  for open release-relevant execution work.
 - [Priority Execution History](priority-execution-history.md): summary of completed backlog items removed from the active queue.
 - [Backlog Priority Plan](backlog-priority-plan.md): branch-level sequencing, grouped work, commit plan, and approval questions for active backlog implementation.
 - [Changes On 2026-05-08](changes-2026-05-08.md): schema package, registration endpoint, test coverage, and related bug fix.

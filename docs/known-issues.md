@@ -4,15 +4,11 @@ Updated: 2026-05-23
 
 ## High Priority
 
-1. Wizard-owned mutable settings now have persistence, runtime resolver
-   integration, and safe-subset authenticated reconfiguration UI. High-impact
-   settings still need explicit-confirmation editing before operators can
-   mutate them in-app.
-2. The v1 protocol surface must stay closed to unsupported flows: LNURL
+1. The v1 protocol surface must stay closed to unsupported flows: LNURL
    `action=auth`, dynamic client registration, device code, client credentials,
    implicit, and hybrid flows remain out of scope unless a dedicated spec is
    approved.
-3. NiceGUI pages still need a stricter v1 boundary: page modules should render
+2. NiceGUI pages still need a stricter v1 boundary: page modules should render
    UI and call services or command endpoints, not own state-changing
    application logic directly.
 
@@ -24,10 +20,7 @@ Updated: 2026-05-23
    operational event coverage for production operations.
 3. `/oauth/token` has a container-backed PostgreSQL concurrency smoke and Locust seed/runbook support, but still needs a recorded PostgreSQL load result before production sizing decisions.
 4. Production deployments must configure reverse-proxy rate limiting for public auth, recovery, and LNURL callback routes; direct public exposure is not hardened.
-5. Temporary execution task files under `docs/priority-execution-tasks/` should
-   be retired or reduced before v1 so release planning does not depend on stale
-   multi-agent scaffolding.
-6. Local database files are disposable artifacts; v1 still needs a repeatable
+5. Local database files are disposable artifacts; v1 still needs a repeatable
    migration plus seed/setup workflow for deterministic development resets.
 
 ## Lower Priority

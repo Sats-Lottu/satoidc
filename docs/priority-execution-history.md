@@ -350,3 +350,9 @@ This file summarizes completed execution backlog items. Keep active work in
 - Normalize encoding and documentation drift.
   - Outcome: README, docs, specs, and agent memory were synchronized with the
     completed priority backlog state.
+
+- Discard temporary agent scaffolding.
+  - Outcome: open release-relevant work from `docs/priority-execution-tasks/`
+    was promoted into `docs/priority-execution-backlog.md`; the temporary
+    multi-agent task files were removed so release planning no longer depends
+    on orchestration artifacts.

@@ -202,6 +202,13 @@ defaults that path to `/app/generated/secrets.env` on a persistent volume.
 For hardened signing, set `OIDC_SIGNING_BACKEND=transit` and configure the
 Vault-compatible Transit endpoint and token through environment variables.
 
+Production deployments must place SatOIDC behind a TLS-terminating reverse
+proxy with authentication rate limiting for login, registration, recovery,
+verification, and LNURL callback routes. Direct public exposure without edge
+throttling is not considered hardened; see
+[reverse proxy operations](docs/operations/reverse-proxy.md) for NGINX and
+Traefik examples.
+
 ---
 
 ## Docker Compose

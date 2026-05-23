@@ -1,18 +1,16 @@
 # Priority Execution Backlog
 
-Updated: 2026-05-20
+Updated: 2026-05-23
 
 This backlog is a temporary queue for open execution work. Completed items must
 be removed from this file and summarized in `docs/priority-execution-history.md`.
 
 ## Open Items
 
-Production-readiness work is split into temporary task files under
-`docs/priority-execution-tasks/`. Each file is intended for later execution by
-specialized agents and should be removed after completion, with the outcome
-summarized in `docs/priority-execution-history.md`.
+Temporary multi-agent task scaffolding has been removed. Keep only open,
+release-relevant work here.
 
-| Task File | Priority | Area |
-| --- | --- | --- |
-| [phase-3-setup-wizard-ui.md](priority-execution-tasks/phase-3-setup-wizard-ui.md) | P3 | Setup UI; interactive wizard MVP complete; admin-only reconfiguration mode remains open |
-| [phase-4-token-conformance-performance.md](priority-execution-tasks/phase-4-token-conformance-performance.md) | P1/P3 | OIDC/performance |
+| Item | Priority | Area | Completion Criteria |
+| --- | --- | --- | --- |
+| Run and record OIDC Basic OP evidence | P1 | OIDC conformance | A dated OpenID Foundation Basic OP run is documented with tested profile, configuration, pass/fail status, deviations, and follow-up specs for product bugs. |
+| Publish PostgreSQL `/oauth/token` load evidence | P2 | Performance | A PostgreSQL 16 load report records target config, request count, failure rate, p95 latency, and conservative operating notes for the token endpoint. |
