@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-17
+- Updated: 2026-05-23
 - Related code:
   - `satoidc/pyproject.toml`
   - `satoidc/tests/conftest.py`
@@ -61,6 +61,10 @@ Out of scope:
   LNURL challenge setup.
 - Coverage excludes must stay narrow and justified, especially for visual-only
   NiceGUI rendering helpers.
+- The default measured suite must keep 100% line coverage through
+  `coverage report --fail-under=100`.
+- AI-assisted production code must include tests in the same change, preferably
+  written first as the red step of a TDD loop.
 - New markers must be documented in `pyproject.toml`.
 
 ## Recommended Markers
@@ -79,11 +83,14 @@ Out of scope:
 
 ## Task Commands
 
-- `poetry run task test`: `pytest -m "not e2e and not integration and not container and not load and not slow"`
-- `poetry run task test_unit`: `pytest -m "not e2e and not integration and not container and not load and not slow"`
-- `poetry run task test_property`: `pytest -m property`
-- `poetry run task test_api_security`: `pytest -m api_security tests/api`
+- `poetry run task test`: `pytest -m "not e2e and not integration and not container and not property and not load and not slow"`
+- `poetry run task test_unit`: `pytest -m "not e2e and not integration and not container and not property and not load and not slow"`
+- `poetry run task test_property`: `pytest -m "property and not property_slow" --no-cov`
+- `poetry run task test_api_security`: `pytest -m api_security tests/api --no-cov`
+- `poetry run task test_integration`: `pytest -m "(integration or container) and not load" --no-cov`
 - `poetry run task test_all`: `pytest -m "not load and not slow"`
+- `poetry run task coverage_html`: `coverage html`
+- `post_test`: `coverage html`
 
 ## Acceptance Criteria
 
@@ -97,6 +104,8 @@ Out of scope:
   setup is isolated and repeatable.
 - Given coverage is generated, then source modules are measured without relying
   on generated local databases or browser state.
+- Given the default suite completes, then measured line coverage is 100% and a
+  drop below 100% fails the command.
 
 ## Implementation Notes
 
@@ -105,3 +114,8 @@ Out of scope:
 - Add feature-specific fixtures near the tests that need them unless they are
   reused broadly.
 - Prefer `factory-boy` only where it removes repeated setup noise.
+- Keep coverage HTML generation automatic after `task test` so the local
+  `htmlcov` report reflects the latest default-suite run. `coverage_html`
+  remains available for explicit regeneration.
+- Keep coverage-driven refactors small. Extract testable helpers or services
+  when route/UI glue makes behavior hard to exercise directly.

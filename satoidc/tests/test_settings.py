@@ -4,7 +4,12 @@ from sqlalchemy.orm import Session
 
 from satoidc.enums import JwkAlgEnum
 from satoidc.models import SetupRuntimeSetting, table_registry
-from satoidc.runtime_config import PLACEHOLDER_SECRET, mask_secret
+from satoidc.runtime_config import (
+    PLACEHOLDER_SECRET,
+    env_controls_field,
+    mask_secret,
+    validate_public_url,
+)
 from satoidc.settings import Settings
 
 STRONG_SESSION_SECRET = "s" * 32
@@ -193,6 +198,11 @@ def test_oidc_signing_backend_must_be_supported():
         Settings(_env_file=None, OIDC_SIGNING_BACKEND="unsupported")
 
 
+def test_email_sender_mode_must_be_supported():
+    with pytest.raises(ValueError, match="EMAIL_SENDER_MODE"):
+        Settings(_env_file=None, EMAIL_SENDER_MODE="sendmail")
+
+
 def test_oidc_signing_algorithm_supports_v1_rsa_contract():
     for algorithm in JwkAlgEnum:
         Settings(_env_file=None, OAUTH2_JWT_ALG=algorithm.value)
@@ -344,3 +354,19 @@ def test_env_locked_setting_wins_over_persisted_value(
     )
 
     assert settings.SERVICE_NAME == "Env SatOIDC"
+
+
+def test_env_controls_field_detects_file_alias():
+    assert env_controls_field(
+        "SESSION_MIDDLEWARE_SECRET_KEY",
+        {"satoidc_secret_key_file": "/run/secrets/session"},
+    )
+
+
+def test_validate_public_url_rejects_local_production_url():
+    with pytest.raises(ValueError, match="local URL"):
+        validate_public_url(
+            "https://localhost",
+            name="EMAIL_PUBLIC_BASE_URL",
+            production=True,
+        )

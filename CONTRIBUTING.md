@@ -20,10 +20,23 @@ in English.
 2. Create or update a spec before changing behavior that affects auth,
    OAuth2/OIDC, LNURL Auth, persistence, security, public contracts, or UI
    flows.
-3. Keep changes narrow and reversible.
-4. Add focused tests for behavior changes.
-5. Run relevant checks before submitting.
-6. Explain validation results and residual risks in the pull request.
+3. Start behavior changes with a failing test, then implement the smallest code
+   change that makes it pass.
+4. Keep changes narrow and reversible.
+5. Add focused tests for behavior changes.
+6. Run relevant checks before submitting.
+7. Explain validation results and residual risks in the pull request.
+
+## Test-Driven Development
+
+SatOIDC uses Test-Driven Development for new behavior and bug fixes. The
+default measured test suite must stay at 100% line coverage. `poetry run task
+test` is configured to fail below that threshold and to refresh the HTML
+coverage report through `post_test`.
+
+Do not merge production code that lacks tests for its intended behavior. If a
+path is difficult to test, refactor it into a focused service, helper, or
+adapter boundary before adding more behavior.
 
 ## Commit Style
 
@@ -46,6 +59,10 @@ responsible for the entire contribution.
 Requirements:
 
 - Review and understand all AI-assisted changes before submission.
+- Include tests in the same change for production code generated or
+  substantially edited with AI assistance.
+- Keep the default measured suite at 100% line coverage; do not lower coverage
+  thresholds to accommodate generated code.
 - Disclose meaningful AI assistance with an `Assisted-by:` trailer or pull
   request metadata.
 - Do not list AI tools as authors, signers, reviewers, approvers, or legal

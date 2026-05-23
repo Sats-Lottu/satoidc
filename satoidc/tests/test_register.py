@@ -5,6 +5,7 @@ from sqlalchemy import select
 from satoidc.auth.security import verify_password
 from satoidc.models import User
 from satoidc.routes.register import register_redirect
+from satoidc.services.email_delivery import EmailDeliveryError
 
 
 def test_register_redirect_sanitizes_external_redirect_target():
@@ -148,3 +149,38 @@ async def test_register_post_rejects_password_mismatch(
         "/register?err=password_mismatch&redirect_to=%2Fprofile"
     )
     assert user is None
+
+
+async def test_register_post_redirects_on_email_delivery_error(
+    app_client, db_session, monkeypatch
+):
+    async def fail_email_verification(*args, **kwargs):
+        raise EmailDeliveryError("SMTP delivery failed")
+
+    monkeypatch.setattr(
+        "satoidc.routes.register.request_email_verification",
+        fail_email_verification,
+    )
+
+    response = app_client.post(
+        "/register",
+        data={
+            "login": "satoshiemailerror",
+            "email": "satoshi-email-error@example.com",
+            "nickname": "SatoshiEmailError",
+            "password": "StrongPass1!",
+            "confirm_password": "StrongPass1!",
+            "redirect_to": "/profile",
+            "terms_accepted": "true",
+        },
+        follow_redirects=False,
+    )
+    user = await db_session.scalar(
+        select(User).where(User.login == "satoshiemailerror")
+    )
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == (
+        "/register?err=email_delivery&redirect_to=%2Fprofile"
+    )
+    assert user is not None

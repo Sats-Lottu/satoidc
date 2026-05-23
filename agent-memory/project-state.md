@@ -41,23 +41,46 @@ Documentation added after full project analysis:
 
 Current test structure:
 
-- `poetry run task test` runs unit/integration tests with browser e2e tests deselected by default.
+- `poetry run task test` runs the default fast local suite with browser e2e,
+  container-backed integration, property, load, and slow tests deselected by
+  default.
 - `poetry run task test_e2e` runs Playwright browser smoke/responsive tests under `satoidc/tests/e2e/`.
 - Quality-testing commands are available for `test_unit`, `test_property`,
   `test_api_security`, `test_integration`, `test_load`, `test_load_ui`, and
   `test_all`. Python and Tavern API security smoke tests cover public metadata
-  and route-boundary contracts.
-- `test_integration` includes Testcontainers-backed PostgreSQL 16 coverage that
-  applies Alembic migrations to `head` and verifies sync/async access to the
-  same migrated database.
+  and route-boundary contracts. `task test` updates the HTML coverage report
+  through `post_test`; `coverage_html` explicitly renders the same report when
+  needed. The default measured suite is configured as a 100% line coverage gate.
+- Focused property, API security, and Testcontainers integration tasks run with
+  `--no-cov` so valid subset runs do not fail the default-suite coverage gate.
+- CI runs Ruff, `task test`, `test_property`, `test_api_security`,
+  `test_integration`, and Docker image build. Load tests remain manual, and
+  OIDC conformance remains external evidence work for now.
+- `test_integration` includes shared fixtures in
+  `satoidc/tests/integration/conftest.py` for PostgreSQL 16, migrated
+  PostgreSQL state, a live SatOIDC app wired to PostgreSQL, Mailpit, and
+  OpenBao Transit. PostgreSQL starts with
+  `PostgresContainer("postgres:16", driver="psycopg")`.
+- The PostgreSQL integration coverage applies Alembic migrations to `head` and
+  verifies sync/async access to the same migrated database.
 - `test_integration` also includes a PostgreSQL-backed token issuance
   concurrency smoke that starts SatOIDC locally and exchanges seeded PKCE
   authorization codes through `/oauth/token`.
 - Testcontainers-backed integration coverage also exercises OpenBao Transit
   signing and Mailpit-backed email delivery behavior.
 - `satoidc/tests/test_time_sensitive.py` uses `freezegun` for time-dependent behavior such as authorization-code expiration, refresh-token active/revoked windows, and LNURL challenge expiration.
-- As of 2026-05-17, `poetry run task test` passes with
-  `242 passed, 21 deselected`.
+- As of 2026-05-23, `poetry run task test` passes with
+  `369 passed, 30 deselected` and 100.00% measured line coverage after focused
+  runtime settings, email delivery, recovery route, Transit helper, OAuth grant,
+  client command, setup-state, logging, and redirect-safety tests.
+- SatOIDC uses TDD for new behavior and bug fixes. Production code generated or
+  substantially edited with AI assistance must include tests in the same change;
+  hard-to-test code should be refactored into smaller service/helper boundaries.
+- As of 2026-05-23, `poetry run task test_property` passes with
+  `3 passed, 396 deselected`.
+- As of 2026-05-23, `poetry run task test_api_security` passes with `3 passed`.
+- As of 2026-05-23, `poetry run task test_integration` passes with
+  `5 passed, 394 deselected` when Docker access is available.
 - As of 2026-05-15, `poetry run task test_e2e` passes with `17 passed`.
 - Coverage-related `pragma: no cover` annotations are intentionally limited to
   NiceGUI visual rendering helpers/pages, QR UI classes, and defensive parse

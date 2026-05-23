@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from satoidc.enums import PermissionRequestStatusEnum, PermissionsEnum
 from satoidc.models import OAuth2Client, Permission, PermissionRequest, User
 from satoidc.services.admin_dashboard import (
+    DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
     PermissionRequestPageFilters,
     list_admin_users_page,
@@ -70,6 +71,14 @@ async def test_admin_users_page_reports_counts_and_boundaries(db_session):
         "page must be greater than or equal to 1",
         f"page_size must be less than or equal to {MAX_PAGE_SIZE}",
     )
+
+
+async def test_admin_users_page_normalizes_small_page_size(db_session):
+    page = await list_admin_users_page(db_session, page=1, page_size=0)
+
+    assert page.page == 1
+    assert page.page_size == DEFAULT_PAGE_SIZE
+    assert page.errors == ("page_size must be greater than or equal to 1",)
 
 
 async def test_oauth_clients_page_handles_empty_and_owner_scope(db_session):

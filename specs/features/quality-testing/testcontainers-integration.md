@@ -5,7 +5,7 @@
 - Status: draft
 - Owner: project maintainers
 - Created: 2026-05-16
-- Updated: 2026-05-17
+- Updated: 2026-05-23
 - Related code:
   - `satoidc/pyproject.toml`
   - `satoidc/tests/`
@@ -65,7 +65,7 @@ Out of scope:
 
 ## Task Commands
 
-- `poetry run task test_integration`: `pytest -m "integration or container"`
+- `poetry run task test_integration`: `pytest -m "(integration or container) and not load" --no-cov`
 - `poetry run task test_all`: `pytest -m "not load and not slow"`
 
 ## Acceptance Criteria
@@ -89,6 +89,9 @@ Out of scope:
 
 - Keep container fixtures separate from default SQLite fixtures to preserve
   local test speed.
+- Keep reusable container fixtures in `satoidc/tests/integration/conftest.py`.
+  Current shared fixtures cover PostgreSQL URLs, migrated PostgreSQL state, a
+  live SatOIDC app wired to PostgreSQL, Mailpit, and OpenBao Transit.
 - Prefer a small number of high-signal PostgreSQL tests over duplicating the
   entire SQLite suite.
 - Use test-only credentials and random database names generated per test run.

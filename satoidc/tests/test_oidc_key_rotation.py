@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
@@ -11,6 +12,7 @@ from joserfc import jwt
 from joserfc.jwk import RSAKey
 from sqlalchemy import select
 
+import satoidc.auth.oidc_signing_backends as signing_backends
 from satoidc.auth.oauth2 import OpenIDCode
 from satoidc.auth.oidc_keys import (
     activate_signing_key,
@@ -21,7 +23,11 @@ from satoidc.auth.oidc_keys import (
     retire_expired_signing_keys,
     rotate_signing_key,
 )
-from satoidc.auth.oidc_signing_backends import TransitSigningBackend
+from satoidc.auth.oidc_signing_backends import (
+    TransitClient,
+    TransitSigningBackend,
+    get_signing_backend,
+)
 from satoidc.models import OidcSigningKey, OidcSigningKeyAuditEvent
 
 
@@ -37,6 +43,10 @@ class Client:
     @staticmethod
     def get_client_id():
         return "client-1"
+
+
+LATEST_TRANSIT_VERSION = 3
+DEFAULT_TRANSIT_TIMEOUT = 5.0
 
 
 async def test_jwks_bootstraps_persistent_active_key(db_session):
@@ -329,6 +339,352 @@ def test_transit_backend_rotation_tracks_key_version():
 
     assert rotated.kid == "satoidc-test-v2"
     assert rotated.backend_reference == "transit:satoidc-test:2"
+
+
+def test_transit_backend_jwt_config_exposes_public_metadata():
+    fake_client = FakeTransitClient()
+    backend = TransitSigningBackend(
+        client=fake_client,
+        key_name="satoidc-test",
+    )
+    key_row = backend.create_key_row(status="active")
+
+    config = backend.jwt_config(key_row)
+
+    assert config["key"] is None
+    assert config["kid"] == key_row.kid
+    assert config["alg"] == key_row.alg
+    assert config["iss"]
+    assert config["exp"] > 0
+
+
+def test_transit_backend_jwt_config_requires_client_configuration():
+    backend = TransitSigningBackend(
+        client=TransitClient(addr="", token=""),
+        key_name="satoidc-test",
+    )
+    key_row = OidcSigningKey(
+        kid="kid",
+        alg="RS256",
+        kty="RSA",
+        use="sig",
+        status="active",
+        public_jwk="{}",
+        private_jwk_encrypted="",
+        backend_reference="transit:satoidc-test:1",
+    )
+
+    with pytest.raises(RuntimeError, match="OIDC_TRANSIT_ADDR"):
+        backend.jwt_config(key_row)
+
+
+def test_transit_backend_rejects_invalid_reference():
+    backend = TransitSigningBackend(
+        client=FakeTransitClient(),
+        key_name="satoidc-test",
+    )
+    key_row = OidcSigningKey(
+        kid="bad",
+        alg="RS256",
+        kty="RSA",
+        use="sig",
+        status="active",
+        public_jwk="{}",
+        private_jwk_encrypted="",
+        backend_reference="invalid-reference",
+    )
+
+    with pytest.raises(RuntimeError, match="Invalid Transit backend"):
+        backend.encode_jwt({"alg": "RS256"}, {"sub": "user"}, key_row)
+
+
+async def test_run_async_http_uses_thread_when_loop_is_running():
+    async def coro():
+        return "ok"
+
+    assert signing_backends._run_async_http(coro) == "ok"
+
+
+async def test_run_async_http_reraises_thread_errors():
+    async def fail():
+        raise RuntimeError("thread failure")
+
+    with pytest.raises(RuntimeError, match="thread failure"):
+        signing_backends._run_async_http(fail)
+
+
+async def test_transit_client_request_async_handles_response_shapes(
+    monkeypatch,
+):
+    calls = []
+
+    class Response:
+        def __init__(self, content=b"{}", payload=None):
+            self.content = content
+            self.payload = payload or {}
+
+        def raise_for_status(self):
+            assert self.content is not None
+
+        def json(self):
+            return self.payload
+
+    class FakeAsyncClient:
+        def __init__(self, *, timeout):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return None
+
+        async def request(self, method, url, json=None, headers=None):
+            calls.append((method, url, json, headers, self.timeout))
+            if url.endswith("/empty"):
+                return Response(content=b"")
+            return Response(payload={"data": {"ok": True}})
+
+    monkeypatch.setattr(signing_backends.httpx, "AsyncClient", FakeAsyncClient)
+    client = TransitClient(
+        addr="http://vault.example/",
+        token="token",
+        mount="/transit/",
+        timeout_seconds=1.5,
+    )
+
+    assert await client.request_async("GET", "/metadata") == {
+        "data": {"ok": True}
+    }
+    assert await client.request_async("GET", "empty") == {}
+    assert calls[0] == (
+        "GET",
+        "http://vault.example/v1/transit/metadata",
+        None,
+        {"X-Vault-Token": "token"},
+        1.5,
+    )
+
+
+async def test_transit_client_request_async_fails_closed(monkeypatch):
+    class FakeAsyncClient:
+        def __init__(self, *, timeout):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return None
+
+        async def request(self, method, url, json=None, headers=None):
+            assert self.timeout == DEFAULT_TRANSIT_TIMEOUT
+            if url.endswith("/status"):
+                request = httpx.Request(method, url)
+                response = httpx.Response(
+                    500,
+                    text="server error",
+                    request=request,
+                )
+                raise httpx.HTTPStatusError(
+                    "bad status",
+                    request=request,
+                    response=response,
+                )
+            raise httpx.ConnectError("network down")
+
+    monkeypatch.setattr(signing_backends.httpx, "AsyncClient", FakeAsyncClient)
+    client = TransitClient(addr="http://vault.example", token="token")
+
+    with pytest.raises(RuntimeError, match="HTTP 500: server error"):
+        await client.request_async("GET", "status")
+    with pytest.raises(RuntimeError, match="network down"):
+        await client.request_async("GET", "network")
+    with pytest.raises(RuntimeError, match="OIDC_TRANSIT_ADDR"):
+        await TransitClient(addr="", token="").request_async("GET", "status")
+
+
+@pytest.mark.parametrize(
+    ("alg", "expected"),
+    [
+        (
+            "RS256",
+            {
+                "hash_algorithm": "sha2-256",
+                "signature_algorithm": "pkcs1v15",
+            },
+        ),
+        (
+            "RS384",
+            {
+                "hash_algorithm": "sha2-384",
+                "signature_algorithm": "pkcs1v15",
+            },
+        ),
+        (
+            "RS512",
+            {
+                "hash_algorithm": "sha2-512",
+                "signature_algorithm": "pkcs1v15",
+            },
+        ),
+        (
+            "PS256",
+            {
+                "hash_algorithm": "sha2-256",
+                "signature_algorithm": "pss",
+                "salt_length": "hash",
+            },
+        ),
+        (
+            "PS512",
+            {
+                "hash_algorithm": "sha2-512",
+                "signature_algorithm": "pss",
+                "salt_length": "hash",
+            },
+        ),
+    ],
+)
+def test_transit_signing_parameters_map_supported_algorithms(alg, expected):
+    assert signing_backends._transit_signing_parameters(alg) == expected
+
+
+def test_transit_signing_parameters_reject_unknown_algorithm():
+    with pytest.raises(RuntimeError, match="Unsupported Transit"):
+        signing_backends._transit_signing_parameters("ES256")
+
+
+def test_transit_helpers_decode_signatures_and_latest_versions():
+    signature = signing_backends._decode_vault_signature(
+        "vault:v1:c2lnbmF0dXJl"
+    )
+
+    assert signature == b"signature"
+    assert (
+        signing_backends._latest_version(
+            {"keys": {"1": {}, "3": {}, "2": {}}}
+        )
+        == LATEST_TRANSIT_VERSION
+    )
+    with pytest.raises(RuntimeError, match="does not expose"):
+        signing_backends._latest_version({"keys": {}})
+
+
+def test_transit_client_key_management_uses_vault_contract():
+    requests = []
+    new_key_reads = 0
+
+    class StubClient(TransitClient):
+        def request(self, method, path, payload=None):
+            nonlocal new_key_reads
+            assert self.addr == "http://vault.example"
+            requests.append((method, path, payload))
+            if path == "keys/missing":
+                raise RuntimeError("Transit request failed with HTTP 404: no")
+            if path == "keys/explode":
+                raise RuntimeError("boom")
+            if path == "keys/new-key":
+                new_key_reads += 1
+                if new_key_reads == 1:
+                    raise RuntimeError(
+                        "Transit request failed with HTTP 404: no"
+                    )
+            if path == "keys/bad-key":
+                return {"data": {"type": "ed25519", "supports_signing": True}}
+            if path == "keys/no-sign":
+                return {
+                    "data": {
+                        "type": "rsa-2048",
+                        "supports_signing": False,
+                    }
+                }
+            if path == "keys/empty-after-rotate":
+                return {}
+            if path.startswith("export/public-key/missing-public"):
+                return {"data": {"keys": {}}}
+            if path.startswith("export/public-key/ok-key"):
+                return {"data": {"keys": {"1": "PUBLIC KEY"}}}
+            return {
+                "data": {
+                    "type": "rsa-2048",
+                    "supports_signing": True,
+                    "keys": {"1": {}},
+                }
+            }
+
+    client = StubClient(addr="http://vault.example", token="token")
+
+    assert client.read_key("missing") is None
+    with pytest.raises(RuntimeError, match="boom"):
+        client.read_key("explode")
+    assert client.ensure_rsa_key("new-key")["type"] == "rsa-2048"
+    assert client.rotate_key("ok-key")["type"] == "rsa-2048"
+    assert client.export_public_key("ok-key", 1)
+    with pytest.raises(RuntimeError, match="type rsa-2048"):
+        client.ensure_rsa_key("bad-key")
+    with pytest.raises(RuntimeError, match="does not support signing"):
+        client.ensure_rsa_key("no-sign")
+    with pytest.raises(RuntimeError, match="rotation did not return"):
+        client.rotate_key("empty-after-rotate")
+    with pytest.raises(RuntimeError, match="did not include key"):
+        client.export_public_key("missing-public", 1)
+    assert ("POST", "keys/new-key", {"type": "rsa-2048"}) in requests
+
+
+def test_transit_client_sign_builds_expected_payload():
+    calls = []
+
+    class StubClient(TransitClient):
+        def request(self, method, path, payload=None):
+            assert self.addr == "http://vault.example"
+            calls.append((method, path, payload))
+            return {"data": {"signature": "vault:v1:c2lnbmF0dXJl"}}
+
+    client = StubClient(addr="http://vault.example", token="token")
+
+    signature = client.sign(
+        "satoidc-test",
+        2,
+        b"header.payload",
+        alg="PS384",
+    )
+
+    assert signature == b"signature"
+    assert calls == [
+        (
+            "POST",
+            "sign/satoidc-test/sha2-384",
+            {
+                "input": "aGVhZGVyLnBheWxvYWQ=",
+                "key_version": 2,
+                "signature_algorithm": "pss",
+                "salt_length": "hash",
+            },
+        )
+    ]
+
+
+def test_transit_client_sign_requires_signature_in_response():
+    class StubClient(TransitClient):
+        def request(self, method, path, payload=None):
+            assert self.addr == "http://vault.example"
+            return {"data": {}}
+
+    client = StubClient(addr="http://vault.example", token="token")
+
+    with pytest.raises(RuntimeError, match="did not include signature"):
+        client.sign("satoidc-test", 1, b"payload", alg="RS256")
+
+
+def test_get_signing_backend_rejects_unknown_backend(monkeypatch):
+    monkeypatch.setattr(
+        "satoidc.auth.oidc_signing_backends.ENV.OIDC_SIGNING_BACKEND",
+        "unsupported",
+    )
+
+    with pytest.raises(RuntimeError, match="Unsupported OIDC signing backend"):
+        get_signing_backend()
 
 
 async def test_backend_switch_demotes_previous_active_key(

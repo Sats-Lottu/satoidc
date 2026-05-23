@@ -46,6 +46,15 @@ jobs:
       - name: Run tests
         run: poetry run task test
 
+      - name: Run property tests
+        run: poetry run task test_property
+
+      - name: Run API security tests
+        run: poetry run task test_api_security
+
+      - name: Run Testcontainers integration tests
+        run: poetry run task test_integration
+
   docker:
     name: Build Docker image
     runs-on: ubuntu-latest

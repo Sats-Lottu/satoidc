@@ -230,7 +230,9 @@ Transit setup and signing failure handling.
 
 GitHub Actions workflows live in `.github/workflows/`:
 
-- `ci.yaml` runs Ruff, the default test suite and a Docker image build on pushes and pull requests.
+- `ci.yaml` runs Ruff, the default 100% coverage-gated suite, property tests,
+  API security tests, Testcontainers integration tests and a Docker image build
+  on pushes and pull requests. Load tests remain manual.
 - `deploy-coolify.yaml` triggers a Coolify deployment after CI succeeds on `main`, or manually from GitHub Actions.
 
 See [docs/deployment/vps.md](docs/deployment/vps.md) for the required GitHub Secrets and VPS setup.
@@ -298,10 +300,17 @@ cd satoidc
 poetry run task test
 ```
 
-The default test task excludes browser e2e, container-backed, load and slow
-tests. Time-sensitive behavior such as authorization-code expiration,
+The default test task excludes browser e2e, container-backed, property, load
+and slow tests. Time-sensitive behavior such as authorization-code expiration,
 refresh-token windows and LNURL challenge expiration is covered with
-`freezegun`.
+`freezegun`. Running `task test` enforces 100% measured line coverage and also
+updates the HTML coverage report through the `post_test` task. The same report
+can be regenerated explicitly when needed:
+
+```bash
+cd satoidc
+poetry run task coverage_html
+```
 
 Browser e2e tests are separate from the default test task:
 
@@ -319,6 +328,13 @@ Additional test-layer commands are available for focused verification:
 - `poetry run task test_integration`
 - `poetry run task test_load`
 - `poetry run task test_all`
+
+See [Testing Strategy](docs/testing.md) for the tier boundaries and current
+coverage focus.
+
+CI runs lint, the default 100% coverage-gated suite, property tests, API
+security tests, Testcontainers-backed integration tests, and a Docker image
+build. Load tests remain manual and are not part of CI.
 
 Useful sanity check:
 

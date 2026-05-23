@@ -1,31 +1,16 @@
 import asyncio
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine
-
-import satoidc.settings as settings_module
-from satoidc.settings import Settings
 
 pytestmark = [pytest.mark.integration, pytest.mark.container]
 
 
 def test_postgres_migrations_support_sync_and_async_sessions(
-    monkeypatch: pytest.MonkeyPatch,
-    postgres_urls: tuple[str, str],
+    migrated_postgres_urls: tuple[str, str],
 ) -> None:
-    async_url, sync_url = postgres_urls
-
-    monkeypatch.setattr(
-        settings_module,
-        "ENV",
-        Settings(DATABASE_URL=async_url, SYNC_DATABASE_URL=sync_url),
-    )
-
-    alembic_config = Config("alembic.ini")
-    command.upgrade(alembic_config, "head")
+    async_url, sync_url = migrated_postgres_urls
 
     sync_engine = create_engine(sync_url)
 

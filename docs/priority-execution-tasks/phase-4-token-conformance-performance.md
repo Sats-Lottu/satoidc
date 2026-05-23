@@ -4,6 +4,25 @@ Status: open
 Priority: P1/P3
 Recommended agents: OIDC QA, performance engineering
 
+## 2026-05-23 Testing Suite Update
+
+The test-suite improvement work is complete except for recorded OIDC
+conformance evidence. The current baseline:
+
+- Keeps `poetry run task test` as the 100% coverage-gated default suite and
+  preserves `post_test` HTML coverage generation.
+- Runs focused property, API security, and Testcontainers integration commands
+  with `--no-cov` so subset suites do not fail the global coverage gate.
+- Shares Testcontainers fixtures for PostgreSQL 16, Alembic-migrated
+  PostgreSQL state, a live SatOIDC app wired to PostgreSQL, Mailpit, and
+  OpenBao Transit under `satoidc/tests/integration/conftest.py`.
+- Runs CI gates for lint, default tests, property tests, API security tests,
+  Testcontainers integration tests, and Docker image build.
+- Keeps load tests manual and outside CI.
+
+OIDC conformance remains open under Task 4.4. Do not claim conformance until a
+dated external OpenID Foundation run is recorded.
+
 ## Task 4.1: Expand Token Lifecycle E2E Coverage
 
 1. Clear task name: Expand refresh, revocation, introspection, and UserInfo e2e.
@@ -157,5 +176,6 @@ Recommended agents: OIDC QA, performance engineering
 
 - [x] Add explicit seed requirements.
 - [x] Add token issuance scenario if missing.
-- Run against PostgreSQL.
+- [x] Keep load tests outside CI.
+- [ ] Run against PostgreSQL when publishing a new load evidence report.
 - [x] Document conservative baseline.

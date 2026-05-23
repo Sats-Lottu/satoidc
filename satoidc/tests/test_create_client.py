@@ -6,6 +6,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy import select
 
+import satoidc.routes.create_client as create_client_routes
 from satoidc.auth.client_management import (
     CLIENT_DISABLED_AT,
     CLIENT_SECRET_ROTATED_AT,
@@ -16,7 +17,10 @@ from satoidc.auth.client_management import (
 )
 from satoidc.enums import PermissionsEnum
 from satoidc.models import OAuth2Client, Permission
-from satoidc.routes.create_client import create_client_command
+from satoidc.routes.create_client import (
+    CLIENT_TYPE_PUBLIC,
+    create_client_command,
+)
 from satoidc.schemas.oauth_clients import CreateOAuthClientCommand
 from satoidc.services.oauth_clients import (
     build_client_metadata,
@@ -64,6 +68,26 @@ def test_build_client_metadata_normalizes_valid_values():
         "scope": "openid profile",
         "token_endpoint_auth_method": "client_secret_post",
     }
+
+
+def test_guided_client_form_helpers_normalize_protocol_values():
+    assert create_client_routes._client_form_scopes(
+        profile=False, email=True
+    ) == "openid email"
+    assert create_client_routes._client_form_scopes(
+        profile=False, email=False
+    ) == "openid"
+    assert create_client_routes._client_form_grants(refresh_token=True) == (
+        "authorization_code\nrefresh_token"
+    )
+    assert create_client_routes._client_form_auth_method(
+        client_type=CLIENT_TYPE_PUBLIC,
+        token_endpoint_auth_method="client_secret_post",
+    ) == "none"
+    assert create_client_routes._client_form_auth_method(
+        client_type="confidential_web",
+        token_endpoint_auth_method="client_secret_post",
+    ) == "client_secret_post"
 
 
 def test_build_client_metadata_rejects_invalid_values():
@@ -345,6 +369,54 @@ async def test_create_client_command_rejects_missing_permission(
 
     assert response.status_code == HTTPStatus.SEE_OTHER
     assert response.headers["location"] == "/forbidden"
+
+
+async def test_create_client_command_redirects_invalid_session(db_session):
+    request = SimpleNamespace(session={"user_id": "not-a-uuid"})
+
+    response = await create_client_command(
+        db_session,
+        request,
+        CreateOAuthClientCommand(),
+    )
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == "/login"
+
+
+async def test_create_client_command_stores_validation_errors(
+    db_session, make_user
+):
+    user = await make_user(
+        login="invalid_command_user",
+        email="invalid-command@example.com",
+    )
+    db_session.add(
+        Permission(
+            user_id=user.id,
+            granted_by=None,
+            permission_type=PermissionsEnum.DEVELOPER,
+            expiration_date=None,
+            reason="test developer access",
+        )
+    )
+    await db_session.commit()
+    request = SimpleNamespace(session={"user_id": user.id.hex})
+
+    response = await create_client_command(
+        db_session,
+        request,
+        CreateOAuthClientCommand(
+            client_name="",
+            client_uri="not-a-url",
+            redirect_uri="javascript:alert(1)",
+        ),
+    )
+
+    assert response.status_code == HTTPStatus.SEE_OTHER
+    assert response.headers["location"] == "/create_client"
+    assert request.session["create_client_flash"]["type"] == "error"
+    assert request.session["create_client_flash"]["messages"]
 
 
 async def test_update_oauth_client_generates_secret_for_private_method(

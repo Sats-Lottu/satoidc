@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
+import satoidc.services.setup_lock as setup_lock_module
 import satoidc.settings as settings_module
 from satoidc.models import SetupState
 from satoidc.services.setup_lock import (
@@ -139,6 +140,37 @@ async def test_setup_lock_release_requires_active_lock(db_session):
         await release_setup_lock(db_session, lock)
 
     assert exc_info.value.diagnostics.current_state == "failed"
+
+
+async def test_setup_lock_reports_missing_state(db_session):
+    with pytest.raises(SetupLockUnavailableError) as exc_info:
+        await setup_lock_module._raise_locked(db_session)
+
+    assert exc_info.value.diagnostics.current_state == "missing"
+    assert (
+        exc_info.value.diagnostics.message
+        == "Setup lock could not be acquired."
+    )
+
+
+async def test_create_applying_setup_state_handles_insert_race(
+    db_session, monkeypatch
+):
+    original_flush = db_session.flush
+    calls = 0
+
+    async def race_once(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise IntegrityError("insert", {}, Exception("duplicate"))
+        return await original_flush(*args, **kwargs)
+
+    monkeypatch.setattr(db_session, "flush", race_once)
+
+    state = await setup_lock_module._create_applying_setup_state(db_session)
+
+    assert state is None
 
 
 def test_setup_state_migration_creates_sqlite_table(

@@ -1,6 +1,7 @@
 import time
 from types import SimpleNamespace
 
+import satoidc.auth.oauth2 as oauth2_module
 from satoidc.auth.oauth2 import (
     AuthorizationCodeGrant,
     IntrospectionEndpoint,
@@ -213,3 +214,63 @@ def test_openid_code_delegates_public_key_claim_header_and_userinfo(
     assert openid.generate_user_info(user, "email profile")["email"] == (
         "satoshi@example.com"
     )
+
+
+def test_openid_code_external_encoder_adds_access_token_hash(monkeypatch):
+    captured = {}
+
+    class Backend:
+        def encode_jwt(self, header, claims, key_row):
+            self.used = True
+            captured["header"] = header
+            captured["claims"] = claims
+            captured["key_row"] = key_row
+            return "signed-token"
+
+    backend = Backend()
+
+    def get_backend():
+        return backend
+
+    openid = OpenIDCode(require_nonce=True)
+    monkeypatch.setattr(
+        openid,
+        "get_encode_header",
+        lambda client: {"alg": "RS256", "kid": "kid-1"},
+    )
+    monkeypatch.setattr(openid, "get_compatible_claims", lambda request: {})
+    monkeypatch.setattr(
+        openid,
+        "generate_user_info",
+        lambda user, scope: {"sub": str(user.id)},
+    )
+    monkeypatch.setattr(
+        oauth2_module,
+        "get_signing_backend",
+        get_backend,
+    )
+    request = SimpleNamespace(
+        client=Client("client-1"),
+        authorization_code={"nonce": "nonce-1"},
+        user=SimpleNamespace(id="user-1"),
+    )
+    monkeypatch.setattr(
+        openid,
+        "get_authorization_code_claims",
+        lambda code: {"nonce": code["nonce"]},
+    )
+
+    token = openid._encode_external_id_token(
+        {"access_token": "access-token", "scope": "openid"},
+        request,
+        {"alg": "RS256"},
+        "key-row",
+    )
+
+    assert token == "signed-token"
+    assert captured["header"]["kid"] == "kid-1"
+    assert captured["claims"]["sub"] == "user-1"
+    assert captured["claims"]["nonce"] == "nonce-1"
+    assert captured["claims"]["at_hash"]
+    assert captured["key_row"] == "key-row"
+    assert backend.used is True

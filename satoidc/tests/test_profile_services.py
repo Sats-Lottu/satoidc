@@ -60,6 +60,17 @@ async def test_update_profile_email_rejects_duplicate(
     assert user.email == "first@example.com"
 
 
+async def test_update_profile_email_rejects_invalid_address(
+    db_session, make_user
+):
+    user = await make_user(email="profile@example.com")
+
+    with pytest.raises(ProfileServiceError) as exc_info:
+        await update_profile_email(db_session, user, "not-an-email")
+
+    assert str(exc_info.value) == "Invalid email address."
+
+
 async def test_update_profile_password_requires_current_password(
     db_session, make_user
 ):

@@ -26,6 +26,8 @@ This folder keeps durable technical documentation for SatOIDC. Keep new Markdown
   known local setup failures and repair workflows.
 - [Load Testing](load-testing.md): Locust smoke scenarios, token lifecycle seed
   requirements, and baseline result template.
+- [Testing Strategy](testing.md): test-suite tiers, task commands, coverage
+  workflow, and current coverage focus.
 - [Relying-Party Compatibility](relying-party-compatibility.md): verified and
   pending OIDC client integration matrix.
 - [Reverse Proxy Operations](operations/reverse-proxy.md): TLS, forwarded

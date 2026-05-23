@@ -5,11 +5,16 @@ tags:
 type: command
 project: satoidc
 status: active
-updated: 2026-05-17
+updated: 2026-05-23
 ---
 
 # Validated Commands
 
+- `cd satoidc; poetry run task lint`: ran on 2026-05-23 after test-suite cleanup, task command updates, and coverage-focused tests; passed.
+- `cd satoidc; poetry run task test`: ran on 2026-05-23 after restoring the 100% coverage gate, separating property tests, and keeping `post_test` coverage HTML generation; passed with `369 passed, 30 deselected` and 100.00% measured line coverage. The command wrote the HTML report to `htmlcov/index.html`.
+- `cd satoidc; poetry run task test_property`: ran on 2026-05-23 after changing the property command to exclude `property_slow` and run without coverage reporting; passed with `3 passed, 396 deselected`.
+- `cd satoidc; poetry run task test_api_security`: ran on 2026-05-23 after moving focused CI commands to `--no-cov`; passed with `3 passed`.
+- `cd satoidc; poetry run task test_integration`: ran on 2026-05-23 with Docker access after adding shared Testcontainers fixtures and aligning PostgreSQL startup with `PostgresContainer("postgres:16", driver="psycopg")`; passed with `5 passed, 394 deselected`.
 - `cd satoidc; poetry add httpx`: ran on 2026-05-17 after standardizing outbound HTTP calls on async `httpx`; dependency was already available transitively, but Poetry recorded `httpx` as a direct project dependency and updated `poetry.lock`.
 - `cd satoidc; poetry run task lint`: ran on 2026-05-17 after OpenBao Transit signing, service extraction, email recovery, and async `httpx` client work; passed.
 - `cd satoidc; poetry run task test`: ran on 2026-05-17 after OpenBao Transit signing, service extraction, email recovery, and async `httpx` client work; passed with `242 passed, 21 deselected`.

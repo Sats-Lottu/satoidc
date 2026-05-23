@@ -80,12 +80,17 @@ The implementation must expose explicit `taskipy` commands for each test type:
 
 - `poetry run task test`: default fast pytest suite.
 - `poetry run task test_unit`: unit-focused pytest suite.
-- `poetry run task test_property`: Hypothesis property-based suite.
-- `poetry run task test_api_security`: Tavern API security suite.
-- `poetry run task test_integration`: Testcontainers-backed integration suite.
+- `poetry run task test_property`: Hypothesis property-based suite excluding
+  `property_slow`, without coverage reporting.
+- `poetry run task test_api_security`: Tavern API security suite, without
+  coverage reporting.
+- `poetry run task test_integration`: Testcontainers-backed integration suite
+  excluding load tests, without coverage reporting.
 - `poetry run task test_e2e`: Playwright browser UI suite.
 - `poetry run task test_load`: headless Locust load smoke test.
 - `poetry run task test_all`: complete non-load verification suite.
+- `poetry run task coverage_html`: explicit HTML coverage report generation.
+- `post_test`: automatic `coverage html` hook after `task test`.
 
 Optional helper commands:
 
@@ -105,6 +110,11 @@ Optional helper commands:
   developer-specific browser state.
 - Tests that manipulate time-sensitive tokens must use deterministic time
   control, such as `freezegun`, where practical.
+- The default measured suite must maintain 100% line coverage through
+  `coverage report --fail-under=100`.
+- Production code generated or substantially edited with AI assistance must
+  include tests in the same change and should follow a TDD red-green-refactor
+  loop.
 
 ## Acceptance Criteria
 
@@ -126,16 +136,36 @@ Optional helper commands:
   is recorded or explicitly marked as absent with known deviations.
 - Given a new feature affects auth, OIDC, LNURL, persistence, or UI, then at
   least one relevant automated test tier is updated.
+- Given AI-assisted production code is submitted, then tests for the generated
+  or edited behavior are included in the same change.
+- Given `poetry run task test` runs, then measured line coverage remains 100%
+  and the HTML report is regenerated through `post_test`.
 
 ## Implementation Progress
 
 - Pytest markers and taskipy commands exist for unit, property, API security,
   integration, e2e, load, and non-load suites.
+- The default local suite excludes property tests; run `test_property` for
+  Hypothesis checks and `test_all` for complete non-load verification.
+- Coverage HTML generation stays automatic after `task test` through
+  `post_test`, and can also be run explicitly through `coverage_html`.
+- The default measured suite now enforces 100% line coverage through
+  `fail_under = 100`.
+- Focused property, API security, and Testcontainers integration tasks use
+  `--no-cov`; otherwise they would fail the global default-suite coverage gate
+  for valid subset runs.
+- CI runs lint, default tests, property tests, API security tests,
+  Testcontainers integration tests, and Docker image build. Load tests remain
+  outside CI.
 - The first bounded property tests cover redirect safety and validators.
 - API security smoke coverage exercises public metadata and route-boundary
   contracts through Python and Tavern tests.
 - The first Locust smoke scenario covers public metadata and auth pages against
   a configured base URL.
+- Focused service and route coverage added on 2026-05-23 covers runtime
+  settings, email delivery, recovery routes, and Transit signing/client helper
+  contracts. Additional focused tests restored the default measured suite to
+  100% coverage with `369 passed, 30 deselected`.
 
 ## Release Evidence Follow-Ups
 

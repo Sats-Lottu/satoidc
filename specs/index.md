@@ -22,13 +22,13 @@ Use this index to track active and historical specs.
 | [OIDC Conformance Evidence](features/oidc-conformance/spec.md) | active | OAuth/OIDC/Compliance | 2026-05-20 |
 | [Operational Observability Baseline](features/operational-observability/spec.md) | draft | Operations/Security | 2026-05-18 |
 | [Prometheus-Compatible Metrics Baseline](features/operational-observability/metrics-baseline.md) | draft | Operations/Metrics | 2026-05-20 |
-| [Automated Testing Baseline](features/quality-testing/spec.md) | draft | Testing/Quality | 2026-05-17 |
-| [Pytest And Test Extensions](features/quality-testing/pytest-extensions.md) | draft | Testing/Quality | 2026-05-17 |
+| [Automated Testing Baseline](features/quality-testing/spec.md) | draft | Testing/Quality | 2026-05-23 |
+| [Pytest And Test Extensions](features/quality-testing/pytest-extensions.md) | draft | Testing/Quality | 2026-05-23 |
 | [Hypothesis Property Tests](features/quality-testing/hypothesis-property.md) | draft | Testing/Quality | 2026-05-17 |
 | [Tavern API Security Tests](features/quality-testing/tavern-api-security.md) | implemented | Testing/Security | 2026-05-17 |
 | [Playwright UI Tests](features/quality-testing/playwright-ui.md) | draft | Testing/UI | 2026-05-17 |
 | [Locust Load Tests](features/quality-testing/locust-load.md) | draft | Testing/Performance | 2026-05-17 |
-| [Testcontainers Integration Tests](features/quality-testing/testcontainers-integration.md) | draft | Testing/Integration | 2026-05-17 |
+| [Testcontainers Integration Tests](features/quality-testing/testcontainers-integration.md) | draft | Testing/Integration | 2026-05-23 |
 | [OIDC Key Rotation](features/oidc-key-rotation/spec.md) | implemented | OAuth/OIDC Security | 2026-05-18 |
 | [OIDC Contract](contracts/oidc.md) | draft | OAuth/OIDC | 2026-05-06 |
 | [Authorization Code Flow](flows/authorization-code.md) | implemented | OAuth/OIDC | 2026-05-15 |

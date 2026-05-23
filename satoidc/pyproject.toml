@@ -70,6 +70,10 @@ filterwarnings = [
 core = "ctrace"
 concurrency = ["thread", "greenlet"]
 
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+
 [tool.ruff]
 line-length = 79
 extend-exclude = [
@@ -95,11 +99,11 @@ quote-style = "double"
 [tool.taskipy.tasks]
 run = "fastapi dev satoidc/main.py"
 setup_wizard = "python -m setup_wizard"
-test = "pytest -m \"not e2e and not integration and not container and not load and not slow\""
-test_unit = "pytest -m \"not e2e and not integration and not container and not load and not slow\""
-test_property = "pytest -m property"
-test_api_security = "pytest -m api_security tests/api"
-test_integration = "pytest -m \"integration or container\""
+test = "pytest -m \"not e2e and not integration and not container and not property and not load and not slow\""
+test_unit = "pytest -m \"not e2e and not integration and not container and not property and not load and not slow\""
+test_property = "pytest -m \"property and not property_slow\" --no-cov"
+test_api_security = "pytest -m api_security tests/api --no-cov"
+test_integration = "pytest -m \"(integration or container) and not load\" --no-cov"
 test_load = "locust -f tests/load/locustfile.py --headless --users 5 --spawn-rate 1 --run-time 1m --host http://127.0.0.1:8000"
 test_load_ui = "locust -f tests/load/locustfile.py --host http://127.0.0.1:8000"
 test_all = "pytest -m \"not load and not slow\""
@@ -111,4 +115,5 @@ format = "ruff format"
 pre_format = "ruff check --fix"
 playwright_install = "playwright install chromium"
 start_public_client = "python ../examples/public_client.py --client-id"
+coverage_html = "coverage html"
 post_test = "coverage html"
