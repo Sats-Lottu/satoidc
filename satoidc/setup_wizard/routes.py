@@ -198,6 +198,12 @@ SAFE_EDITABLE_RECONFIGURATION_FIELDS = {
     "EMAIL_SENDER_MODE",
     "SMTP_FROM_EMAIL",
 }
+CONFIRMABLE_HIGH_IMPACT_RECONFIGURATION_FIELDS = {
+    "EMAIL_PUBLIC_BASE_URL",
+    "OAUTH2_JWT_ISS",
+    "OAUTH2_TOKEN_EXPIRES_IN",
+    "OIDC_SIGNING_BACKEND",
+}
 
 
 def setup_reconfiguration_fields(
@@ -227,11 +233,15 @@ def setup_reconfiguration_fields(
         else:
             display_value = value or "Not configured"
         mutable_spec = MUTABLE_BY_FIELD.get(spec.field_name)
+        editable_fields = (
+            SAFE_EDITABLE_RECONFIGURATION_FIELDS
+            | CONFIRMABLE_HIGH_IMPACT_RECONFIGURATION_FIELDS
+        )
         editable = (
             mutable_spec is not None
             and not configured
             and not spec.secret
-            and spec.field_name in SAFE_EDITABLE_RECONFIGURATION_FIELDS
+            and spec.field_name in editable_fields
         )
 
         fields.append(
@@ -344,10 +354,21 @@ def render_high_impact_confirmation():
     ).props("outline").classes(SECONDARY_BUTTON_CLASSES)
 
 
+def high_impact_reconfiguration_names(
+    fields: list[dict[str, object]],
+) -> list[str]:
+    return [
+        str(field["name"])
+        for field in fields
+        if field["editable"] and field["high_impact"]
+    ]
+
+
 def render_reconfiguration_panel():
     report = validate_bootstrap_environment()
     fields = setup_reconfiguration_fields()
     editable_inputs: dict[str, object] = {}
+    high_impact_editable_names = high_impact_reconfiguration_names(fields)
 
     with auth_shell("max-w-2xl"):
         with ui.column().classes("gap-4"):
@@ -395,7 +416,32 @@ def render_reconfiguration_panel():
             for field in fields:
                 render_reconfiguration_field(field, editable_inputs)
 
+            high_impact_ack = None
+            if high_impact_editable_names:
+                with ui.column().classes(
+                    "gap-2 rounded-lg border border-amber-400/30 "
+                    "bg-amber-400/10 p-3"
+                ):
+                    ui.label("High-impact confirmation").classes(
+                        "font-semibold"
+                    )
+                    ui.label(
+                        "Saving these fields can invalidate clients, tokens, "
+                        "or signing behavior: "
+                        + ", ".join(high_impact_editable_names)
+                    ).classes(f"text-sm {MUTED_TEXT}")
+                    high_impact_ack = ui.checkbox(
+                        "I understand the impact and have planned validation "
+                        "after restart."
+                    )
+
             async def save_reconfiguration():
+                if high_impact_editable_names and not high_impact_ack.value:
+                    ui.notify(
+                        "Confirm high-impact changes before saving.",
+                        type="warning",
+                    )
+                    return
                 errors: list[str] = []
                 async with setup_session() as session:
                     for field in fields:

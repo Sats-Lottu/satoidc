@@ -31,6 +31,7 @@ from setup_wizard.get_root import (
 from setup_wizard.routes import (
     SETUP_ROOT_USER_ID_KEY,
     apply_initial_root_setup_form,
+    high_impact_reconfiguration_names,
     initial_root_form_state_from_result,
     initial_root_review_from_payload,
     set_root,
@@ -517,5 +518,22 @@ def test_setup_reconfiguration_fields_marks_safe_unlocked_values_editable():
 
     assert by_name["SERVICE_NAME"]["editable"] is True
     assert by_name["SERVICE_NAME"]["key"] == "instance_name"
-    assert by_name["OAUTH2_JWT_ISS"]["editable"] is False
+    assert by_name["OAUTH2_JWT_ISS"]["editable"] is True
+    assert by_name["OAUTH2_JWT_ISS"]["high_impact"] is True
+    assert by_name["OIDC_SIGNING_BACKEND"]["editable"] is True
+    assert by_name["OIDC_SIGNING_BACKEND"]["high_impact"] is True
     assert by_name["SESSION_MIDDLEWARE_SECRET_KEY"]["editable"] is False
+
+
+def test_high_impact_reconfiguration_names_only_lists_editable_critical():
+    fields = setup_reconfiguration_fields(
+        {
+            "SATOIDC_ISSUER": "https://issuer.example.com",
+            "OIDC_SIGNING_BACKEND": "database",
+        }
+    )
+
+    assert high_impact_reconfiguration_names(fields) == [
+        "EMAIL_PUBLIC_BASE_URL",
+        "OAUTH2_TOKEN_EXPIRES_IN",
+    ]
