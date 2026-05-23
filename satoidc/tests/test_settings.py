@@ -1,6 +1,9 @@
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 from satoidc.enums import JwkAlgEnum
+from satoidc.models import SetupRuntimeSetting, table_registry
 from satoidc.runtime_config import PLACEHOLDER_SECRET, mask_secret
 from satoidc.settings import Settings
 
@@ -282,3 +285,62 @@ def test_mask_secret_never_returns_secret_value():
     assert mask_secret("super-secret") == "********"
     assert not mask_secret("")
     assert not mask_secret(None)
+
+
+def test_persisted_runtime_setting_loads_after_env_sources(tmp_path):
+    database_path = tmp_path / "settings.db"
+    sync_url = f"sqlite:///{database_path.as_posix()}"
+    async_url = f"sqlite+aiosqlite:///{database_path.as_posix()}"
+    engine = create_engine(sync_url)
+    table_registry.metadata.create_all(
+        engine, tables=[SetupRuntimeSetting.__table__]
+    )
+    with Session(engine) as session:
+        session.add(
+            SetupRuntimeSetting(
+                key="instance_name",
+                value='"Persisted SatOIDC"',
+                source="admin_reconfigure",
+            )
+        )
+        session.commit()
+    engine.dispose()
+
+    settings = Settings(
+        _env_file=None,
+        DATABASE_URL=async_url,
+        SYNC_DATABASE_URL=sync_url,
+    )
+
+    assert settings.SERVICE_NAME == "Persisted SatOIDC"
+
+
+def test_env_locked_setting_wins_over_persisted_value(
+    tmp_path, monkeypatch
+):
+    database_path = tmp_path / "settings.db"
+    sync_url = f"sqlite:///{database_path.as_posix()}"
+    async_url = f"sqlite+aiosqlite:///{database_path.as_posix()}"
+    engine = create_engine(sync_url)
+    table_registry.metadata.create_all(
+        engine, tables=[SetupRuntimeSetting.__table__]
+    )
+    with Session(engine) as session:
+        session.add(
+            SetupRuntimeSetting(
+                key="instance_name",
+                value='"Persisted SatOIDC"',
+                source="admin_reconfigure",
+            )
+        )
+        session.commit()
+    engine.dispose()
+    monkeypatch.setenv("SATOIDC_INSTANCE_NAME", "Env SatOIDC")
+
+    settings = Settings(
+        _env_file=None,
+        DATABASE_URL=async_url,
+        SYNC_DATABASE_URL=sync_url,
+    )
+
+    assert settings.SERVICE_NAME == "Env SatOIDC"

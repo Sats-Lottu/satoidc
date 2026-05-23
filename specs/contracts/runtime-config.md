@@ -2,7 +2,7 @@
 
 Status: draft
 Area: Runtime/Configuration
-Last Updated: 2026-05-18
+Last Updated: 2026-05-23
 
 ## Intent
 
@@ -25,14 +25,16 @@ only to choose the host port and is not read by the Python settings object.
 Current precedence is:
 
 1. explicit values passed to `Settings(...)` by tests or internal callers;
-2. process environment variables using current names;
-3. `.env` values from the current working directory using current names;
-4. defaults declared in `satoidc/satoidc/settings.py`.
+2. `SATOIDC_*` process environment or `.env` values;
+3. supported `SATOIDC_*_FILE` values when direct values are absent;
+4. current process environment or `.env` values;
+5. supported current `*_FILE` values when direct values are absent;
+6. valid wizard-owned persisted values from `setup_runtime_settings`;
+7. defaults declared in `satoidc/satoidc/settings.py`.
 
-Current runtime code does not resolve `SATOIDC_*` aliases or `_FILE` variables.
-The only generated-file behavior currently documented here is
-`SETUP_GENERATED_SECRETS_PATH`, which points the bootstrap/entrypoint flow at a
-shell env file containing generated current-name secret exports.
+`SETUP_GENERATED_SECRETS_PATH` points the bootstrap/entrypoint flow at a shell
+env file containing generated current-name secret exports. Raw secrets remain
+deployment-owned and are not persisted in `setup_runtime_settings`.
 
 ## Compatibility And Precedence Contract
 
@@ -60,9 +62,9 @@ the direct value wins and startup should log a non-sensitive warning. If both
 `SATOIDC_*` value wins and startup should log a non-sensitive deprecation
 warning for the current name. Secret values must never be logged.
 
-Until alias support is implemented and covered by `satoidc/tests/test_settings.py`,
-operators must use current names in production. The planned `SATOIDC_*` names in
-the matrix below are contract targets, not currently accepted runtime inputs.
+Alias and supported `_FILE` resolution are implemented and covered by
+`satoidc/tests/test_settings.py`. Operators may use current names during the
+migration window, but `SATOIDC_*` values win when both names are present.
 
 ## Runtime Variable Matrix
 
@@ -80,15 +82,15 @@ Status meanings:
 
 | Logical setting | Current variable | Future variable | `_FILE` support | Secret | Required | Status | Migration note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Instance name | `SERVICE_NAME` | `SATOIDC_INSTANCE_NAME` | no | no | optional | implemented / planned-alias | Future alias maps to `SERVICE_NAME`; keep current name during migration. |
+| Instance name | `SERVICE_NAME` | `SATOIDC_INSTANCE_NAME` | no | no | optional | implemented / alias / persisted | Alias maps to `SERVICE_NAME`; wizard persistence uses `instance_name` when env is absent. |
 | Public domain hint | `DOMAIN` | none | no | no | optional | implemented | Keep current name unless replaced by explicit public URL behavior. |
 | Runtime environment | `APP_ENV` | `SATOIDC_APP_ENV` | no | no | optional | implemented / planned-alias | Future alias maps to `APP_ENV`; production checks still use `production` or `prod`. |
 | Host port | none | `SATOIDC_PORT` | no | no | optional | compose-only | Compose maps host port to container port `8000`; runtime ignores it. |
 | Compose database user | `POSTGRES_USER` | none | no | no | required for Compose PostgreSQL | compose-only | Compose uses this to initialize PostgreSQL and interpolate runtime database URLs. |
 | Compose database password | `POSTGRES_PASSWORD` | none | future Compose secret only | yes | required for Compose PostgreSQL | compose-only | Compose uses this to initialize PostgreSQL and interpolate runtime database URLs. |
 | Compose database name | `POSTGRES_DB` | none | no | no | required for Compose PostgreSQL | compose-only | Compose uses this to initialize PostgreSQL and interpolate runtime database URLs. |
-| Public base URL | `EMAIL_PUBLIC_BASE_URL` partially | `SATOIDC_PUBLIC_BASE_URL` | no | no | yes in future setup | implemented partial / planned-alias | Future public URL should drive email links and setup validation; current fallback also uses request base URL or issuer. |
-| OIDC issuer | `OAUTH2_JWT_ISS` | `SATOIDC_ISSUER` | no | no | required in production | implemented / planned-alias | Future alias maps to issuer; current name remains a backwards-compatible alias. |
+| Public base URL | `EMAIL_PUBLIC_BASE_URL` partially | `SATOIDC_PUBLIC_BASE_URL` | no | no | yes in future setup | implemented partial / alias / persisted | Public URL drives email links; current fallback also uses request base URL or issuer. |
+| OIDC issuer | `OAUTH2_JWT_ISS` | `SATOIDC_ISSUER` | no | no | required in production | implemented / alias / persisted | Alias maps to issuer; current name remains a backwards-compatible alias. |
 | Async database URL | `DATABASE_URL` | `SATOIDC_DATABASE_URL` | yes, future only | maybe | required | implemented / planned-alias | Future alias maps to async SQLAlchemy URL; URL is secret only when it contains credentials. |
 | Sync database URL | `SYNC_DATABASE_URL` | `SATOIDC_SYNC_DATABASE_URL` | yes, future only | maybe | required while Authlib remains sync | implemented / planned-alias | Future may derive sync URL from `SATOIDC_DATABASE_URL`; until then current pair must target the same database. |
 | Session secret | `SESSION_MIDDLEWARE_SECRET_KEY` | `SATOIDC_SECRET_KEY` | yes, future only | yes | required in production | implemented / planned-alias | Future single app secret maps to session signing and any app-level crypto use that explicitly adopts it. |

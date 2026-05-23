@@ -28,6 +28,12 @@ from satoidc.routes.ui_components import (
     responsive_grid,
 )
 from satoidc.runtime_config import RUNTIME_ENV_VARS, mask_secret
+from satoidc.services.runtime_settings import (
+    MUTABLE_BY_FIELD,
+    RuntimeSettingSpec,
+    RuntimeSettingValidationError,
+    upsert_runtime_setting,
+)
 from satoidc.settings import ENV
 from satoidc.validators import (
     is_valid_email,
@@ -184,6 +190,14 @@ HIGH_IMPACT_RECONFIGURATION_FIELDS = {
     "OAUTH2_TOKEN_EXPIRES_IN",
     "OIDC_SIGNING_BACKEND",
 }
+SAFE_EDITABLE_RECONFIGURATION_FIELDS = {
+    "SERVICE_NAME",
+    "LNURL_K1_TTL_SECONDS",
+    "OAUTH2_JWT_AUDIENCE",
+    "OIDC_JWKS_CACHE_TTL_SECONDS",
+    "EMAIL_SENDER_MODE",
+    "SMTP_FROM_EMAIL",
+}
 
 
 def setup_reconfiguration_fields(
@@ -204,20 +218,31 @@ def setup_reconfiguration_fields(
             None,
         )
         configured = source is not None or file_source is not None
-        value = values.get(source or "") if source else ""
+        runtime_value = getattr(ENV, spec.field_name, "")
+        value = values.get(source or "") if source else runtime_value
         if spec.secret:
             display_value = mask_secret(value or values.get(file_source or ""))
         elif file_source and not source:
             display_value = f"{file_source} file"
         else:
             display_value = value or "Not configured"
+        mutable_spec = MUTABLE_BY_FIELD.get(spec.field_name)
+        editable = (
+            mutable_spec is not None
+            and not configured
+            and not spec.secret
+            and spec.field_name in SAFE_EDITABLE_RECONFIGURATION_FIELDS
+        )
 
         fields.append(
             {
                 "name": spec.field_name,
+                "key": mutable_spec.key if mutable_spec else "",
                 "display_value": display_value,
+                "value": runtime_value,
                 "source": source or file_source or "default",
                 "locked": configured,
+                "editable": editable,
                 "secret": spec.secret,
                 "high_impact": (
                     spec.field_name in HIGH_IMPACT_RECONFIGURATION_FIELDS
@@ -227,13 +252,30 @@ def setup_reconfiguration_fields(
     return fields
 
 
-def render_reconfiguration_field(field: dict[str, object]):
+def _parse_reconfiguration_value(
+    spec: RuntimeSettingSpec, raw_value: object
+) -> object:
+    value = str(raw_value or "").strip()
+    if spec.value_type is int:
+        return int(value)
+    if spec.value_type is bool:
+        return value.lower() in {"1", "true", "yes", "on"}
+    if spec.value_type == bool | None:
+        if not value:
+            return None
+        return value.lower() in {"1", "true", "yes", "on"}
+    return value
+
+
+def render_reconfiguration_field(
+    field: dict[str, object], editable_inputs: dict[str, object]
+):
     badge = "High impact" if field["high_impact"] else "Runtime"
     with ui.row().classes(
         "items-start gap-3 rounded-lg border border-white/10 "
         "bg-white/5 p-3 w-full"
     ):
-        ui.icon("lock" if field["locked"] else "info").classes(
+        ui.icon("lock" if field["locked"] else "edit").classes(
             "text-sky-300"
         )
         with ui.column().classes("gap-1 w-full"):
@@ -244,9 +286,15 @@ def render_reconfiguration_field(field: dict[str, object]):
                 ui.label(badge).classes(
                     "text-xs uppercase tracking-wide text-slate-400"
                 )
-            ui.label(str(field["display_value"])).classes(
-                "font-mono text-sm break-all"
-            )
+            if field["editable"]:
+                editable_inputs[str(field["name"])] = ui.input(
+                    "Value",
+                    value=str(field["value"] or ""),
+                ).classes(INPUT_CLASSES)
+            else:
+                ui.label(str(field["display_value"])).classes(
+                    "font-mono text-sm break-all"
+                )
             ui.label(f"Source: {field['source']}").classes(
                 f"text-xs {MUTED_TEXT}"
             )
@@ -299,6 +347,7 @@ def render_high_impact_confirmation():
 def render_reconfiguration_panel():
     report = validate_bootstrap_environment()
     fields = setup_reconfiguration_fields()
+    editable_inputs: dict[str, object] = {}
 
     with auth_shell("max-w-2xl"):
         with ui.column().classes("gap-4"):
@@ -344,9 +393,54 @@ def render_reconfiguration_panel():
                 ).classes(f"text-sm {MUTED_TEXT}")
 
             for field in fields:
-                render_reconfiguration_field(field)
+                render_reconfiguration_field(field, editable_inputs)
+
+            async def save_reconfiguration():
+                errors: list[str] = []
+                async with setup_session() as session:
+                    for field in fields:
+                        if not field["editable"]:
+                            continue
+                        spec = MUTABLE_BY_FIELD[str(field["name"])]
+                        input_element = editable_inputs[str(field["name"])]
+                        try:
+                            await upsert_runtime_setting(
+                                session,
+                                key=spec.key,
+                                value=_parse_reconfiguration_value(
+                                    spec, input_element.value
+                                ),
+                                production=ENV.is_production,
+                                updated_by="setup-wizard",
+                            )
+                        except (
+                            RuntimeSettingValidationError,
+                            ValueError,
+                        ) as exc:
+                            errors.append(f"{field['name']}: {exc}")
+                if errors:
+                    for error in errors[:3]:
+                        ui.notify(error, type="negative")
+                    return
+                log.info(
+                    "Setup runtime settings updated",
+                    extra={
+                        "event_name": "setup.runtime_settings_updated",
+                        "component": "setup_wizard",
+                        "outcome": "updated",
+                    },
+                )
+                ui.notify(
+                    "Runtime settings saved. Restart SatOIDC to apply them.",
+                    type="positive",
+                )
 
             with ui.row().classes("gap-3 mt-4"):
+                ui.button(
+                    "Save editable settings",
+                    icon="save",
+                    on_click=save_reconfiguration,
+                ).classes(PRIMARY_BUTTON_CLASSES)
                 render_high_impact_confirmation()
                 ui.button(
                     "Shut down wizard",

@@ -354,6 +354,36 @@ class SetupState:
     )
 
 
+@table_registry.mapped_as_dataclass
+class SetupRuntimeSetting:
+    __tablename__ = "setup_runtime_settings"
+
+    key: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    secret_ref: Mapped[Optional[str]] = mapped_column(
+        nullable=True, default=None
+    )
+    source: Mapped[str] = mapped_column(default="wizard", index=True)
+    updated_by: Mapped[Optional[str]] = mapped_column(
+        nullable=True, default=None
+    )
+    version: Mapped[int] = mapped_column(default=1)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        init=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    __table_args__ = (
+        CheckConstraint("version >= 1", name="ck_setup_runtime_version"),
+        CheckConstraint(
+            "source in ('wizard', 'setup', 'admin_reconfigure', 'migration')",
+            name="ck_setup_runtime_source",
+        ),
+    )
+
+
 @table_registry.mapped
 class OAuth2Client(OAuth2ClientMixin):
     __tablename__ = "oauth2_client"

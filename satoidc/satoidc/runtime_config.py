@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import Mapping
 from urllib.parse import unquote, urlsplit
 
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL, make_url
+from sqlalchemy.exc import SQLAlchemyError
 
 PRODUCTION_ENVIRONMENTS = {"production", "prod"}
 PLACEHOLDER_SECRET = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
@@ -260,6 +262,65 @@ def resolved_runtime_env_settings(
             )
         resolved[spec.field_name] = value
     return resolved
+
+
+def env_controls_field(field_name: str, env: Mapping[str, str]) -> bool:
+    normalized_env = {name.upper(): value for name, value in env.items()}
+    for spec in RUNTIME_ENV_VARS:
+        if spec.field_name != field_name:
+            continue
+        names = [
+            name for name in (spec.satoidc_name, spec.current_name) if name
+        ]
+        for name in names:
+            if name in normalized_env:
+                return True
+            if spec.supports_file and f"{name}_FILE" in normalized_env:
+                return True
+    return False
+
+
+def load_persisted_runtime_settings(
+    *,
+    sync_database_url: str,
+    env: Mapping[str, str],
+    production: bool,
+) -> dict[str, str]:
+    """Load wizard-owned DB settings without making DB readiness fatal."""
+    try:
+        from satoidc.services.runtime_settings import (  # noqa: PLC0415
+            field_values_from_runtime_settings,
+        )
+
+        engine = create_engine(sync_database_url)
+        try:
+            with engine.connect() as connection:
+                rows = connection.execute(
+                    text("select key, value from setup_runtime_settings")
+                ).all()
+        finally:
+            engine.dispose()
+    except SQLAlchemyError as exc:
+        LOGGER.debug(
+            "Persisted runtime settings unavailable",
+            extra={
+                "event_name": "runtime.settings_unavailable",
+                "component": "runtime_config",
+                "outcome": "skipped",
+                "reason": exc.__class__.__name__,
+            },
+        )
+        return {}
+
+    values = field_values_from_runtime_settings(
+        [(str(key), value) for key, value in rows],
+        production=production,
+    )
+    return {
+        field_name: value
+        for field_name, value in values.items()
+        if not env_controls_field(field_name, env)
+    }
 
 
 def is_operator_issuer_missing(value: str | None) -> bool:

@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from satoidc.enums import JwkAlgEnum
 from satoidc.runtime_config import (
     is_production_environment,
+    load_persisted_runtime_settings,
     resolved_runtime_env_settings,
     validate_database_url_pair,
     validate_issuer_url,
@@ -80,9 +81,33 @@ class Settings(BaseSettings):
                 }
             )
 
+        def persisted_runtime_settings():
+            env = {
+                **getattr(dotenv_settings, "env_vars", {}),
+                **os.environ,
+            }
+            init_values = init_settings()
+            env_values = runtime_env_settings()
+            sync_database_url = (
+                init_values.get("SYNC_DATABASE_URL")
+                or env_values.get("SYNC_DATABASE_URL")
+                or cls.model_fields["SYNC_DATABASE_URL"].default
+            )
+            app_env = (
+                init_values.get("APP_ENV")
+                or env_values.get("APP_ENV")
+                or cls.model_fields["APP_ENV"].default
+            )
+            return load_persisted_runtime_settings(
+                sync_database_url=sync_database_url,
+                env=env,
+                production=is_production_environment(str(app_env)),
+            )
+
         return (
             init_settings,
             runtime_env_settings,
+            persisted_runtime_settings,
             env_settings,
             dotenv_settings,
             file_secret_settings,

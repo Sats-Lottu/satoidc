@@ -78,5 +78,6 @@ def test_postgres_migrations_support_sync_and_async_sessions(
         "oidc_signing_keys",
         "oidc_signing_key_audit_events",
         "setup_state",
+        "setup_runtime_settings",
     }.issubset(tables)
     assert nickname == "Satoshi"

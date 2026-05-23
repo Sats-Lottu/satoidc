@@ -509,3 +509,13 @@ def test_setup_reconfiguration_fields_lock_env_and_mask_secrets():
     assert by_name["SMTP_PASSWORD"]["source"] == "SATOIDC_SMTP_PASSWORD_FILE"
     assert by_name["SMTP_PASSWORD"]["display_value"] == "********"
     assert "super-secret-value" not in repr(fields)
+
+
+def test_setup_reconfiguration_fields_marks_safe_unlocked_values_editable():
+    fields = setup_reconfiguration_fields({})
+    by_name = {field["name"]: field for field in fields}
+
+    assert by_name["SERVICE_NAME"]["editable"] is True
+    assert by_name["SERVICE_NAME"]["key"] == "instance_name"
+    assert by_name["OAUTH2_JWT_ISS"]["editable"] is False
+    assert by_name["SESSION_MIDDLEWARE_SECRET_KEY"]["editable"] is False
